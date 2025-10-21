@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pakistan-train-tracker
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Train Page</title>
+</head>
+<body>
+    <h1>Debug Train Page</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Get train ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const trainId = urlParams.get('id');
+        
+        console.log('Train ID from URL:', trainId);
+        
+        async function fetchTrainData() {
+            try {
+                const response = await fetch('/api/live');
+                const data = await response.json();
+                
+                console.log('API Response:', data);
+                
+                if (data.success) {
+                    const train = data.data.find(t => t.InnerKey === trainId);
+                    console.log('Found train:', train);
+                    
+                    if (train) {
+                        document.getElementById('output').innerHTML = `
+                            <h2>Train Found!</h2>
+                            <p><strong>Train Name:</strong> ${train.TrainName}</p>
+                            <p><strong>Train Number:</strong> ${train.TrainNumber}</p>
+                            <p><strong>Speed:</strong> ${train.Speed} km/h</p>
+                            <p><strong>Status:</strong> Late by ${train.LateBy} minutes</p>
+                            <p><strong>Next Station:</strong> ${train.NextStation}</p>
+                            <p><strong>Location:</strong> ${train.Latitude}, ${train.Longitude}</p>
+                            <p><strong>Last Updated:</strong> ${new Date(train.LastUpdated).toLocaleString()}</p>
+                            <pre>${JSON.stringify(train, null, 2)}</pre>
+                        `;
+                    } else {
+                        document.getElementById('output').innerHTML = `
+                            <h2>Train Not Found</h2>
+                            <p>Looking for train ID: ${trainId}</p>
+                            <p>Total trains available: ${data.data.length}</p>
+                            <h3>Available trains:</h3>
+                            <pre>${JSON.stringify(data.data.map(t => ({InnerKey: t.InnerKey, TrainName: t.TrainName})), null, 2)}</pre>
+                        `;
+                    }
+                } else {
+                    document.getElementById('output').innerHTML = `<h2>API Error</h2><p>${data.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('output').innerHTML = `<h2>Network Error</h2><p>${error.message}</p>`;
+            }
+        }
+        
+        // Run on page load
+        fetchTrainData();
+    </script>
+</body>
+</html>
