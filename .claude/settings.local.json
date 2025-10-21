@@ -21,7 +21,10 @@
       "Bash(brew install:*)",
       "Bash(export:*)",
       "Bash(adb install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(vercel:*)",
+      "WebFetch(domain:pakistan-train-tracker-cm7pg4guy-pakrailways-projects.vercel.app)",
+      "WebFetch(domain:pakraillive.com)"
     ],
     "deny": [],
     "ask": []

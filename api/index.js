@@ -58,46 +58,160 @@ async function fetchStaticData() {
   }
 }
 
-// Fetch live train data
+// Fetch live train data using Socket.IO polling (compatible with serverless)
 async function fetchLiveTrainData() {
   try {
-    const response = await axios.get('https://pakraillive.com/api/live-trains', {
+    console.log('Attempting to fetch live trains via Socket.IO polling...');
+    
+    // Step 1: Establish Socket.IO session via polling
+    const sessionResponse = await axios.get('https://socket.pakraillive.com/socket.io/?EIO=4&transport=polling', {
       timeout: 10000,
       headers: {
-        'User-Agent': 'Pakistan Train Tracker'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': '*/*'
       }
     });
     
-    if (response.data && Array.isArray(response.data)) {
-      data.liveTrains = response.data;
-      data.lastUpdated = new Date().toISOString();
-      return response.data;
+    if (!sessionResponse.data) throw new Error('No session data received');
+    
+    // Parse session ID from response like "97:0{"sid":"_PV2ngPh6pP9Q9ykAywH"...
+    const sessionData = sessionResponse.data.substring(sessionResponse.data.indexOf('{'));
+    const session = JSON.parse(sessionData);
+    const sid = session.sid;
+    
+    if (!sid) throw new Error('No session ID received');
+    console.log('Got session ID:', sid);
+    
+    // Step 2: Send the request for all trains
+    const requestPayload = '42["all-newtrains"]';
+    await axios.post(`https://socket.pakraillive.com/socket.io/?EIO=4&transport=polling&sid=${sid}`, requestPayload, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'Accept': '*/*'
+      },
+      timeout: 10000
+    });
+    
+    // Step 3: Poll for response
+    const responseResp = await axios.get(`https://socket.pakraillive.com/socket.io/?EIO=4&transport=polling&sid=${sid}`, {
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': '*/*'
+      }
+    });
+    
+    if (responseResp.data) {
+      // Parse Socket.IO message format
+      const responseText = responseResp.data;
+      console.log('Raw response length:', responseText.length);
+      
+      // Look for the all-newtrains response (format: 42["all-newtrains",{...}])
+      const match = responseText.match(/42\["all-newtrains",(\{.*?\})\]/);
+      if (match) {
+        const trainsData = JSON.parse(match[1]);
+        console.log('Parsed trains data keys:', Object.keys(trainsData).length);
+        
+        // Process the data similar to local server
+        const processedTrains = [];
+        for (const trainKey in trainsData) {
+          const trainData = trainsData[trainKey];
+          for (const innerKey of Object.keys(trainData)) {
+            if (innerKey && trainData[innerKey]) {
+              const train = trainData[innerKey];
+              const formattedTrain = {
+                TrainId: trainKey,
+                InnerKey: innerKey,
+                LocomotiveNumber: train.locomitiveNo,
+                Latitude: parseFloat(train.lat),
+                Longitude: parseFloat(train.lon),
+                Speed: parseInt(train.sp) || 0,
+                LateBy: parseInt(train.late_by) || 0,
+                NextStationId: train.next_station,
+                NextStation: train.next_stop,
+                PrevStationId: train.prev_station,
+                NextStationETA: train.NextStationETA,
+                LastUpdated: new Date(parseInt(train.last_updated) * 1000).toISOString(),
+                Status: train.st,
+                Icon: train.icon,
+                IsLive: true
+              };
+              
+              // Try to match with static train data
+              const staticTrain = data.trains.find(t => 
+                String(t.TrainId) === String(trainKey.replace('9900', '')) ||
+                String(t.TrainId) === String(innerKey.split('0')[0])
+              );
+              
+              if (staticTrain) {
+                formattedTrain.TrainName = staticTrain.TrainName;
+                formattedTrain.TrainNumber = staticTrain.TrainNumber;
+                formattedTrain.TrainNameUrdu = staticTrain.TrainNameUR;
+              }
+              
+              processedTrains.push(formattedTrain);
+            }
+          }
+        }
+        
+        data.liveTrains = processedTrains;
+        data.lastUpdated = new Date().toISOString();
+        console.log(`✅ Fetched ${processedTrains.length} live trains via Socket.IO polling`);
+        return processedTrains;
+      }
     }
+    
+    throw new Error('No train data found in response');
+    
   } catch (error) {
-    console.error('Error fetching live trains:', error.message);
+    console.error('Error fetching via Socket.IO polling:', error.message);
   }
-  
-  // Return mock data for testing
-  return [
+
+  // Fallback to sample data
+  console.log('⚠️ Using fallback data - Socket.IO polling failed');
+  const fallbackData = [
     {
-      trainNumber: '1UP',
-      trainName: 'Karachi Express',
-      currentStation: 'Lahore',
-      nextStation: 'Faisalabad',
+      TrainNumber: '1UP',
+      TrainName: 'Karachi Express',
+      InnerKey: '11001',
       status: 'On Time',
       delay: 0,
-      speed: 85
+      speed: 85,
+      currentStation: 'Lahore Junction',
+      nextStation: 'Faisalabad',
+      lat: 31.5204,
+      lng: 74.3587
     },
     {
-      trainNumber: '2DN',
-      trainName: 'Business Express',
-      currentStation: 'Islamabad',
-      nextStation: 'Rawalpindi',
+      TrainNumber: '2DN', 
+      TrainName: 'Business Express',
+      InnerKey: '22001',
       status: 'Delayed',
       delay: 15,
-      speed: 0
+      speed: 0,
+      currentStation: 'Islamabad',
+      nextStation: 'Rawalpindi',
+      lat: 33.6844,
+      lng: 73.0479
+    },
+    {
+      TrainNumber: '3UP',
+      TrainName: 'Millat Express', 
+      InnerKey: '33001',
+      status: 'On Time',
+      delay: 0,
+      speed: 95,
+      currentStation: 'Multan',
+      nextStation: 'Bahawalpur',
+      lat: 30.1575,
+      lng: 71.5249
     }
   ];
+  
+  data.liveTrains = fallbackData;
+  data.lastUpdated = new Date().toISOString();
+  return fallbackData;
 }
 
 // Routes
