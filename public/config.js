@@ -4,8 +4,8 @@ const API_CONFIG = {
     getBaseURL() {
         // Check if running in Capacitor (mobile app)
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            // Mobile app - use production server
-            return 'https://pakistan-train-tracker.onrender.com';
+            // Mobile app - use Vercel production server
+            return 'https://pakistan-train-tracker-6j9ydm49n-pakrailways-projects.vercel.app';
         } else {
             // Web browser - use relative URLs (current domain)
             return '';
@@ -23,7 +23,7 @@ const API_CONFIG = {
     // WebSocket configuration
     getSocketURL() {
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            return 'https://pakistan-train-tracker.onrender.com';
+            return 'https://pakistan-train-tracker-6j9ydm49n-pakrailways-projects.vercel.app';
         } else {
             return window.location.origin;
         }
