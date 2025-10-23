@@ -680,8 +680,15 @@ class MobileApp {
                 </div>
             `;
         });
-        
+
         container.innerHTML = html;
+
+        // Update results count when filtering
+        const resultsCountEl = document.getElementById('liveTrackingResultsCount');
+        if (resultsCountEl) {
+            const liveTrains = filteredTrains.filter(t => t.Speed !== undefined).length;
+            resultsCountEl.textContent = `${filteredTrains.length} trains found (${liveTrains} live)`;
+        }
     }
 
     updateLiveSearchResults(count, query) {
@@ -2236,6 +2243,14 @@ class MobileApp {
         container.innerHTML = html;
         this.updateFavoriteButtons();
         this.liveTrackingLastUpdatedTime = new Date();
+
+        // Update results count
+        const resultsCountEl = document.getElementById('liveTrackingResultsCount');
+        if (resultsCountEl) {
+            const totalTrains = this.trainData.active.length;
+            const liveTrains = this.trainData.active.filter(t => t.Speed !== undefined).length;
+            resultsCountEl.textContent = `${totalTrains} trains found (${liveTrains} live)`;
+        }
     }
 
     async loadScheduledTrainsForHome() {
@@ -2813,7 +2828,7 @@ class MobileApp {
         container.innerHTML = html || '<div class="empty-state">No schedule data available</div>';
 
         // Update results count
-        const resultsCount = document.querySelector('.results-count');
+        const resultsCount = document.querySelector('#scheduleScreen .results-count');
         if (resultsCount) {
             const liveCount = schedule.filter(train => this.findLiveTrainData(train.trainNumber)).length;
             resultsCount.textContent = `${schedule.length} trains found (${liveCount} live)`;
@@ -2875,9 +2890,9 @@ class MobileApp {
         });
         
         this.populateSchedule(filteredTrains);
-        
+
         // Update results count
-        const resultsCount = document.querySelector('.results-count');
+        const resultsCount = document.querySelector('#scheduleScreen .results-count');
         if (resultsCount) {
             const liveCount = filteredTrains.filter(train => this.findLiveTrainData(train.trainNumber)).length;
             resultsCount.textContent = `${filteredTrains.length} trains found (${liveCount} live)`;
