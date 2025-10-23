@@ -9,7 +9,12 @@
     "path": "android"
   },
   "ios": {
-    "path": "ios/App"
+    "path": "ios/App",
+    "contentInset": "automatic",
+    "limitsNavigationsToAppBoundDomains": false,
+    "allowsLinkPreview": false,
+    "overrideUserAgent": null,
+    "preferredContentMode": "mobile"
   },
   "plugins": {
     "SplashScreen": {

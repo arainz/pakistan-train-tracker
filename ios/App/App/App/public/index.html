@@ -3,77 +3,613 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pakistan Train Tracker</title>
-    <link rel="stylesheet" href="styles.css">
-    <script>
-        // Redirect to mobile.html if running in Capacitor
-        if (window.Capacitor) {
-            window.location.href = 'mobile.html';
-        }
-    </script>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Pakistan Train Tracker - Mobile</title>
+    <link rel="stylesheet" href="mobile-styles.css?v=1729607000">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🚂 Pakistan Train Tracker</h1>
-            <p class="subtitle">Live train tracking and schedule information</p>
-        </header>
-
-        <div class="search-section">
-            <input type="text" id="searchInput" placeholder="Search by train number or name...">
-            <button onclick="searchTrains()">Search</button>
-            <button onclick="refreshData()" class="refresh-btn">↻ Refresh</button>
-        </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('live')">Live Trains</button>
-            <button class="tab-btn" onclick="switchTab('schedule')">Schedule</button>
-            <button class="tab-btn" onclick="switchTab('search')">Search Results</button>
-        </div>
-
-        <div class="info-bar">
-            <span id="lastUpdated">Last updated: Never</span>
-            <span id="trainCount">0 active trains</span>
-        </div>
-
-        <div id="liveTab" class="tab-content active">
-            <h2>Active Trains</h2>
-            <div id="activeTrains" class="train-grid">
-                <div class="loading">Loading train data...</div>
+<body class="mobile-app">
+    <div class="mobile-app">
+        <!-- Floating Header -->
+        <div class="floating-header">
+            <div class="header-blur">
+                <div class="header-content">
+                    <div class="app-logo">
+                        <div class="logo-circle">🚂</div>
+                        <div class="app-info">
+                            <h1>Train Tracker</h1>
+                            <div class="tagline">Live Pakistan Railways</div>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button class="icon-btn">
+                            <span>🔔</span>
+                            <div class="notification-dot"></div>
+                        </button>
+                        <button class="icon-btn" id="darkModeToggle" onclick="mobileApp.toggleDarkMode()">
+                            <span id="darkModeIcon">🌙</span>
+                        </button>
+                        <button class="icon-btn">
+                            <span>⚙️</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="scheduleTab" class="tab-content">
-            <h2>Train Schedule</h2>
-            <div id="scheduleList" class="schedule-list">
-                <div class="loading">Loading schedule...</div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Stats Overview -->
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-icon">🚂</div>
+                    <div class="stat-number" id="activeTrainsCount">0</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-number" id="onTimeTrains">--</div>
+                    <div class="stat-label">On Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-number" id="delayedTrains">--</div>
+                    <div class="stat-label">Delayed</div>
+                </div>
+            </div>
+
+            <!-- Feature Grid -->
+            <div class="feature-grid">
+                <div class="feature-tile primary" onclick="mobileApp.navigateToScreen('liveTracking')">
+                    <div class="tile-header">
+                        <div class="tile-icon">🚂</div>
+                        <div class="live-indicator">LIVE</div>
+                    </div>
+                    <h3>Live Tracking</h3>
+                    <p>Track trains in real-time with live positions and updates</p>
+                </div>
+                <div class="feature-tile secondary" onclick="mobileApp.navigateToScreen('scheduleScreen')">
+                    <div class="tile-header">
+                        <div class="tile-icon">📅</div>
+                    </div>
+                    <h3>Schedules</h3>
+                    <p>Browse train schedules and departure times</p>
+                </div>
+                <div class="feature-tile tertiary" onclick="mobileApp.navigateToScreen('stationScreen')">
+                    <div class="tile-header">
+                        <div class="tile-icon">🚉</div>
+                    </div>
+                    <h3>Stations</h3>
+                    <p>Find station information and train arrivals</p>
+                </div>
+                <div class="feature-tile quaternary" onclick="mobileApp.navigateToScreen('mapScreen')">
+                    <div class="tile-header">
+                        <div class="tile-icon">🗺️</div>
+                    </div>
+                    <h3>Live Map</h3>
+                    <p>View trains on interactive map</p>
+                </div>
+            </div>
+            <!-- Quick Train Access -->
+            <div class="quick-train-access">
+                <div class="section-header">
+                    <h3>Live Trains</h3>
+                    <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
+                </div>
+                <div class="train-carousel" id="liveTrainsList">
+                    <div class="loading">Loading live trains...</div>
+                </div>
+            </div>
+
+
+            <!-- Live Updates -->
+            <div class="live-updates">
+                <div class="section-header">
+                    <h3>Live Updates</h3>
+                    <div class="update-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>Real-time</span>
+                    </div>
+                </div>
+                <div class="updates-feed" id="liveUpdatesFeed">
+                    <div class="update-item">
+                        <div class="update-status on-time"></div>
+                        <div class="update-content">
+                            <div class="update-title">Karachi Express</div>
+                            <div class="update-details">Arrived at Lahore Junction</div>
+                            <div class="update-time">2 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="update-item">
+                        <div class="update-status delayed"></div>
+                        <div class="update-content">
+                            <div class="update-title">Green Line</div>
+                            <div class="update-details">Running 15 minutes late</div>
+                            <div class="update-time">5 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="update-item">
+                        <div class="update-status arrived"></div>
+                        <div class="update-content">
+                            <div class="update-title">Business Express</div>
+                            <div class="update-details">Departed from Islamabad</div>
+                            <div class="update-time">8 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="searchTab" class="tab-content">
-            <h2>Search Results</h2>
-            <div id="searchResults" class="train-grid">
-                <p class="empty-state">Enter a search query to find trains</p>
+        <!-- Mobile Footer -->
+        <div class="mobile-footer">
+            <p>Pakistan Railways Live Tracking System</p>
+        </div>
+
+        <!-- Screens -->
+        <div class="screens">
+            <!-- Dashboard Screen -->
+            <div id="dashboard" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Dashboard</h2>
+                    <button class="refresh-btn" onclick="mobileApp.loadDashboardData()">🔄</button>
+                </div>
+
+                <div class="screen-content">
+                    <!-- Dashboard Stats -->
+                    <div class="dashboard-stats">
+                        <div class="stat-card primary">
+                            <div class="stat-icon">🚂</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="dashboardActiveTrains">0</div>
+                                <div class="stat-label">Active Trains</div>
+                            </div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="dashboardOnTime">0</div>
+                                <div class="stat-label">On Time</div>
+                            </div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon">⏰</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="dashboardDelayed">0</div>
+                                <div class="stat-label">Delayed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card info">
+                            <div class="stat-icon">🚉</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="dashboardStations">0</div>
+                                <div class="stat-label">Stations</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="section-header">
+                        <h3>Quick Actions</h3>
+                    </div>
+                    <div class="quick-actions-grid">
+                        <div class="action-card" onclick="mobileApp.navigateToScreen('liveTracking')">
+                            <div class="action-icon">🚂</div>
+                            <div class="action-text">Live Trains</div>
+                        </div>
+                        <div class="action-card" onclick="mobileApp.navigateToScreen('scheduleScreen')">
+                            <div class="action-icon">📅</div>
+                            <div class="action-text">Schedules</div>
+                        </div>
+                        <div class="action-card" onclick="mobileApp.navigateToScreen('stationScreen')">
+                            <div class="action-icon">🚉</div>
+                            <div class="action-text">Stations</div>
+                        </div>
+                        <div class="action-card" onclick="mobileApp.navigateToScreen('mapScreen')">
+                            <div class="action-icon">🗺️</div>
+                            <div class="action-text">Live Map</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Trains -->
+                    <div class="section-header">
+                        <h3>Recent Trains</h3>
+                        <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
+                    </div>
+                    <div class="recent-trains" id="dashboardRecentTrains">
+                        <div class="loading">Loading recent trains...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Tracking Screen -->
+            <div id="liveTracking" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Live Tracking</h2>
+                    <button class="refresh-btn" onclick="mobileApp.loadLiveTrains()">🔄</button>
+                </div>
+
+                <div class="search-panel">
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="liveTrackingSearchInput" placeholder="Search live trains by number, name, or location..." class="search-input">
+                            <button class="clear-search-btn" id="clearLiveTrackingSearch" onclick="mobileApp.clearLiveTrackingSearch()" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    <div class="search-results-info" id="liveTrackingSearchResults" style="display: none;">
+                        Found 0 trains matching your search
+                    </div>
+                </div>
+
+                <div class="screen-content">
+                    <div class="schedule-results">
+                        <div class="results-header">
+                            <h3>Live Trains</h3>
+                            <div class="results-count" id="liveTrackingResultsCount">Loading...</div>
+                        </div>
+                        <div class="live-trains-list" id="liveTrainsListDetail">
+                            <div class="loading">Loading live trains...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Train Details Screen -->
+            <div id="liveTrainDetail" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Train Details</h2>
+                    <button class="refresh-btn" onclick="mobileApp.refreshTrainDetails()">🔄</button>
+                </div>
+
+                <div class="train-detail-content">
+                    <!-- Train Status Card -->
+                    <div class="train-status-card">
+                        <div class="train-title">
+                            <h3 id="trainDetailName">Loading...</h3>
+                            <div class="train-number" id="trainDetailNumber">--</div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span class="live-indicator">LIVE</span>
+                        </div>
+                    </div>
+
+                    <!-- Train Metrics -->
+                    <div class="train-metrics">
+                        <div class="metric-card">
+                            <div class="metric-icon">⚡</div>
+                            <div class="metric-value" id="trainSpeed">-- km/h</div>
+                            <div class="metric-label">Speed</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">⏰</div>
+                            <div class="metric-value" id="trainDelay">--</div>
+                            <div class="metric-label">Delay</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">📍</div>
+                            <div class="metric-value" id="nextStation">--</div>
+                            <div class="metric-label">Next Station</div>
+                        </div>
+                    </div>
+
+                    <!-- Last Updated -->
+                    <div class="last-updated-container">
+                        <span class="last-updated-text" id="lastUpdated">--</span>
+                    </div>
+
+                    <!-- Journey Map -->
+                    <div class="journey-map">
+                        <div class="route-progress" id="routeProgress">
+                            <div class="route-stations" id="routeStations">
+                                <!-- Stations will be populated dynamically -->
+                                <div class="loading">Loading route stations...</div>
+                            </div>
+                            <div class="route-line">
+                                <div class="progress-indicator" id="progressIndicator" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Station Route Section -->
+                    <div class="station-route-section">
+                        <h3>🚉 Route Stations</h3>
+                        <div class="station-route-list" id="stationRouteList">
+                            <div class="loading">Loading route stations...</div>
+                        </div>
+                    </div>
+
+                    <div class="last-update">
+                        Last updated: <span class="current-time">--:--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Screen -->
+            <div id="mapScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Live Map</h2>
+                </div>
+
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <p>📍 Live train map coming soon</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Station Search Screen -->
+            <div id="stationScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Station Search</h2>
+                </div>
+
+                <div class="station-search">
+                    <div class="search-input">
+                        <input type="text" id="stationSearchInput" class="station-search-input" placeholder="Search for station...">
+                        <button class="search-btn-small" onclick="mobileApp.searchStations()">🔍</button>
+                    </div>
+                </div>
+
+                <div class="screen-content">
+                    <!-- Major Stations -->
+                    <div class="section-header">
+                        <h3>Major Stations</h3>
+                    </div>
+                    <div class="major-stations" id="majorStations">
+                        <div class="loading">Loading major stations...</div>
+                    </div>
+
+                    <div class="station-results" id="stationResults">
+                        <div class="empty-state">
+                            <p>🚉 Enter a station name to search</p>
+                            <p>Find departures, arrivals, and station information</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Train Search Screen -->
+            <div id="trainSearchScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Train Search</h2>
+                </div>
+
+                <div class="search-section">
+                    <div class="route-selector">
+                        <div class="input-group">
+                            <input type="text" id="trainSearchInput" class="station-input" placeholder="Search by train number or name...">
+                            <button class="search-btn" onclick="mobileApp.searchTrains()">🔍</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screen-content">
+                    <div class="search-results" id="trainSearchResults">
+                        <div class="empty-state">
+                            <p>🚂 Enter train number or name to search</p>
+                            <p>Find schedules, routes, and live tracking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Screen -->
+            <div id="scheduleScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Train Schedule</h2>
+                </div>
+
+                <div class="search-panel">
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="scheduleSearchInput" placeholder="Search trains by number, name, or route..." class="search-input">
+                            <button class="clear-search-btn" id="clearSearchBtn" onclick="mobileApp.clearScheduleSearch()" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screen-content">
+                    <div class="schedule-results">
+                        <div class="results-header">
+                            <h3>Available Trains</h3>
+                            <div class="results-count">Loading...</div>
+                        </div>
+                        <div class="schedule-train-list" id="scheduleList">
+                            <div class="loading">Loading schedule...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Schedule Details Screen -->
+            <div id="scheduleDetailsScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Schedule Details</h2>
+                </div>
+
+                <div class="train-detail-content">
+                    <!-- Combined Train Info and Route Card -->
+                    <div class="train-status-card combined-card">
+                        <div class="train-header-section">
+                            <div class="train-main-title">
+                                <h3 id="scheduleTrainName">Loading...</h3>
+                                <div class="train-badges">
+                                    <div class="train-number" id="scheduleTrainNumber">--</div>
+                                    <div class="status-indicator">
+                                        <div class="status-dot"></div>
+                                        <span class="schedule-indicator">SCHEDULE</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="route-info-section">
+                            <div class="route-info">
+                                <div class="route-station origin">
+                                    <span class="station-text">Origin: <span id="scheduleOrigin">Loading...</span> <span id="scheduleDepartureTime">--:--</span></span>
+                                </div>
+                                <div class="route-station destination">
+                                    <span class="station-text">Destination: <span id="scheduleDestination">Loading...</span> <span id="scheduleArrivalTime">--:--</span></span>
+                                </div>
+                            </div>
+                            <div class="journey-duration">
+                                <span>Journey Duration: <span id="journeyDuration">31h 0m</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Station Route Section -->
+                    <div class="station-route-section">
+                        <h3>🚉 All Stations</h3>
+                        <div class="station-route-list" id="scheduleStationList">
+                            <div class="loading">Loading station schedule...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div id="profileScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Profile & Settings</h2>
+                </div>
+
+                <div class="screen-content">
+                    <div class="station-info-card">
+                        <div class="station-header">
+                            <h3>🚂 Train Tracker</h3>
+                            <div class="station-status">
+                                <div class="status-dot"></div>
+                                <span>Active</span>
+                            </div>
+                        </div>
+                        <div class="station-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Version</div>
+                                <div class="detail-value">1.0.0</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Last Updated</div>
+                                <div class="detail-value" id="appLastUpdate">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="station-info-card">
+                        <div class="station-header">
+                            <h3>⚙️ Settings</h3>
+                        </div>
+                        <div class="station-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Auto Refresh</div>
+                                <div class="detail-value">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="autoRefreshToggle" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Push Notifications</div>
+                                <div class="detail-value">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="notificationsToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="station-info-card">
+                        <div class="station-header">
+                            <h3>ℹ️ About</h3>
+                        </div>
+                        <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 16px 0;">
+                            Pakistan Train Tracker provides real-time train tracking and schedule information for Pakistan Railways. 
+                            Track trains live, view schedules, and get station information.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Favorites Screen -->
+            <div id="favoritesScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Favorite Trains</h2>
+                </div>
+
+                <div class="screen-content">
+                    <div class="favorites-list" id="favoritesList">
+                        <div class="empty-state">
+                            <p>⭐ No favorite trains yet</p>
+                            <p>Tap the star on any train to add it to favorites</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Details Screen -->
+            <div id="routeScreen" class="screen hidden">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
+                    <h2>Route Details</h2>
+                </div>
+
+                <div class="screen-content">
+                    <div class="route-detail-content">
+                        <div class="route-details" id="routeDetails">
+                            <div class="loading">Loading route details...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-    </div>
-
-    <!-- Train Details Modal -->
-    <div id="trainModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Train Details</h2>
-                <span class="close" onclick="closeModal()">&times;</span>
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="mobileApp.navigateToScreen('home')" data-nav="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
             </div>
-            <div id="modalBody" class="modal-body">
-                <div class="loading">Loading...</div>
+            <div class="nav-item" onclick="mobileApp.navigateToScreen('liveTracking')" data-nav="track">
+                <span class="nav-icon">🚂</span>
+                <span class="nav-label">Track</span>
+            </div>
+            <div class="nav-item" onclick="mobileApp.navigateToScreen('trainSearchScreen')" data-nav="search">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-label">Search</span>
+            </div>
+            <div class="nav-item" onclick="mobileApp.navigateToScreen('favoritesScreen')" data-nav="favorites">
+                <span class="nav-icon">⭐</span>
+                <span class="nav-label">Favorites</span>
+            </div>
+            <div class="nav-item" onclick="mobileApp.navigateToScreen('profileScreen')" data-nav="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
             </div>
         </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
     </div>
 
     <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script src="mobile-features.js"></script>
+    <script src="mobile-app.js"></script>
 </body>
 </html>

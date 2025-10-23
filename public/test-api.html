@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="status">Testing...</div>
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://pakistan-train-tracker-174840179894.us-central1.run.app/api/live';
+
+        async function testAPI() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+
+            try {
+                statusEl.textContent = 'Fetching from: ' + API_URL;
+                console.log('Fetching from:', API_URL);
+
+                const response = await fetch(API_URL);
+                console.log('Response status:', response.status);
+
+                const data = await response.json();
+                console.log('Data:', data);
+
+                if (data.success && data.data) {
+                    statusEl.textContent = 'SUCCESS! Got ' + data.data.length + ' trains';
+                    statusEl.style.color = 'green';
+                    resultsEl.innerHTML = '<pre>' + JSON.stringify(data.data.slice(0, 3), null, 2) + '</pre>';
+                } else {
+                    statusEl.textContent = 'API returned no data';
+                    statusEl.style.color = 'orange';
+                }
+            } catch (error) {
+                statusEl.textContent = 'ERROR: ' + error.message;
+                statusEl.style.color = 'red';
+                console.error('Error:', error);
+            }
+        }
+
+        // Test on load
+        testAPI();
+    </script>
+</body>
+</html>

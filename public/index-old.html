@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Train Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚂 Pakistan Train Tracker</h1>
+            <p class="subtitle">Live train tracking and schedule information</p>
+        </header>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search by train number or name...">
+            <button onclick="searchTrains()">Search</button>
+            <button onclick="refreshData()" class="refresh-btn">↻ Refresh</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('live')">Live Trains</button>
+            <button class="tab-btn" onclick="switchTab('schedule')">Schedule</button>
+            <button class="tab-btn" onclick="switchTab('search')">Search Results</button>
+        </div>
+
+        <div class="info-bar">
+            <span id="lastUpdated">Last updated: Never</span>
+            <span id="trainCount">0 active trains</span>
+        </div>
+
+        <div id="liveTab" class="tab-content active">
+            <h2>Active Trains</h2>
+            <div id="activeTrains" class="train-grid">
+                <div class="loading">Loading train data...</div>
+            </div>
+        </div>
+
+        <div id="scheduleTab" class="tab-content">
+            <h2>Train Schedule</h2>
+            <div id="scheduleList" class="schedule-list">
+                <div class="loading">Loading schedule...</div>
+            </div>
+        </div>
+
+        <div id="searchTab" class="tab-content">
+            <h2>Search Results</h2>
+            <div id="searchResults" class="train-grid">
+                <p class="empty-state">Enter a search query to find trains</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Train Details Modal -->
+    <div id="trainModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Train Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody" class="modal-body">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="mobile-app.js"></script>
+    <script src="mobile-features.js"></script>
+</body>
+</html>

@@ -231,11 +231,7 @@ function connectWebSocket() {
   
   socket.on('disconnect', (reason) => {
     console.log('❌ WebSocket disconnected:', reason);
-    // Try to reconnect
-    setTimeout(() => {
-      console.log('Attempting to reconnect...');
-      socket.connect();
-    }, 5000);
+    // socket.io-client will automatically reconnect based on the reconnection config
   });
   
   socket.on('connect_error', (error) => {
