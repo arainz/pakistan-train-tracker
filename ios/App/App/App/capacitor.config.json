@@ -1,0 +1,50 @@
+{
+	"appId": "com.pakrail.tracker",
+	"appName": "Pakistan Train Tracker",
+	"webDir": "public",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"path": "android"
+	},
+	"ios": {
+		"path": "ios/App"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": true,
+			"backgroundColor": "#2563EB",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false,
+			"iosSpinnerStyle": "small",
+			"spinnerColor": "#ffffff"
+		},
+		"StatusBar": {
+			"style": "light",
+			"backgroundColor": "#2563EB"
+		},
+		"Geolocation": {
+			"permissions": [
+				"location"
+			]
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_icon_config_sample",
+			"iconColor": "#4CAF50",
+			"sound": "default"
+		},
+		"Network": {
+			"enabled": true
+		}
+	},
+	"packageClassList": [
+		"GeolocationPlugin",
+		"LocalNotificationsPlugin",
+		"CAPNetworkPlugin",
+		"SplashScreenPlugin",
+		"StatusBarPlugin"
+	]
+}

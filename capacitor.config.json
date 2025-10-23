@@ -3,8 +3,13 @@
   "appName": "Pakistan Train Tracker",
   "webDir": "public",
   "server": {
-    "androidScheme": "https",
-    "url": "mobile.html"
+    "androidScheme": "https"
+  },
+  "android": {
+    "path": "android"
+  },
+  "ios": {
+    "path": "ios/App"
   },
   "plugins": {
     "SplashScreen": {
