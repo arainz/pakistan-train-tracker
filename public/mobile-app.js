@@ -13,6 +13,10 @@ class MobileApp {
         this.progressBarInterval = null;
         this.currentRouteStations = null;
         this.lastUpdatedTime = null;
+        this.navigationStack = ['home']; // Track navigation history
+        this.homeLastUpdatedTime = null;
+        this.liveTrackingLastUpdatedTime = null;
+        this.scheduleLastUpdatedTime = null;
         this.init();
     }
 
@@ -40,8 +44,10 @@ class MobileApp {
         this.loadLiveUpdates();
         
         this.setupNavigation();
+        this.setupHistoryNavigation();
         this.initializeDarkMode();
         this.startAutoRefresh();
+        this.startLastUpdatedCountdown();
     }
 
     setupNavigation() {
@@ -55,6 +61,29 @@ class MobileApp {
                 }
             });
         });
+    }
+
+    setupHistoryNavigation() {
+        // Set initial history state
+        if (!history.state) {
+            history.replaceState({ screen: 'home' }, '', '#home');
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            console.log('🔙 Browser back button pressed', event.state);
+            if (event.state && event.state.screen) {
+                this.navigateToScreen(event.state.screen, false);
+            } else {
+                this.navigateToScreen('home', false);
+            }
+        });
+
+        // Prevent default back button behavior on Android
+        document.addEventListener('backbutton', (e) => {
+            e.preventDefault();
+            this.goBack();
+        }, false);
     }
 
     navigateTo(screen, data = null) {
@@ -90,8 +119,11 @@ class MobileApp {
     }
 
     // Main screen navigation function
-    navigateToScreen(screenId) {
+    navigateToScreen(screenId, pushHistory = true) {
         console.log('🔄 Navigating to screen:', screenId);
+
+        // Store previous screen
+        const previousScreen = this.currentScreen;
 
         // Stop auto-refresh if leaving train detail screen
         if (this.currentScreen === 'liveTrainDetail' && screenId !== 'liveTrainDetail') {
@@ -99,6 +131,14 @@ class MobileApp {
         }
 
         this.currentScreen = screenId;
+
+        // Push to navigation stack
+        if (pushHistory && this.navigationStack[this.navigationStack.length - 1] !== screenId) {
+            this.navigationStack.push(screenId);
+            const url = screenId === 'home' ? '#home' : `#${screenId}`;
+            history.pushState({ screen: screenId, previous: previousScreen }, '', url);
+            console.log('📚 Navigation stack:', this.navigationStack);
+        }
 
         // Special case for home/dashboard
         if (screenId === 'home' || screenId === 'dashboard') {
@@ -211,9 +251,14 @@ class MobileApp {
 
     goBack() {
         console.log('⬅️ Going back from:', this.currentScreen);
-        
-        // Navigate back to home
-        this.navigateToScreen('home');
+
+        // Use browser history to go back
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // Fallback to home if no history
+            this.navigateToScreen('home', false);
+        }
     }
 
     showLiveTracking() {
@@ -439,6 +484,45 @@ class MobileApp {
 
         container.innerHTML = html;
         this.updateLiveStatistics();
+        this.initializeCarouselDots();
+        this.homeLastUpdatedTime = new Date();
+    }
+
+    initializeCarouselDots() {
+        const carousel = document.getElementById('liveTrainsList');
+        const dotsContainer = document.getElementById('carouselDots');
+
+        if (!carousel || !dotsContainer) return;
+
+        const cards = carousel.querySelectorAll('.train-card');
+        if (cards.length === 0) return;
+
+        // Create dots
+        dotsContainer.innerHTML = '';
+        cards.forEach((card, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'carousel-dot';
+            if (index === 0) dot.classList.add('active');
+
+            dot.addEventListener('click', () => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+            });
+
+            dotsContainer.appendChild(dot);
+        });
+
+        // Update active dot on scroll
+        carousel.addEventListener('scroll', () => {
+            const scrollLeft = carousel.scrollLeft;
+            const cardWidth = cards[0].offsetWidth;
+            const gap = 16;
+            const activeIndex = Math.round(scrollLeft / (cardWidth + gap));
+
+            const dots = dotsContainer.querySelectorAll('.carousel-dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        });
     }
 
     updateLiveStatistics() {
@@ -800,37 +884,39 @@ class MobileApp {
         document.getElementById('trainDetailNumber').textContent = train.TrainNumber || '000';
         
         // Add favorite button to header if it doesn't exist
-        const header = document.querySelector('#liveTrainDetail .screen-header');
-        let headerActions = header.querySelector('.header-actions');
-        
-        // Create header actions container if it doesn't exist
-        if (!headerActions) {
-            const refreshBtn = header.querySelector('.refresh-btn');
-            headerActions = document.createElement('div');
-            headerActions.className = 'header-actions';
-            
-            // Move refresh button into actions container
-            if (refreshBtn) {
-                headerActions.appendChild(refreshBtn);
+        const header = document.querySelector('#liveTrainDetail .sticky-header');
+        let headerActions = header ? header.querySelector('.header-right-actions') : null;
+
+        if (headerActions) {
+            const existingFavoriteBtn = headerActions.querySelector('.favorite-btn');
+            if (!existingFavoriteBtn) {
+                const favoriteBtn = document.createElement('button');
+                favoriteBtn.className = 'header-icon-btn favorite-btn';
+                favoriteBtn.onclick = () => this.toggleFavorite(train.TrainNumber);
+
+                // Insert before refresh button
+                const refreshBtn = headerActions.querySelector('.refresh-btn');
+                if (refreshBtn) {
+                    headerActions.insertBefore(favoriteBtn, refreshBtn);
+                } else {
+                    headerActions.appendChild(favoriteBtn);
+                }
             }
-            header.appendChild(headerActions);
-        }
-        
-        const existingFavoriteBtn = headerActions.querySelector('.favorite-btn');
-        if (!existingFavoriteBtn) {
-            const favoriteBtn = document.createElement('button');
-            favoriteBtn.className = 'favorite-btn';
-            favoriteBtn.onclick = () => this.toggleFavorite(train.TrainNumber);
-            headerActions.insertBefore(favoriteBtn, headerActions.firstChild);
-        }
-        
-        // Update favorite button state
-        const favoriteBtn = headerActions.querySelector('.favorite-btn');
-        if (favoriteBtn) {
-            const isFavorited = this.isFavorite(train.TrainNumber);
-            favoriteBtn.textContent = isFavorited ? '⭐' : '☆';
-            favoriteBtn.className = `favorite-btn ${isFavorited ? 'favorited' : ''}`;
-            favoriteBtn.onclick = () => this.toggleFavorite(train.TrainNumber);
+
+            // Update favorite button state
+            const favoriteBtn = headerActions.querySelector('.favorite-btn');
+            if (favoriteBtn) {
+                const isFavorited = this.isFavorite(train.TrainNumber);
+                favoriteBtn.innerHTML = isFavorited ?
+                    `<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>` :
+                    `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>`;
+                favoriteBtn.className = `header-icon-btn favorite-btn ${isFavorited ? 'favorited' : ''}`;
+                favoriteBtn.onclick = () => this.toggleFavorite(train.TrainNumber);
+            }
         }
         
         // Calculate accurate delay from NextStationETA vs scheduled time
@@ -2149,6 +2235,7 @@ class MobileApp {
 
         container.innerHTML = html;
         this.updateFavoriteButtons();
+        this.liveTrackingLastUpdatedTime = new Date();
     }
 
     async loadScheduledTrainsForHome() {
@@ -2231,10 +2318,10 @@ class MobileApp {
                 // Load schedule data first, then live trains (to ensure schedule data is available)
                 await this.loadScheduledTrainsForHome();
                 this.loadLiveTrains();
-                
+
                 // Also refresh live updates
                 this.loadLiveUpdates();
-                
+
                 // If on liveTracking screen and search is active, reapply the current search
                 if (this.currentScreen === 'liveTracking' && this.isLiveSearchActive) {
                     const searchInput = document.getElementById('liveTrackingSearchInput');
@@ -2244,6 +2331,66 @@ class MobileApp {
                 }
             }
         }, 30000);
+    }
+
+    startLastUpdatedCountdown() {
+        // Update every second
+        setInterval(() => {
+            this.updateLastUpdatedTimestamps();
+        }, 1000);
+    }
+
+    updateLastUpdatedTimestamps() {
+        const now = new Date();
+
+        // Update home last updated
+        const homeEl = document.getElementById('homeLastUpdated');
+        if (homeEl) {
+            if (this.homeLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.homeLastUpdatedTime);
+                homeEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                homeEl.textContent = 'Last updated: Loading...';
+            }
+        }
+
+        // Update live tracking last updated
+        const liveTrackingEl = document.getElementById('liveTrackingLastUpdated');
+        if (liveTrackingEl) {
+            if (this.liveTrackingLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.liveTrackingLastUpdatedTime);
+                liveTrackingEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                liveTrackingEl.textContent = 'Last updated: Loading...';
+            }
+        }
+
+        // Update schedule last updated
+        const scheduleEl = document.getElementById('scheduleLastUpdated');
+        if (scheduleEl) {
+            if (this.scheduleLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.scheduleLastUpdatedTime);
+                scheduleEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                scheduleEl.textContent = 'Last updated: Loading...';
+            }
+        }
+    }
+
+    getTimeElapsed(now, lastUpdated) {
+        const diffSeconds = Math.floor((now - lastUpdated) / 1000);
+
+        if (diffSeconds < 5) {
+            return 'Just now';
+        } else if (diffSeconds < 60) {
+            return `${diffSeconds} seconds ago`;
+        } else if (diffSeconds < 3600) {
+            const minutes = Math.floor(diffSeconds / 60);
+            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        } else {
+            const hours = Math.floor(diffSeconds / 3600);
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        }
     }
 
     // Search functionality
@@ -2664,15 +2811,16 @@ class MobileApp {
         });
 
         container.innerHTML = html || '<div class="empty-state">No schedule data available</div>';
-        
+
         // Update results count
         const resultsCount = document.querySelector('.results-count');
         if (resultsCount) {
             const liveCount = schedule.filter(train => this.findLiveTrainData(train.trainNumber)).length;
             resultsCount.textContent = `${schedule.length} trains found (${liveCount} live)`;
         }
-        
+
         this.updateFavoriteButtons();
+        this.scheduleLastUpdatedTime = new Date();
     }
 
     initializeScheduleSearch() {
