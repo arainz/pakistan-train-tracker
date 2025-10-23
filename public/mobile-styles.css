@@ -325,13 +325,19 @@ body.mobile-app.dark-mode .station-route-section {
 
 .home-last-updated {
     margin-bottom: 0;
-    border-radius: 0;
-    position: sticky;
-    top: 66px;
-    z-index: 100;
+    border-radius: 12px;
+    margin: 15px 20px 20px 20px;
+    position: relative;
+    z-index: 50;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(102, 126, 234, 0.15);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    padding: 12px 20px;
+    font-size: 0.95em;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+    display: block;
+    visibility: visible;
 }
 
 /* Journey Map */
@@ -516,12 +522,15 @@ body.mobile-app.dark-mode .station-route-section {
 /* Station Route Section */
 .station-route-section {
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 0;
-    margin-bottom: 20px;
+    margin: 0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(102, 126, 234, 0.1);
     overflow: hidden;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
 }
 
 .station-route-section h3 {
@@ -538,28 +547,8 @@ body.mobile-app.dark-mode .station-route-section {
 }
 
 .station-route-list {
-    padding: 12px 8px;
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-/* Custom scrollbar for station route list */
-.station-route-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.station-route-list::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
-}
-
-.station-route-list::-webkit-scrollbar-thumb {
-    background: rgba(102, 126, 234, 0.3);
-    border-radius: 10px;
-}
-
-.station-route-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(102, 126, 234, 0.5);
+    padding: 12px 20px;
+    overflow: visible;
 }
 
 /* Combined Card Layout */
@@ -2171,6 +2160,7 @@ body.mobile-app.dark-mode .popular-routes h3 {
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 10px;
 }
 
 .header-content-sticky {
@@ -2712,6 +2702,9 @@ body.mobile-app.dark-mode .logo-icon {
     gap: 8px;
     padding: 0 20px 16px 20px;
     margin-top: -8px;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
 }
 
 .carousel-dot {
@@ -2721,6 +2714,19 @@ body.mobile-app.dark-mode .logo-icon {
     background: rgba(102, 126, 234, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+}
+
+.carousel-dot::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
 }
 
 .carousel-dot.active {
