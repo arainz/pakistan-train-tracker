@@ -1,0 +1,26 @@
+{
+  "name": "Pakistan Train Tracker",
+  "short_name": "PakRail",
+  "description": "Live train tracking and schedule information for Pakistan Railways",
+  "start_url": "/mobile.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4CAF50",
+  "background_color": "#f5f5f5",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjNENBRjUwIiByeD0iMjQiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDk2IDk2IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDI0VjcySDg0VjI0SDEyWiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSI2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHN2ZyB4PSIyNCIgeT0iMzYiIHdpZHRoPSI0OCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDQ4IDI0IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCA0OCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTYgNkgxOFYxOEg2VjZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMzAgNkg0MlYxOEgzMFY2WiIgZmlsbD0id2hpdGUiLz4KPGV\Y2lyY2xlIGN4PSIxMiIgY3k9IjIxIiByPSIzIiBmaWxsPSIjMzMzIi8+CjxjaXJjbGUgY3g9IjM2IiBjeT0iMjEiIHI9IjMiIGZpbGw9IiMzMzMiLz4KPC9zdmc+CjwvXGc+CjwvXGc+Cjwvc3ZnPgo=",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjNENBRjUwIiByeD0iNjQiLz4KPHN2ZyB4PSIxMjgiIHk9IjEyOCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTMyIDY0VjE5Mkg\yMjRWNjRIMzJaIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHN2ZyB4PSI2NCIgeT0iOTYiIHdpZHRoPSIxMjgiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCAxMjggNjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMTYgMTZINDhWNDhIMTZWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNODAgMTZIMTEyVjQ4SDgwVjE2WiIgZmlsbD0id2hpdGUiLz4KPGNccmNsZSBjeD0iMzIiIGN5PSI1NiIgcj0iOCIgZmlsbD0iIzMzMyIvPgo8Y2lyY2xlIGN4PSI5NiIgY3k9IjU2IiByPSI4IiBmaWxsPSIjMzMzIi8+CjwvXGc+CjwvXGc+Cjwvc3ZnPgo=",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "navigation", "transportation"],
+  "prefer_related_applications": false
+}

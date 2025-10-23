@@ -1,3 +1,79 @@
+// Add CSS styles for back button and mobile layout
+const style = document.createElement('style');
+style.textContent = `
+    .back-button {
+        position: fixed !important;
+        bottom: 20px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        background: #667eea !important;
+        color: white !important;
+        padding: 15px 30px !important;
+        border-radius: 50px !important;
+        text-decoration: none !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        z-index: 9999 !important;
+        transition: all 0.3s !important;
+        font-weight: 600 !important;
+        border: none !important;
+        min-width: 200px !important;
+        text-align: center !important;
+    }
+    .back-button:hover {
+        transform: translateX(-50%) translateY(-2px) !important;
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4) !important;
+        background: #5a67d8 !important;
+    }
+    @media (max-width: 768px) {
+        .container {
+            margin-top: 20px !important;
+            padding: 10px !important;
+        }
+        .main-content {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .left-panel {
+            order: 2 !important;
+        }
+        .right-panel {
+            order: 1 !important;
+        }
+        .train-header {
+            padding: 20px !important;
+            margin-bottom: 15px !important;
+        }
+        .back-button {
+            bottom: 25px !important;
+            padding: 12px 25px !important;
+            min-width: 180px !important;
+        }
+        /* Ensure map is responsive */
+        #map {
+            height: 300px !important;
+            width: 100% !important;
+        }
+        .leaflet-container {
+            height: 300px !important;
+            width: 100% !important;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Handle device back button
+document.addEventListener('deviceready', function() {
+    document.addEventListener('backbutton', function(e) {
+        e.preventDefault();
+        window.location.href = '/';
+    }, false);
+}, false);
+
+// For web browsers, handle browser back button
+window.addEventListener('popstate', function(e) {
+    window.location.href = '/';
+});
+
 // Get train ID from URL
 const urlParams = new URLSearchParams(window.location.search);
 const trainId = urlParams.get('id');
@@ -8,6 +84,32 @@ let routeLine;
 let stationMarkers = [];
 let trainData = null;
 let scheduleData = null;
+
+// Global adjustTime function - exact same as used in Route Stations
+function adjustTime(timeStr, delayMinutes, showFullDate = false) {
+    if (!timeStr || timeStr === '--:--') return '--:--';
+    
+    try {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes + (delayMinutes || 0);
+        
+        // Handle day rollover
+        let finalHours = Math.floor(totalMinutes / 60) % 24;
+        let finalMinutes = totalMinutes % 60;
+        
+        if (totalMinutes < 0) {
+            finalHours = 24 + finalHours;
+        }
+        
+        if (showFullDate) {
+            return `Oct 22, ${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+        } else {
+            return `${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+        }
+    } catch (error) {
+        return timeStr;
+    }
+}
 
 // Helper function to format minutes into hours and minutes
 function formatMinutes(minutes) {
@@ -425,11 +527,24 @@ function updateTrainInfo(train) {
         const movementStatus = speed > 0 ? 'Moving' : 'Stopped';
         const movementClass = speed > 0 ? 'status-moving' : 'status-stopped';
         
+        // Find next station's arrival time from schedule data (same logic as Route Stations)
+        let nextStationArrivalTime = train.NextStationETA; // fallback
+        if (scheduleData && scheduleData.length > 0 && train.NextStation) {
+            const nextStationData = scheduleData.find(station => 
+                station.StationName === train.NextStation || 
+                station.StationName.includes(train.NextStation) ||
+                train.NextStation.includes(station.StationName)
+            );
+            if (nextStationData) {
+                nextStationArrivalTime = nextStationData.ArrivalTime || nextStationData.DepartureTime;
+            }
+        }
+
         document.getElementById('currentSpeed').textContent = `${speed} km/h`;
         document.getElementById('movementStatus').innerHTML = `<span class="status-badge ${movementClass}">${movementStatus}</span>`;
         document.getElementById('trainStatus').textContent = status;
         document.getElementById('nextStation').textContent = train.NextStation || 'N/A';
-        document.getElementById('nextETA').textContent = formatTime(train.NextStationETA) || 'N/A';
+        document.getElementById('nextETA').textContent = adjustTime(nextStationArrivalTime, lateBy) || 'N/A';
         document.getElementById('locomotive').textContent = train.LocomotiveNumber || 'N/A';
         
         // Additional info
@@ -603,14 +718,14 @@ function updateTrainInfo(train) {
                 zIndexOffset: 1000 // Ensure train appears above track
             }).addTo(map);
             
-            // Add popup with train info
+            // Add popup with train info (using same arrival time logic)
             const popupContent = `
                 <strong>${trainName}</strong><br>
                 Train #${trainNumber}<br>
                 Speed: ${speed} km/h<br>
                 Status: ${status}<br>
                 Next: ${train.NextStation || 'N/A'}<br>
-                ETA: ${formatTime(train.NextStationETA) || 'N/A'}<br>
+                ETA: ${adjustTime(nextStationArrivalTime, lateBy) || 'N/A'}<br>
                 Locomotive: ${train.LocomotiveNumber || 'N/A'}
             `;
             trainMarker.bindPopup(popupContent).openPopup();
@@ -697,7 +812,7 @@ function displayRoute(stations) {
         };
         
         const delayMinutes = trainData?.LateBy || 0;
-        const originalTime = station.DepartureTime || station.ArrivalTime || '--:--';
+        const originalTime = station.ArrivalTime || station.DepartureTime || '--:--';
         
         // Calculate display time based on station status
         let displayTime;

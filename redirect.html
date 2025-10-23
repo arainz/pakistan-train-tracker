@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Train Tracker - Redirecting...</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+        .manual-link {
+            margin-top: 2rem;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .manual-link:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚂</div>
+        <h1>Pakistan Train Tracker</h1>
+        <div class="spinner"></div>
+        <p class="status" id="status">Connecting to live train data...</p>
+        <p>Redirecting to Node.js application...</p>
+        
+        <div style="margin-top: 2rem;">
+            <a href="#" class="manual-link" id="manualLink">Access Train Tracker</a>
+        </div>
+        
+        <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+            <p>If automatic redirect doesn't work, click the link above</p>
+        </div>
+    </div>
+
+    <script>
+        // Try different URL formats
+        const possibleUrls = [
+            'http://pakrail.aimworld.org:3001',
+            'https://pakrail.aimworld.org:3001',
+            'http://pakrail.aimworld.org:8080',
+            'https://pakrail.aimworld.org:8080',
+            'http://pakrail.aimworld.org/app',
+            'https://pakrail.aimworld.org/app'
+        ];
+        
+        let currentUrlIndex = 0;
+        const statusElement = document.getElementById('status');
+        const manualLink = document.getElementById('manualLink');
+        
+        function updateStatus(message) {
+            statusElement.textContent = message;
+        }
+        
+        function testUrl(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const timeout = setTimeout(() => {
+                    resolve(false);
+                }, 5000); // 5 second timeout
+                
+                img.onload = img.onerror = () => {
+                    clearTimeout(timeout);
+                    resolve(true);
+                };
+                
+                // Test if server responds
+                img.src = url + '/health?' + Date.now();
+            });
+        }
+        
+        async function findWorkingUrl() {
+            updateStatus('Testing connection methods...');
+            
+            for (let i = 0; i < possibleUrls.length; i++) {
+                const url = possibleUrls[i];
+                updateStatus(`Testing: ${url}`);
+                
+                const works = await testUrl(url);
+                if (works) {
+                    updateStatus(`Connected! Redirecting to ${url}`);
+                    manualLink.href = url;
+                    manualLink.textContent = 'Access Train Tracker';
+                    
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 2000);
+                    return;
+                }
+            }
+            
+            // If no URL works, show manual options
+            updateStatus('Unable to auto-connect. Please try manual access:');
+            manualLink.href = possibleUrls[0];
+            manualLink.textContent = 'Try Manual Access';
+            
+            // Show all possible URLs
+            const container = document.querySelector('.container');
+            const urlList = document.createElement('div');
+            urlList.style.marginTop = '1rem';
+            urlList.style.fontSize = '0.9rem';
+            urlList.innerHTML = '<p>Try these URLs manually:</p>' + 
+                possibleUrls.map(url => `<div><a href="${url}" target="_blank" style="color: #4CAF50;">${url}</a></div>`).join('');
+            container.appendChild(urlList);
+        }
+        
+        // Start the connection test
+        setTimeout(findWorkingUrl, 1000);
+    </script>
+</body>
+</html>

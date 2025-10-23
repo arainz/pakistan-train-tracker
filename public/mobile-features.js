@@ -48,8 +48,8 @@ class MobileTrainTracker {
     async setupStatusBar() {
         try {
             const { StatusBar } = window.Capacitor.Plugins;
-            await StatusBar.setStyle({ style: 'dark' });
-            await StatusBar.setBackgroundColor({ color: '#667eea' });
+            await StatusBar.setStyle({ style: 'light' });
+            await StatusBar.setBackgroundColor({ color: '#2563EB' });
         } catch (error) {
             console.log('StatusBar not available:', error);
         }
@@ -123,32 +123,52 @@ class MobileTrainTracker {
                 left: 0;
                 right: 0;
                 z-index: 1000;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #4CAF50;
                 color: white;
-                padding: 10px 20px;
+                padding: 12px 20px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                min-height: 50px;
+                backdrop-filter: blur(10px);
             }
             
             .mobile-content {
-                margin-top: 60px;
+                margin-top: 50px !important;
                 padding: 10px;
+            }
+            
+            /* Ensure content doesn't hide behind mobile header */
+            @media (max-width: 768px) {
+                body.mobile-app .container {
+                    margin-top: 50px !important;
+                    padding-top: 10px !important;
+                }
+                
+                body.mobile-app header {
+                    display: none !important;
+                }
+                
+                .mobile-header h1 {
+                    font-size: 1.1em !important;
+                    margin: 0 !important;
+                }
             }
             
             /* Offline indicator */
             .offline-banner {
                 position: fixed;
-                top: 60px;
+                top: 50px;
                 left: 0;
                 right: 0;
                 background: #ff4444;
                 color: white;
                 text-align: center;
-                padding: 10px;
+                padding: 8px;
                 z-index: 999;
                 display: none;
+                font-size: 14px;
             }
             
             .offline-banner.show {
@@ -165,11 +185,14 @@ class MobileTrainTracker {
     }
 
     addMobileHeader() {
+        // Add mobile app class to body
+        document.body.classList.add('mobile-app');
+        
         const header = document.createElement('div');
         header.className = 'mobile-header mobile-only';
         header.innerHTML = `
             <div>
-                <h1 style="margin: 0; font-size: 1.2em;">🚂 Pakistan Trains</h1>
+                <h1 style="margin: 0; font-size: 1.1em;">🚂 Pakistan Trains</h1>
             </div>
             <div>
                 <span id="network-status" style="font-size: 0.9em;">
@@ -182,8 +205,15 @@ class MobileTrainTracker {
         // Update container margin for mobile
         const container = document.querySelector('.container');
         if (container) {
-            container.style.marginTop = '60px';
+            container.style.marginTop = '50px';
+            container.style.paddingTop = '10px';
             container.classList.add('mobile-content');
+        }
+        
+        // Hide original header in mobile app
+        const originalHeader = document.querySelector('header');
+        if (originalHeader) {
+            originalHeader.style.display = 'none';
         }
     }
 

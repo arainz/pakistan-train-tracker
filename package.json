@@ -33,5 +33,14 @@
     "express": "^5.1.0",
     "node-cron": "^4.2.1",
     "socket.io-client": "^2.5.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arainz/pakistan-train-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arainz/pakistan-train-tracker/issues"
+  },
+  "homepage": "https://github.com/arainz/pakistan-train-tracker#readme"
 }

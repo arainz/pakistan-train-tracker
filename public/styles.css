@@ -299,29 +299,134 @@ button:hover {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 0;
+        min-height: 100vh;
+    }
+    
+    .container {
+        border-radius: 0;
+        margin: 0;
+        min-height: 100vh;
+    }
+    
+    header {
+        padding: 20px 15px !important;
+        position: relative;
+        z-index: 10;
+    }
+    
+    header h1 {
+        font-size: 1.8em !important;
+    }
+    
+    .subtitle {
+        font-size: 1em !important;
+    }
+    
     .train-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .search-section {
         flex-direction: column;
+        padding: 20px 15px;
+        gap: 15px;
     }
     
     #searchInput {
         min-width: 100%;
+        font-size: 16px;
+        padding: 15px 20px;
+    }
+    
+    button {
+        padding: 15px 30px;
+        font-size: 16px;
+        min-height: 44px;
+        width: 100%;
     }
     
     .tabs {
         overflow-x: auto;
         padding: 0 15px;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .container {
-        border-radius: 0;
+    .tab-btn {
+        white-space: nowrap;
+        min-width: 100px;
+        padding: 12px 20px;
     }
     
-    body {
-        padding: 0;
+    .info-bar {
+        padding: 15px;
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
+    }
+    
+    .tab-content {
+        padding: 20px 15px;
+    }
+    
+    .train-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .schedule-item {
+        padding: 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .schedule-left, .schedule-right {
+        width: 100%;
+        text-align: left;
+    }
+    
+    .route-table {
+        font-size: 14px;
+        overflow-x: auto;
+        display: block;
+        white-space: nowrap;
+    }
+    
+    .route-table th, .route-table td {
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: 15px 10px !important;
+    }
+    
+    header h1 {
+        font-size: 1.5em !important;
+    }
+    
+    .search-section {
+        padding: 15px 10px;
+    }
+    
+    .tab-content {
+        padding: 15px 10px;
+    }
+    
+    .train-card {
+        padding: 12px;
+    }
+    
+    .train-info {
+        font-size: 13px;
+    }
+    
+    .info-row {
+        padding: 3px 0;
     }
 }
 
@@ -348,6 +453,56 @@ button:hover {
     max-height: 80vh;
     overflow-y: auto;
     animation: slideIn 0.3s;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
+        max-height: 90vh;
+        border-radius: 8px;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.3em;
+    }
+    
+    .modal-body {
+        padding: 20px 15px;
+        font-size: 14px;
+    }
+    
+    .close {
+        font-size: 24px;
+        width: 28px;
+        height: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        width: 98%;
+        margin: 1% auto;
+        max-height: 95vh;
+        border-radius: 4px;
+    }
+    
+    .modal-header {
+        padding: 12px 15px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2em;
+    }
+    
+    .modal-body {
+        padding: 15px 12px;
+        font-size: 13px;
+    }
 }
 
 .modal-header {

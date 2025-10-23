@@ -1,0 +1,59 @@
+# Docker ignore file for Pakistan Train Tracker
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+
+# Development files
+.env.local
+.env.development
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+DEPLOYMENT_INSTRUCTIONS.md
+HOSTING_GUIDE.md
+MOBILE_APP_GUIDE.md
+MOBILE_APP_SUCCESS.md
+QUICK_DEPLOY.md
+
+# Mobile app files
+android/
+resources/
+capacitor.config.json
+
+# Deployment files
+deploy/
+php/
+*.zip
+*.sh
+
+# Hostinger specific files
+*.htaccess
+redirect.html
+web-app.html
+web-only-solution.php
+
+# Other cloud providers
+render.yaml
+vercel.json

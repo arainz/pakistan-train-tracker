@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Train Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            max-width: 600px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .btn.secondary {
+            background: transparent;
+            border: 2px solid white;
+        }
+        .btn.secondary:hover {
+            background: white;
+            color: #1e3c72;
+        }
+        .status {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: rgba(76, 175, 80, 0.2);
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .links {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .api-link {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            transition: background 0.3s;
+        }
+        .api-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚂</div>
+        <h1>Pakistan Train Tracker</h1>
+        
+        <div class="spinner" id="spinner"></div>
+        
+        <div class="status" id="status">
+            <strong>🔄 Connecting to live train data...</strong>
+            <div id="statusText">Checking server status...</div>
+        </div>
+        
+        <div style="margin: 2rem 0;">
+            <a href="http://pakrail.aimworld.org:3001" class="btn" id="mainBtn">
+                🚀 Launch Train Tracker
+            </a>
+            <br>
+            <a href="http://pakrail.aimworld.org:3001/api/live" class="btn secondary">
+                📊 View Live Data (JSON)
+            </a>
+        </div>
+        
+        <div class="links">
+            <a href="http://pakrail.aimworld.org:3001/api/trains" class="api-link">
+                🚂 All Trains
+            </a>
+            <a href="http://pakrail.aimworld.org:3001/api/stations" class="api-link">
+                🚉 All Stations
+            </a>
+            <a href="http://pakrail.aimworld.org:3001/api/schedule" class="api-link">
+                📅 Schedules
+            </a>
+            <a href="http://pakrail.aimworld.org:3001/health" class="api-link">
+                ❤️ Health Check
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Pakistan Train Tracker</strong></p>
+            <p>Real-time train tracking for Pakistan Railways</p>
+            <div id="serverInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        const statusElement = document.getElementById('status');
+        const statusTextElement = document.getElementById('statusText');
+        const spinnerElement = document.getElementById('spinner');
+        const serverInfoElement = document.getElementById('serverInfo');
+        const mainBtn = document.getElementById('mainBtn');
+        
+        // Check server health
+        async function checkServerHealth() {
+            try {
+                statusTextElement.textContent = 'Testing server connection...';
+                
+                const response = await fetch('http://pakrail.aimworld.org:3001/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    statusElement.innerHTML = `
+                        <strong>✅ Server Online!</strong>
+                        <div>Live Trains: ${data.liveTrains} | Total Trains: ${data.totalTrains}</div>
+                        <div>Last Updated: ${new Date(data.lastUpdated).toLocaleTimeString()}</div>
+                    `;
+                    statusElement.style.background = 'rgba(76, 175, 80, 0.3)';
+                    statusElement.style.borderColor = '#4CAF50';
+                    spinnerElement.style.display = 'none';
+                    
+                    serverInfoElement.innerHTML = `
+                        <small>Server Port: ${data.port} | Uptime: ${Math.floor(data.uptime/60)} minutes</small>
+                    `;
+                    
+                    // Auto-redirect after 5 seconds
+                    let countdown = 5;
+                    mainBtn.textContent = `🚀 Launch Train Tracker (${countdown}s)`;
+                    const timer = setInterval(() => {
+                        countdown--;
+                        if (countdown > 0) {
+                            mainBtn.textContent = `🚀 Launch Train Tracker (${countdown}s)`;
+                        } else {
+                            clearInterval(timer);
+                            window.location.href = 'http://pakrail.aimworld.org:3001';
+                        }
+                    }, 1000);
+                } else {
+                    throw new Error('Server not healthy');
+                }
+                
+            } catch (error) {
+                statusElement.innerHTML = `
+                    <strong>⚠️ Server Connection Issue</strong>
+                    <div>The Node.js server might be starting up...</div>
+                    <div>Click the button above to try accessing it directly</div>
+                `;
+                statusElement.style.background = 'rgba(255, 193, 7, 0.3)';
+                statusElement.style.borderColor = '#ffc107';
+                spinnerElement.style.display = 'none';
+                
+                serverInfoElement.innerHTML = `
+                    <small>If the link doesn't work, the server may need to be started.</small>
+                `;
+            }
+        }
+        
+        // Check server health on page load
+        setTimeout(checkServerHealth, 1000);
+        
+        // Refresh health check every 30 seconds
+        setInterval(checkServerHealth, 30000);
+    </script>
+</body>
+</html>

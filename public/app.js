@@ -5,6 +5,32 @@ let trainData = {
     searchResults: []
 };
 
+// Global adjustTime function - exact same as used in Route Stations
+function adjustTime(timeStr, delayMinutes, showFullDate = false) {
+    if (!timeStr || timeStr === '--:--') return '--:--';
+    
+    try {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes + (delayMinutes || 0);
+        
+        // Handle day rollover
+        let finalHours = Math.floor(totalMinutes / 60) % 24;
+        let finalMinutes = totalMinutes % 60;
+        
+        if (totalMinutes < 0) {
+            finalHours = 24 + finalHours;
+        }
+        
+        if (showFullDate) {
+            return `Oct 22, ${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+        } else {
+            return `${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+        }
+    } catch (error) {
+        return timeStr;
+    }
+}
+
 // Helper function to format time in AM/PM
 function formatTime(timeString) {
     if (!timeString || timeString === 'N/A') return 'N/A';
@@ -20,10 +46,11 @@ function formatTime(timeString) {
             
             const date = new Date();
             date.setHours(hours, minutes, seconds, 0);
-            return date.toLocaleTimeString([], { 
-                hour: 'numeric', 
+            return date.toLocaleTimeString('en-PK', { 
+                timeZone: 'Asia/Karachi',
+                hour: '2-digit', 
                 minute: '2-digit', 
-                hour12: true 
+                hour12: false // 24-hour format like TrackyourTrains
             });
         }
         
@@ -32,15 +59,39 @@ function formatTime(timeString) {
         if (isNaN(date.getTime())) {
             return timeString; // Return original if invalid
         }
-        return date.toLocaleTimeString([], { 
-            hour: 'numeric', 
+        return date.toLocaleTimeString('en-PK', { 
+            timeZone: 'Asia/Karachi',
+            hour: '2-digit', 
             minute: '2-digit', 
             second: '2-digit',
-            hour12: true 
+            hour12: false // 24-hour format like TrackyourTrains
         });
     } catch (e) {
         return timeString;
     }
+}
+
+// Cache for train schedule data to avoid repeated API calls
+const scheduleCache = new Map();
+
+async function fetchTrainSchedule(trainNumber) {
+    if (scheduleCache.has(trainNumber)) {
+        return scheduleCache.get(trainNumber);
+    }
+    
+    try {
+        const response = await fetch(`/api/train/${trainNumber}`);
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.schedule) {
+            scheduleCache.set(trainNumber, data.data.schedule);
+            return data.data.schedule;
+        }
+    } catch (error) {
+        console.error('Error fetching schedule for train', trainNumber, error);
+    }
+    
+    return null;
 }
 
 async function fetchActiveTrains() {
@@ -50,7 +101,7 @@ async function fetchActiveTrains() {
         
         if (data.success) {
             trainData.active = data.data;
-            displayActiveTrains(data.data);
+            await displayActiveTrains(data.data);
             updateInfoBar(data.count || data.data.length, data.lastUpdated);
         }
     } catch (error) {
@@ -76,7 +127,7 @@ async function fetchSchedule() {
     }
 }
 
-function displayActiveTrains(trains) {
+async function displayActiveTrains(trains) {
     const container = document.getElementById('activeTrains');
     
     if (!trains || trains.length === 0) {
@@ -84,7 +135,11 @@ function displayActiveTrains(trains) {
         return;
     }
     
-    container.innerHTML = trains.map(train => {
+    // Show loading state first
+    container.innerHTML = '<p class="empty-state">Loading train details...</p>';
+    
+    // Process trains with schedule data
+    const trainCards = await Promise.all(trains.map(async (train) => {
         // Extract relevant information from the live train data
         const trainNumber = train.TrainNumber || train.trainNumber || train.InnerKey || 'N/A';
         const trainName = train.TrainName || train.trainName || `Train ${trainNumber}`;
@@ -134,7 +189,24 @@ function displayActiveTrains(trains) {
         const status = lateBy > 0 ? `Late by ${formatMinutes(lateBy)}` : lateBy < 0 ? `Early by ${formatMinutes(lateBy)}` : 'On time';
         const speed = train.Speed !== undefined ? `${train.Speed} km/h` : 'N/A';
         const nextStation = train.NextStation || train.nextStation || 'N/A';
-        const eta = formatTime(train.NextStationETA || train.ETA) || 'N/A';
+        
+        // Find next station's arrival time from schedule data (same logic as Route Stations)
+        let nextStationArrivalTime = train.NextStationETA; // fallback
+        if (train.TrainNumber && train.NextStation) {
+            const scheduleData = await fetchTrainSchedule(train.TrainNumber);
+            if (scheduleData && scheduleData.length > 0) {
+                const nextStationData = scheduleData.find(station => 
+                    station.StationName === train.NextStation || 
+                    station.StationName.includes(train.NextStation) ||
+                    train.NextStation.includes(station.StationName)
+                );
+                if (nextStationData) {
+                    nextStationArrivalTime = nextStationData.ArrivalTime || nextStationData.DepartureTime;
+                }
+            }
+        }
+        
+        const eta = adjustTime(nextStationArrivalTime, lateBy) || 'N/A';
         const lastUpdate = train.LastUpdated ? formatTime(train.LastUpdated) : 'N/A';
         const locomotive = train.LocomotiveNumber || 'N/A';
         
@@ -205,7 +277,11 @@ function displayActiveTrains(trains) {
                 </div>
             </div>
         </div>
-    `}).join('');
+        `;
+    }));
+    
+    // Display all train cards
+    container.innerHTML = trainCards.join('');
 }
 
 function displaySchedule(schedules) {
@@ -225,11 +301,18 @@ function displaySchedule(schedules) {
         const departure = firstStation ? formatTime(firstStation.DepartureTime || firstStation.Departure || firstStation.Arrival) || 'N/A' : 'N/A';
         const arrival = lastStation ? formatTime(lastStation.DepartureTime || lastStation.Arrival || lastStation.Departure) || 'N/A' : 'N/A';
         
+        const trainNumber = schedule.trainNumber || 'N/A';
+        const trainName = schedule.trainName || 'Unknown Train';
+        
+        const clickHandler = (trainNumber && trainNumber !== 'N/A') ? 
+            `onclick="showTrainDetails('${trainNumber}')"` : 
+            `style="cursor: not-allowed; opacity: 0.6;" title="Train details not available"`;
+        
         return `
-        <div class="schedule-item" onclick="showTrainDetails('${schedule.trainNumber}')">
+        <div class="schedule-item" ${clickHandler}>
             <div class="schedule-left">
-                <div class="train-number">${schedule.trainNumber || 'N/A'}</div>
-                <div class="train-name">${schedule.trainName || 'Unknown Train'}</div>
+                <div class="train-number">${trainNumber}</div>
+                <div class="train-name">${trainName}</div>
                 <div style="margin-top: 10px; color: #666;">
                     ${origin} → ${destination}
                 </div>
@@ -395,20 +478,38 @@ function displaySearchResults(trains) {
 // selectTrainInstance function removed - no longer needed since we go directly to train page
 
 async function showTrainDetails(trainIdentifier) {
+    // Safety check for trainIdentifier
+    if (!trainIdentifier || trainIdentifier === 'undefined' || trainIdentifier === 'null') {
+        console.error('Invalid train identifier:', trainIdentifier);
+        return;
+    }
+    
     const modal = document.getElementById('trainModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+    
+    // Safety check for modal elements
+    if (!modal || !modalTitle || !modalBody) {
+        console.error('Modal elements not found');
+        return;
+    }
     
     modal.style.display = 'block';
     modalTitle.textContent = `Train ${trainIdentifier} Details`;
     modalBody.innerHTML = '<div class="loading">Loading details...</div>';
     
     try {
-        const response = await fetch(`/api/train/${trainIdentifier}`);
+        console.log('Fetching train details for:', trainIdentifier);
+        const response = await fetch(getAPIUrl('train') + `/${trainIdentifier}`);
         const data = await response.json();
+        
+        console.log('Train details API response:', data);
         
         if (data.success && data.data) {
             const train = data.data;
+            const schedule = data.data.schedule || [];
+            
+            modalTitle.textContent = `${train.TrainName || train.TrainNumber} Details`;
             
             // Find the most recent live instance of this train
             const liveInstance = findLiveTrainInstance(train.TrainNumber);
@@ -418,7 +519,7 @@ async function showTrainDetails(trainIdentifier) {
                     <h3>${train.TrainName || 'Unknown Train'}</h3>
                     <p style="color: #666; margin-top: 5px;">Train Number: ${train.TrainNumber || trainIdentifier}</p>
                     <p style="color: #666;">Route: ${train.TrainDescription || 'N/A'}</p>
-                    <p style="color: #666;">Status: ${train.IsLive ? 'Live' : 'Scheduled'}</p>
+                    <p style="color: #666;">Status: ${liveInstance ? 'Live' : 'Scheduled'}</p>
                     <p style="color: #666;">Direction: ${train.IsUp ? 'Up' : 'Down'}</p>
                     
                     ${liveInstance ? `
@@ -451,8 +552,8 @@ async function showTrainDetails(trainIdentifier) {
                     `}
                 </div>
                 
-                ${train.schedule && train.schedule.length > 0 ? `
-                    <h4 style="margin-bottom: 15px;">Route Information (${train.schedule.length} stations)</h4>
+                ${schedule && schedule.length > 0 ? `
+                    <h4 style="margin-bottom: 15px;">Route Information (${schedule.length} stations)</h4>
                     <table class="route-table">
                         <thead>
                             <tr>
@@ -464,7 +565,7 @@ async function showTrainDetails(trainIdentifier) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${train.schedule.map(station => `
+                            ${schedule.map(station => `
                                 <tr>
                                     <td>${station.StationName || 'N/A'}</td>
                                     <td>${formatTime(station.ArrivalTime) || formatTime(station.DepartureTime) || '--'}</td>
@@ -478,11 +579,42 @@ async function showTrainDetails(trainIdentifier) {
                 ` : '<p style="color: #999;">No route information available.</p>'}
             `;
         } else {
-            modalBody.innerHTML = '<p class="empty-state">Unable to load train details.</p>';
+            modalTitle.textContent = `Train ${trainIdentifier} - No Data`;
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3 style="color: #666; margin-bottom: 15px;">Unable to load train details</h3>
+                    <p style="color: #999;">Train ${trainIdentifier} may not be in our database or the data is currently unavailable.</p>
+                    <p style="color: #999; margin-top: 10px;">This could happen if:</p>
+                    <ul style="color: #999; text-align: left; max-width: 300px; margin: 20px auto;">
+                        <li>The train number is incorrect</li>
+                        <li>The train is not currently scheduled</li>
+                        <li>Data is temporarily unavailable</li>
+                    </ul>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Error fetching train details:', error);
-        modalBody.innerHTML = '<p class="empty-state">Error loading train details.</p>';
+        modalTitle.textContent = `Train ${trainIdentifier} - Error`;
+        modalBody.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                <h3 style="color: #666; margin-bottom: 15px;">Error loading train details</h3>
+                <p style="color: #999;">There was a network error while trying to fetch train information.</p>
+                <p style="color: #999; margin-top: 10px;">Please check your connection and try again.</p>
+                <button onclick="showTrainDetails('${trainIdentifier}')" style="
+                    margin-top: 20px;
+                    padding: 10px 20px;
+                    background: #667eea;
+                    color: white;
+                    border: none;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Try Again</button>
+            </div>
+        `;
     }
 }
 

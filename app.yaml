@@ -1,0 +1,36 @@
+# Google App Engine configuration for Pakistan Train Tracker
+runtime: nodejs18
+
+# Environment variables
+env_variables:
+  NODE_ENV: production
+  PORT: 8080
+  DATA_BASE_URL: https://trackyourtrains.com/data
+  SOCKET_URL: https://socket.pakraillive.com
+
+# Scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+# Resource allocation
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+
+# Health check
+readiness_check:
+  path: "/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2

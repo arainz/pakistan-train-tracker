@@ -1,0 +1,35 @@
+{
+  "name": "pakistan-train-tracker",
+  "version": "1.0.0",
+  "description": "Pakistan Train Tracker - Real-time train tracking system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "pm2": "pm2 start server.js --name 'train-tracker'",
+    "pm2-stop": "pm2 stop train-tracker",
+    "pm2-restart": "pm2 restart train-tracker",
+    "pm2-logs": "pm2 logs train-tracker"
+  },
+  "keywords": [
+    "train",
+    "tracker",
+    "pakistan",
+    "railways",
+    "real-time"
+  ],
+  "author": "Pakistan Rail Tracker",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "socket.io-client": "^4.7.2",
+    "node-cron": "^3.0.2",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

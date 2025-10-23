@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Train Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-bar {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 2px solid #4CAF50;
+        }
+        
+        .status-bar.error {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: #ffc107;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .connection-test {
+            background: rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn.secondary {
+            background: #2196F3;
+        }
+        
+        .btn.secondary:hover {
+            background: #1976D2;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card h3 {
+            margin-bottom: 1rem;
+            color: #4CAF50;
+        }
+        
+        .data-display {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .connection-methods {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 1rem 0;
+        }
+        
+        .method-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .method-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .method-btn.working {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .method-btn.failed {
+            background: #f44336;
+            border-color: #f44336;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚂 Pakistan Train Tracker</h1>
+        <p>Real-time train tracking for Pakistan Railways</p>
+    </div>
+    
+    <div class="status-bar" id="statusBar">
+        <div id="statusText">🔄 Testing connections...</div>
+    </div>
+    
+    <div class="container">
+        <div class="connection-test">
+            <h3>🔍 Connection Diagnostics</h3>
+            <p>Testing multiple ways to access your train data...</p>
+            
+            <div class="connection-methods" id="connectionMethods">
+                <span class="method-btn" id="nodejs-direct">Node.js :3001 Direct</span>
+                <span class="method-btn" id="nodejs-health">Node.js Health Check</span>
+                <span class="method-btn" id="php-proxy">PHP Proxy</span>
+                <span class="method-btn" id="static-data">Static Data API</span>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <button class="btn" onclick="testAllConnections()">🔄 Test All Connections</button>
+                <button class="btn secondary" onclick="loadData('live')">📊 Load Live Data</button>
+                <button class="btn secondary" onclick="loadData('trains')">🚂 Load Trains</button>
+                <button class="btn secondary" onclick="loadData('stations')">🚉 Load Stations</button>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>📊 Live Train Data</h3>
+                <div id="liveDataDisplay" class="data-display">Click "Load Live Data" to fetch data...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🚂 Train Information</h3>
+                <div id="trainsDataDisplay" class="data-display">Click "Load Trains" to fetch data...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🚉 Station Information</h3>
+                <div id="stationsDataDisplay" class="data-display">Click "Load Stations" to fetch data...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🔧 System Status</h3>
+                <div id="systemStatus" class="data-display">System status will appear here...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const connectionMethods = {
+            'nodejs-direct': 'http://pakrail.aimworld.org:3001',
+            'nodejs-health': 'http://pakrail.aimworld.org:3001/health',
+            'php-proxy': './web-only-solution.php?action=health',
+            'static-data': 'https://trackyourtrains.com/data/StationsData.json?v=2025-06-06'
+        };
+        
+        let workingEndpoints = {};
+        
+        function updateStatus(message, isError = false) {
+            const statusBar = document.getElementById('statusBar');
+            const statusText = document.getElementById('statusText');
+            statusText.innerHTML = message;
+            statusBar.className = isError ? 'status-bar error' : 'status-bar';
+        }
+        
+        async function testConnection(method, url) {
+            const btn = document.getElementById(method);
+            btn.innerHTML = '<div class="spinner"></div> Testing...';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    btn.className = 'method-btn working';
+                    btn.textContent = '✅ ' + btn.textContent.replace('🔄 Testing...', '').replace('❌ ', '').replace('✅ ', '');
+                    workingEndpoints[method] = url;
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                btn.className = 'method-btn failed';
+                btn.textContent = '❌ ' + btn.textContent.replace('🔄 Testing...', '').replace('❌ ', '').replace('✅ ', '') + ` (${error.message})`;
+                return false;
+            }
+        }
+        
+        async function testAllConnections() {
+            updateStatus('🔄 Testing all connection methods...');
+            workingEndpoints = {};
+            
+            const results = [];
+            for (const [method, url] of Object.entries(connectionMethods)) {
+                const result = await testConnection(method, url);
+                results.push({ method, url, working: result });
+            }
+            
+            const workingCount = results.filter(r => r.working).length;
+            
+            if (workingCount > 0) {
+                updateStatus(`✅ Found ${workingCount} working connection(s)! Your data is accessible.`);
+                
+                // Update system status
+                document.getElementById('systemStatus').textContent = 
+                    `Connection test completed:\n${results.map(r => 
+                        `${r.method}: ${r.working ? '✅ Working' : '❌ Failed'}`
+                    ).join('\n')}`;
+            } else {
+                updateStatus('⚠️ No connections working. Check if Node.js server is running or network configuration.', true);
+                document.getElementById('systemStatus').textContent = 'All connections failed. Server may not be running or network issues exist.';
+            }
+        }
+        
+        async function loadData(type) {
+            const displayId = type === 'live' ? 'liveDataDisplay' : 
+                             type === 'trains' ? 'trainsDataDisplay' : 
+                             'stationsDataDisplay';
+            
+            const display = document.getElementById(displayId);
+            display.textContent = '🔄 Loading data...';
+            
+            // Try multiple endpoints in order of preference
+            const endpoints = [
+                `http://pakrail.aimworld.org:3001/api/${type}`,
+                `./web-only-solution.php?action=${type}`,
+                type === 'live' ? null : `https://trackyourtrains.com/data/${type === 'trains' ? 'Trains' : type === 'stations' ? 'StationsData' : 'TrainStations'}.json?v=2025-06-06`
+            ].filter(Boolean);
+            
+            let data = null;
+            let source = 'unknown';
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    if (response.ok) {
+                        data = await response.json();
+                        source = endpoint.includes('3001') ? 'Node.js Server' : 
+                                endpoint.includes('.php') ? 'PHP Proxy' : 
+                                'Direct API';
+                        break;
+                    }
+                } catch (error) {
+                    console.log(`Failed to fetch from ${endpoint}:`, error);
+                }
+            }
+            
+            if (data) {
+                const count = data.count || (data.data && data.data.length) || 
+                             (Array.isArray(data) ? data.length : 0);
+                
+                display.textContent = `✅ Data loaded from: ${source}\n` +
+                    `Count: ${count}\n` +
+                    `Last Updated: ${data.lastUpdated || 'Unknown'}\n\n` +
+                    `Sample data:\n${JSON.stringify(data, null, 2).substring(0, 1000)}...`;
+                    
+                updateStatus(`✅ ${type} data loaded successfully from ${source} (${count} items)`);
+            } else {
+                display.textContent = '❌ Failed to load data from all sources';
+                updateStatus(`❌ Failed to load ${type} data`, true);
+            }
+        }
+        
+        // Auto-test connections on page load
+        setTimeout(testAllConnections, 1000);
+    </script>
+</body>
+</html>

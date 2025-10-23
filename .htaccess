@@ -1,0 +1,17 @@
+# Pakistan Train Tracker - Port Forwarding
+# This redirects web requests to the Node.js server on port 3001
+
+RewriteEngine On
+
+# Enable proxy module (if available)
+# Note: This requires mod_proxy to be enabled on the server
+
+# Redirect API calls to Node.js server
+RewriteCond %{REQUEST_URI} ^/api/(.*)$ [OR]
+RewriteCond %{REQUEST_URI} ^/health$ [OR] 
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^(.*)$ http://localhost:3001/$1 [P,L]
+
+# If proxy doesn't work, redirect to port 3001
+RewriteCond %{SERVER_PORT} !^3001$
+RewriteRule ^(.*)$ http://%{SERVER_NAME}:3001/$1 [R=302,L]

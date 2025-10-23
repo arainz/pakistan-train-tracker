@@ -2,12 +2,15 @@
 const API_CONFIG = {
     // Auto-detect if running in Capacitor mobile app
     getBaseURL() {
-        // Check if running in Capacitor (mobile app)
+        // Check if running in Capacitor (mobile app) or if local server doesn't have API endpoints
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            // Mobile app - use Vercel production server
-            return 'https://pakistan-train-tracker-6j9ydm49n-pakrailways-projects.vercel.app';
+            // Mobile app - use Google Cloud Run production server
+            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
+        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Development environment - use production server for API calls
+            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
         } else {
-            // Web browser - use relative URLs (current domain)
+            // Production web browser - use relative URLs (current domain)
             return '';
         }
     },
@@ -23,7 +26,7 @@ const API_CONFIG = {
     // WebSocket configuration
     getSocketURL() {
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            return 'https://pakistan-train-tracker-6j9ydm49n-pakrailways-projects.vercel.app';
+            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
         } else {
             return window.location.origin;
         }
@@ -34,6 +37,12 @@ const API_CONFIG = {
 function getAPIUrl(endpoint) {
     const baseURL = API_CONFIG.getBaseURL();
     return baseURL + API_CONFIG.endpoints[endpoint];
+}
+
+// Helper function to build API URL with custom path
+function getAPIPath(path) {
+    const baseURL = API_CONFIG.getBaseURL();
+    return baseURL + path;
 }
 
 // Helper function for Socket.io connection
