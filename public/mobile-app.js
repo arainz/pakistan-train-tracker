@@ -1415,8 +1415,11 @@ class MobileApp {
             const statusText = status === 'completed' ? 'Completed' : status === 'current' ? 'Next Station' : 'Upcoming';
             const lastUpdated = train.LastUpdated ? this.formatLastUpdated(new Date(train.LastUpdated)) : '--:--';
             
+            // Alternate station names between top and bottom
+            const positionClass = index % 2 === 0 ? 'label-bottom' : 'label-top';
+            
             html += `
-                <div class="station-point ${status}" 
+                <div class="station-point ${status} ${positionClass}" 
                      data-station="${stationName}" 
                      data-distance="${distance}" 
                      data-scheduled="${scheduledTime}"
@@ -2057,6 +2060,9 @@ class MobileApp {
         
         if (locomotiveIcon) {
             locomotiveIcon.style.left = `${progressPercentage}%`;
+            
+            // Create or update locomotive popover
+            this.updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex);
         }
 
         // Update journey map stations
@@ -2073,6 +2079,79 @@ class MobileApp {
         const hours = now.getHours();
         const minutes = now.getMinutes();
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex) {
+        if (!locomotiveIcon || !train || !stations || stations.length === 0) return;
+        
+        // Check if popover already exists
+        let popover = locomotiveIcon.querySelector('.locomotive-popover');
+        
+        if (!popover) {
+            // Create popover element
+            popover = document.createElement('div');
+            popover.className = 'locomotive-popover';
+            locomotiveIcon.appendChild(popover);
+            console.log('🎈 Created locomotive popover');
+        }
+        
+        // Get next station info
+        const nextStationIndex = Math.min(currentStationIndex + 1, stations.length - 1);
+        const nextStation = stations[nextStationIndex];
+        const nextStationName = nextStation?.StationName || 'Unknown';
+        
+        // Get train info
+        const speed = train.Speed || 0;
+        const status = speed > 0 ? 'Moving' : 'Stopped';
+        const eta = train.NextStationETA || '--:--';
+        
+        // Calculate delay
+        const delay = this.calculateDelayFromETA(train);
+        const delayText = this.formatDelayDisplay(delay);
+        
+        // Update popover content
+        popover.innerHTML = `
+            <div class="popover-row">
+                <strong>Next:</strong> ${nextStationName}
+            </div>
+            <div class="popover-row">
+                <strong>ETA:</strong> ${eta}
+            </div>
+            <div class="popover-row">
+                <strong>Speed:</strong> ${speed} km/h
+            </div>
+            <div class="popover-row">
+                <strong>Status:</strong> ${status}
+            </div>
+            <div class="popover-row">
+                <strong>Delay:</strong> ${delayText}
+            </div>
+        `;
+        
+        // Position popover above locomotive using fixed positioning
+        // First set display to get accurate height, then position
+        popover.style.display = 'block';
+        popover.style.visibility = 'hidden'; // Hide while measuring
+        
+        // Wait for layout to complete before measuring
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                const rect = locomotiveIcon.getBoundingClientRect();
+                const popoverHeight = popover.offsetHeight;
+                
+                // If height is still too small, use minimum
+                const actualHeight = popoverHeight > 50 ? popoverHeight : 160;
+                
+                const leftPos = rect.left + rect.width / 2;
+                const topPos = rect.top - actualHeight - 15; // 15px gap above locomotive
+                
+                popover.style.left = `${leftPos}px`;
+                popover.style.top = `${topPos}px`;
+                popover.style.visibility = 'visible'; // Show after positioning
+                
+                console.log(`🎈 Popover positioned at: left=${leftPos}px, top=${topPos}px, height=${popoverHeight}px (used: ${actualHeight}px), locRect:`, rect);
+            });
+        }, 10);
     }
 
     updateJourneyMap(stations, currentStationIndex, train) {
