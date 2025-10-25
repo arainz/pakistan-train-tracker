@@ -11,49 +11,74 @@
 </head>
 <body class="mobile-app">
     <div class="mobile-app">
-        <!-- Floating Header -->
-        <div class="floating-header">
-            <div class="header-blur">
-                <div class="header-content">
-                    <div class="app-logo">
-                        <div class="logo-circle">🚂</div>
-                        <div class="app-info">
-                            <h1>Train Tracker</h1>
-                            <div class="tagline">Live Pakistan Railways</div>
-                        </div>
+        <!-- Sticky Header for Home -->
+        <div class="sticky-header">
+            <div class="header-content-sticky">
+                <div class="app-logo-sticky">
+                    <div class="logo-circle-sticky">🚂</div>
+                    <div class="app-info-sticky">
+                        <h1>Train Tracker</h1>
+                        <div class="tagline-sticky">Live Pakistan Railways</div>
                     </div>
-                    <div class="header-right">
-                        <button class="icon-btn">
-                            <span>🔔</span>
-                            <div class="notification-dot"></div>
-                        </button>
-                        <button class="icon-btn" id="darkModeToggle" onclick="mobileApp.toggleDarkMode()">
-                            <span id="darkModeIcon">🌙</span>
-                        </button>
-                        <button class="icon-btn">
-                            <span>⚙️</span>
-                        </button>
-                    </div>
+                </div>
+                <div class="header-right-actions">
+                    <button class="header-icon-btn notification-btn">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="notification-badge"></span>
+                    </button>
+                    <button class="header-icon-btn dark-mode-btn" id="darkModeToggle" onclick="mobileApp.toggleDarkMode()">
+                        <svg class="icon-svg moon-icon" id="darkModeIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
+            <!-- Last Updated Header for Home -->
+            <div class="last-updated-header home-last-updated">
+                <span id="homeLastUpdated">Last updated: Just now</span>
+            </div>
+
             <!-- Stats Overview -->
             <div class="stats-overview">
                 <div class="stat-card">
-                    <div class="stat-icon">🚂</div>
+                    <div class="stat-icon">
+                        <svg class="stat-svg train-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M4 10h16M8 18v2M16 18v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="8" cy="15" r="1" fill="currentColor"/>
+                            <circle cx="16" cy="15" r="1" fill="currentColor"/>
+                            <path d="M12 6V4M10 4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="stat-number" id="activeTrainsCount">0</div>
                     <div class="stat-label">Active</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">⏰</div>
+                    <div class="stat-icon">
+                        <svg class="stat-svg clock-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 3v1M12 20v1M3 12h1M20 12h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="stat-number" id="onTimeTrains">--</div>
                     <div class="stat-label">On Time</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-icon">
+                        <svg class="stat-svg alert-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"/>
+                        </svg>
+                    </div>
                     <div class="stat-number" id="delayedTrains">--</div>
                     <div class="stat-label">Delayed</div>
                 </div>
@@ -93,13 +118,14 @@
             </div>
             <!-- Quick Train Access -->
             <div class="quick-train-access">
-                <div class="section-header">
+                <div class="section-header" style="padding: 0 20px;">
                     <h3>Live Trains</h3>
                     <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
                 </div>
                 <div class="train-carousel" id="liveTrainsList">
                     <div class="loading">Loading live trains...</div>
                 </div>
+                <div class="carousel-dots" id="carouselDots"></div>
             </div>
 
 
@@ -225,10 +251,39 @@
 
             <!-- Live Tracking Screen -->
             <div id="liveTracking" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Live Tracking</h2>
-                    <button class="refresh-btn" onclick="mobileApp.loadLiveTrains()">🔄</button>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Live Tracking</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn refresh-btn" onclick="mobileApp.loadLiveTrains()">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" id="darkModeToggleLive" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="last-updated-header">
+                    <span id="liveTrackingLastUpdated">Last updated: Just now</span>
                 </div>
 
                 <div class="search-panel">
@@ -259,10 +314,36 @@
 
             <!-- Live Train Details Screen -->
             <div id="liveTrainDetail" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Train Details</h2>
-                    <button class="refresh-btn" onclick="mobileApp.refreshTrainDetails()">🔄</button>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Train Details</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn refresh-btn" onclick="mobileApp.refreshTrainDetails()">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="train-detail-content">
@@ -297,20 +378,12 @@
                         </div>
                     </div>
 
-                    <!-- Last Updated -->
-                    <div class="last-updated-container">
-                        <span class="last-updated-text" id="lastUpdated">--</span>
-                    </div>
-
                     <!-- Journey Map -->
                     <div class="journey-map">
                         <div class="route-progress" id="routeProgress">
                             <div class="route-stations" id="routeStations">
-                                <!-- Stations will be populated dynamically -->
+                                <!-- Stations and route line will be populated dynamically -->
                                 <div class="loading">Loading route stations...</div>
-                            </div>
-                            <div class="route-line">
-                                <div class="progress-indicator" id="progressIndicator" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
@@ -322,18 +395,36 @@
                             <div class="loading">Loading route stations...</div>
                         </div>
                     </div>
-
-                    <div class="last-update">
-                        Last updated: <span class="current-time">--:--</span>
-                    </div>
                 </div>
             </div>
 
             <!-- Map Screen -->
             <div id="mapScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Live Map</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Live Map</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="map-container">
@@ -345,9 +436,31 @@
 
             <!-- Station Search Screen -->
             <div id="stationScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Station Search</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Station Search</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="station-search">
@@ -377,9 +490,31 @@
 
             <!-- Train Search Screen -->
             <div id="trainSearchScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Train Search</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Train Search</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="search-section">
@@ -403,9 +538,34 @@
 
             <!-- Schedule Screen -->
             <div id="scheduleScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Train Schedule</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Train Schedule</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="last-updated-header">
+                    <span id="scheduleLastUpdated">Last updated: Just now</span>
                 </div>
 
                 <div class="search-panel">
@@ -434,9 +594,31 @@
 
             <!-- Schedule Details Screen -->
             <div id="scheduleDetailsScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Schedule Details</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Schedule Details</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="train-detail-content">
@@ -483,9 +665,31 @@
 
             <!-- Profile Screen -->
             <div id="profileScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Profile & Settings</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Profile & Settings</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="screen-content">
@@ -549,9 +753,31 @@
 
             <!-- Favorites Screen -->
             <div id="favoritesScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Favorite Trains</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Favorite Trains</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="screen-content">
@@ -566,9 +792,31 @@
 
             <!-- Route Details Screen -->
             <div id="routeScreen" class="screen hidden">
-                <div class="screen-header">
-                    <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Route Details</h2>
+                <div class="sticky-header">
+                    <div class="header-content-sticky">
+                        <button class="header-icon-btn back-btn" onclick="mobileApp.goBack()">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="header-title-section">
+                            <h2>Route Details</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <button class="header-icon-btn notification-btn">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="notification-badge"></span>
+                            </button>
+                            <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                                <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="screen-content">
@@ -609,6 +857,8 @@
         <div id="toastContainer" class="toast-container"></div>
     </div>
 
+    <!-- Capacitor Scripts -->
+    <script type="module" src="capacitor.js"></script>
     <script src="config.js"></script>
     <script src="mobile-app.js"></script>
 </body>

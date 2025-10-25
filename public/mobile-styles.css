@@ -324,20 +324,14 @@ body.mobile-app.dark-mode .station-route-section {
 }
 
 .home-last-updated {
+    text-align: center;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(102, 126, 234, 0.2);
     margin-bottom: 0;
-    border-radius: 12px;
-    margin: 15px 20px 20px 20px;
     position: relative;
-    z-index: 50;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: rgba(102, 126, 234, 0.15);
-    border: 2px solid rgba(102, 126, 234, 0.3);
-    padding: 12px 20px;
-    font-size: 0.95em;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-    display: block;
-    visibility: visible;
+    z-index: 10;
+    margin-bottom: 15px;
 }
 
 /* Journey Map */
@@ -465,7 +459,7 @@ body.mobile-app.dark-mode .station-route-section {
 
 .station-point.active .station-dot {
     background: #667eea;
-    animation: pulse 1.5s infinite;
+    animation: pulse 2.5s infinite;
 }
 
 .station-info {
@@ -1845,7 +1839,7 @@ body.mobile-app.dark-mode .train-info h3 {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
     padding: 20px;
-    margin: 0 20px 15px;
+    margin: 0 0 20px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -1957,44 +1951,6 @@ body.mobile-app.dark-mode .train-info h3 {
     50% { opacity: 0.5; }
 }
 
-/* Dark Mode Enhancements */
-body.mobile-app.dark-mode .dashboard-stats .stat-card,
-body.mobile-app.dark-mode .recent-train-item,
-body.mobile-app.dark-mode .quick-action-btn,
-body.mobile-app.dark-mode .route-card,
-body.mobile-app.dark-mode .station-card,
-body.mobile-app.dark-mode .favorite-train-card,
-body.mobile-app.dark-mode .search-result-item {
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-body.mobile-app.dark-mode .stat-label,
-body.mobile-app.dark-mode .train-status .next-station,
-body.mobile-app.dark-mode .train-count,
-body.mobile-app.dark-mode .station-meta .city-name,
-body.mobile-app.dark-mode .empty-text,
-body.mobile-app.dark-mode .status-label,
-body.mobile-app.dark-mode .location-label {
-    color: #94a3b8;
-}
-
-body.mobile-app.dark-mode .train-info .train-name,
-body.mobile-app.dark-mode .station-info .station-name,
-body.mobile-app.dark-mode .from-station,
-body.mobile-app.dark-mode .to-station,
-body.mobile-app.dark-mode .quick-action-label,
-body.mobile-app.dark-mode .empty-title,
-body.mobile-app.dark-mode .status-value,
-body.mobile-app.dark-mode .location-value {
-    color: #f1f5f9;
-}
-
-body.mobile-app.dark-mode .recent-trains-section h3,
-body.mobile-app.dark-mode .popular-routes h3 {
-    color: #f1f5f9;
-}
-
 /* Responsive Improvements */
 @media (max-width: 360px) {
     .dashboard-stats {
@@ -2051,7 +2007,7 @@ body.mobile-app.dark-mode .popular-routes h3 {
 
 /* Main Content Container */
 .main-content {
-    padding: 0 0 100px;
+    padding: 0;
     min-height: 100vh;
 }
 
@@ -2160,7 +2116,6 @@ body.mobile-app.dark-mode .popular-routes h3 {
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    margin-bottom: 10px;
 }
 
 .header-content-sticky {
@@ -2635,7 +2590,7 @@ body.mobile-app.dark-mode .logo-icon {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding: 0 20px;
+    padding: 0;
 }
 
 .section-header h3 {
@@ -2684,7 +2639,7 @@ body.mobile-app.dark-mode .logo-icon {
     display: flex;
     gap: 16px;
     overflow-x: auto;
-    padding: 8px 16px 40px 16px;
+    padding: 8px 16px 40px 0px;
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
@@ -3524,11 +3479,6 @@ body.mobile-app.dark-mode .logo-icon {
     padding: 0;
 }
 
-#liveTracking .results-header {
-    padding: 0 20px;
-    margin-bottom: 15px;
-}
-
 /* Schedule Details page - First card icon-based layout */
 #scheduleDetailsScreen .route-info-section {
     padding: 6px 16px 12px 16px;
@@ -3711,24 +3661,24 @@ body.mobile-app.dark-mode .logo-icon {
     align-items: center;
     margin-bottom: 15px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin: 0px 20px 0px 20px;
+}
+
+#scheduleScreen .results-header {
+    margin: 0
 }
 
 .results-header h3 {
-    color: white;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     margin: 0;
 }
 
 .results-count {
-    color: rgba(255, 255, 255, 0.95);
     font-size: 0.9em;
     font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 255, 255, 0.2);
     padding: 4px 12px;
     border-radius: 20px;
 }
@@ -3738,7 +3688,7 @@ body.mobile-app.dark-mode .logo-icon {
     flex-direction: column;
     gap: 12px;
     overflow: visible;
-    padding: 12px 0;
+    padding: 20px 0;
 }
 
 /* Full width train cards specifically for Schedule screen */
@@ -4073,7 +4023,7 @@ input:checked + .toggle-slider:before {
 
 /* Favorites Screen */
 .favorites-list {
-    padding: 20px;
+    padding: 0;
 }
 
 /* Toast Container */
@@ -4834,4 +4784,49 @@ body:not(.screen-active) .screens {
 .station-info {
     flex: 1;
     min-width: 0;
+}
+
+/* Dark Mode Enhancements */
+body.mobile-app.dark-mode .dashboard-stats .stat-card,
+body.mobile-app.dark-mode .recent-train-item,
+body.mobile-app.dark-mode .quick-action-btn,
+body.mobile-app.dark-mode .route-card,
+body.mobile-app.dark-mode .station-card,
+body.mobile-app.dark-mode .favorite-train-card,
+body.mobile-app.dark-mode .search-result-item, 
+body.mobile-app.dark-mode .train-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .stat-label,
+body.mobile-app.dark-mode .train-status .next-station,
+body.mobile-app.dark-mode .train-count,
+body.mobile-app.dark-mode .station-meta .city-name,
+body.mobile-app.dark-mode .empty-text,
+body.mobile-app.dark-mode .status-label,
+body.mobile-app.dark-mode .location-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .train-info .train-name,
+body.mobile-app.dark-mode .station-info .station-name,
+body.mobile-app.dark-mode .from-station,
+body.mobile-app.dark-mode .to-station,
+body.mobile-app.dark-mode .quick-action-label,
+body.mobile-app.dark-mode .empty-title,
+body.mobile-app.dark-mode .status-value,
+body.mobile-app.dark-mode .location-value {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .recent-trains-section h3,
+body.mobile-app.dark-mode .popular-routes h3,
+body.mobile-app.dark-mode .section-header {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .info-text,
+body.mobile-app.dark-mode .train-name {
+    text-shadow: none
 }

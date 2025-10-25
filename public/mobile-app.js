@@ -1783,10 +1783,12 @@ class MobileApp {
             
             if (index === 0 && currentStationIndex > 0) {
                 point.classList.add('completed');
-            } else if (index === 1) {
+            } else if (index < currentStationIndex) {
+                point.classList.add('completed');
+            } else if (index === currentStationIndex) {
                 point.classList.add('active');
-            } else if (index === 2) {
-                point.classList.add(currentStationIndex >= stations.length - 1 ? 'completed' : 'upcoming');
+            } else {
+                point.classList.add(currentStationIndex >= stations.length - 1 ? 'active' : 'upcoming');
             }
         });
     }
