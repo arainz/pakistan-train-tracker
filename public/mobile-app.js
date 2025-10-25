@@ -11,12 +11,14 @@ class MobileApp {
         this.isLiveSearchActive = false;
         this.detailRefreshInterval = null;
         this.progressBarInterval = null;
+        this.trainDetailClockInterval = null;
         this.currentRouteStations = null;
         this.lastUpdatedTime = null;
         this.navigationStack = ['home']; // Track navigation history
         this.homeLastUpdatedTime = null;
         this.liveTrackingLastUpdatedTime = null;
         this.scheduleLastUpdatedTime = null;
+        this.trainDetailLastUpdatedTime = null;
         
         // Map-related properties
         this.map = null;
@@ -590,7 +592,9 @@ class MobileApp {
         let delayedCount = 0;
         
         this.trainData.active.forEach(train => {
-            const delay = train.LateBy || 0;
+            // Calculate accurate delay from NextStationETA - ScheduledTime
+            const calculatedDelay = this.calculateDelayFromETA(train);
+            const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
             if (delay <= 5) {
                 onTimeCount++;
             } else {
@@ -792,6 +796,7 @@ class MobileApp {
 
             this.currentTrainData = train;
             this.lastUpdatedTime = new Date();
+            this.trainDetailLastUpdatedTime = new Date();
             this.populateTrainDetails(train);
 
             // Try to load schedule data
@@ -816,29 +821,25 @@ class MobileApp {
     startDetailAutoRefresh() {
         // Clear any existing interval
         this.stopDetailAutoRefresh();
+        
+        // Start the live clock immediately
+        this.startTrainDetailClock();
 
-        // Update last updated display every 10 seconds
-        setInterval(() => {
-            if (this.currentScreen === 'liveTrainDetail') {
-                this.updateLastUpdatedDisplay();
-            }
-        }, 10000); // 10 seconds
-
-        // Update progress bar every minute based on clock time for real-time progress
+        // Update progress bar every 1 second for smooth real-time progress (like live map)
         this.progressBarInterval = setInterval(() => {
-            if (this.currentScreen === 'liveTrainDetail' && this.currentTrainData) {
+            if (this.currentScreen === 'liveTrainDetail' && this.currentTrainData && this.currentRouteStations) {
                 console.log('⏱️ Updating progress bar based on clock time...');
-                this.updateProgressBarRealtime();
+                this.updateProgressBar(this.currentRouteStations, this.getCurrentStationIndex(), this.currentTrainData);
             }
-        }, 60000); // 1 minute (60 seconds)
+        }, 1000); // 1 second for smooth real-time updates
 
-        // Refresh full data every 30 seconds
+        // Refresh full data every 10 seconds
         this.detailRefreshInterval = setInterval(() => {
             if (this.currentScreen === 'liveTrainDetail' && this.currentTrainData) {
                 console.log('🔄 Auto-refreshing train details...');
                 this.refreshTrainDetails();
             }
-        }, 30000); // 30 seconds
+        }, 10000); // 10 seconds
     }
 
     stopDetailAutoRefresh() {
@@ -850,6 +851,86 @@ class MobileApp {
             clearInterval(this.progressBarInterval);
             this.progressBarInterval = null;
         }
+        if (this.trainDetailClockInterval) {
+            clearInterval(this.trainDetailClockInterval);
+            this.trainDetailClockInterval = null;
+        }
+    }
+    
+    startTrainDetailClock() {
+        // Clear any existing clock interval
+        if (this.trainDetailClockInterval) {
+            clearInterval(this.trainDetailClockInterval);
+        }
+        
+        // Update clock immediately
+        this.updateTrainDetailClock();
+        
+        // Then update every second
+        this.trainDetailClockInterval = setInterval(() => {
+            if (this.currentScreen === 'liveTrainDetail') {
+                this.updateTrainDetailClock();
+            }
+        }, 1000);
+    }
+    
+    updateTrainDetailClock() {
+        const clockEl = document.getElementById('trainDetailClock');
+        if (clockEl) {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            
+            clockEl.textContent = `${displayHours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
+        }
+    }
+
+    getCurrentStationIndex() {
+        if (!this.currentTrainData || !this.currentRouteStations) {
+            return 0;
+        }
+        
+        const stations = this.currentRouteStations;
+        const train = this.currentTrainData;
+        const nextLocation = train.NextStation || '';
+        
+        // Find the next station index
+        let nextStationIndex = -1;
+        if (nextLocation) {
+            nextStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
+                       nextLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
+        }
+        
+        // Fallback
+        if (nextStationIndex === -1) {
+            nextStationIndex = 0;
+        }
+        
+        // Check if train has reached the next station (within 2 minutes of ETA)
+        let hasReachedNextStation = false;
+        if (train.NextStationETA && train.NextStationETA !== '--:--') {
+            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            if (etaMinutes !== null) {
+                let minutesUntilArrival = etaMinutes - currentMinutes;
+                if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
+                
+                if (minutesUntilArrival <= 2) {
+                    hasReachedNextStation = true;
+                }
+            }
+        }
+        
+        // Return the progress index: last completed station
+        return hasReachedNextStation ? nextStationIndex : (nextStationIndex > 0 ? nextStationIndex - 1 : 0);
     }
 
     updateProgressBarRealtime() {
@@ -924,6 +1005,7 @@ class MobileApp {
             if (updatedTrain) {
                 this.currentTrainData = updatedTrain;
                 this.lastUpdatedTime = new Date();
+                this.trainDetailLastUpdatedTime = new Date();
                 this.populateTrainDetails(updatedTrain);
 
                 // Reload schedule if needed
@@ -1032,11 +1114,6 @@ class MobileApp {
         }
 
         // Update last updated time
-        this.updateLastUpdatedDisplay();
-        
-        // Update header last updated time
-        this.updateTrainDetailLastUpdated();
-
         // Update route stations progress bar (with slight delay to allow DOM to settle)
         setTimeout(() => {
             this.updateRouteStationsProgress(train);
@@ -1046,47 +1123,6 @@ class MobileApp {
         this.addMetricCardInteractivity(train);
     }
 
-    updateLastUpdatedDisplay() {
-        const lastUpdatedEl = document.getElementById('lastUpdated');
-        if (lastUpdatedEl && this.lastUpdatedTime) {
-            const now = new Date();
-            const diffSeconds = Math.floor((now - this.lastUpdatedTime) / 1000);
-
-            let timeText;
-            if (diffSeconds < 60) {
-                timeText = 'Just now';
-            } else if (diffSeconds < 3600) {
-                const minutes = Math.floor(diffSeconds / 60);
-                timeText = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-            } else {
-                const hours = Math.floor(diffSeconds / 3600);
-                timeText = `${hours} hour${hours > 1 ? 's' : ''} ago`;
-            }
-
-            lastUpdatedEl.textContent = `Last updated: ${timeText}`;
-        }
-    }
-
-    updateTrainDetailLastUpdated() {
-        const lastUpdatedEl = document.getElementById('trainDetailLastUpdated');
-        if (lastUpdatedEl && this.lastUpdatedTime) {
-            const now = new Date();
-            const diffSeconds = Math.floor((now - this.lastUpdatedTime) / 1000);
-
-            let timeText;
-            if (diffSeconds < 60) {
-                timeText = 'Just now';
-            } else if (diffSeconds < 3600) {
-                const minutes = Math.floor(diffSeconds / 60);
-                timeText = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-            } else {
-                const hours = Math.floor(diffSeconds / 3600);
-                timeText = `${hours} hour${hours > 1 ? 's' : ''} ago`;
-            }
-
-            lastUpdatedEl.textContent = `Last updated: ${timeText}`;
-        }
-    }
 
     async updateRouteStationsProgress(train) {
         if (!train) {
@@ -1250,41 +1286,66 @@ class MobileApp {
             </div>
         `;
 
-        // Use CurrentStation (last reached) for progress, NextStation for display
-        const currentLocation = train.CurrentStation || train.LastStation || train.NextStation || train.Location || '';
+        // Use NextStation to find where the train is heading
         const nextLocation = train.NextStation || '';
-        console.log(`🎯 Current location (last reached): ${currentLocation}, Next: ${nextLocation}`);
+        const currentLocation = train.CurrentStation || train.LastStation || '';
+        console.log(`🎯 Next station: ${nextLocation}, Current/Last: ${currentLocation}`);
         
-        // Find the actual current station index based on train's last passed station
-        let currentStationIndex = -1;
-        if (currentLocation) {
-            currentStationIndex = stations.findIndex(s => {
+        // Find the next station index (where train is heading)
+        let nextStationIndex = -1;
+        if (nextLocation) {
+            nextStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
+                       nextLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
+        }
+        
+        // If next station not found, try current/last station
+        if (nextStationIndex === -1 && currentLocation) {
+            nextStationIndex = stations.findIndex(s => {
                 const stationName = s.StationName || s.name || '';
                 return stationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
                        currentLocation.toLowerCase().includes(stationName.toLowerCase());
             });
         }
         
-        // If current station not found, try to find based on next station (go back one)
-        if (currentStationIndex === -1 && nextLocation) {
-            const nextStationIndex = stations.findIndex(s => {
-                const stationName = s.StationName || s.name || '';
-                return stationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
-                       nextLocation.toLowerCase().includes(stationName.toLowerCase());
-            });
-            if (nextStationIndex > 0) {
-                currentStationIndex = nextStationIndex - 1;
+        // Fallback: if still not found, assume first station
+        if (nextStationIndex === -1) {
+            nextStationIndex = 0;
+        }
+        
+        console.log(`🎯 Next station index: ${nextStationIndex}, Station: ${stations[nextStationIndex]?.StationName || 'Unknown'}`);
+
+        // Calculate accurate delay from NextStationETA - ScheduledTime
+        const calculatedDelay = this.calculateDelayFromETA(train);
+        const trainDelay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
+        
+        // Check if train has reached the next station (within 2 minutes of ETA)
+        let hasReachedNextStation = false;
+        if (train.NextStationETA && train.NextStationETA !== '--:--') {
+            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            if (etaMinutes !== null) {
+                let minutesUntilArrival = etaMinutes - currentMinutes;
+                if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
+                
+                if (minutesUntilArrival <= 2) {
+                    hasReachedNextStation = true;
+                    console.log(`✅ Train has reached next station (${minutesUntilArrival} min until ETA)`);
+                }
             }
         }
         
-        // Fallback: if still not found, assume first station
-        if (currentStationIndex === -1) {
-            currentStationIndex = 0;
+        // Determine the "current" station for progress bar and status
+        // If train has reached next station, mark it as completed and move to the one after
+        let currentStationIndex = nextStationIndex;
+        if (hasReachedNextStation && nextStationIndex < stations.length - 1) {
+            currentStationIndex = nextStationIndex + 1;
+            console.log(`🎯 Train reached station, moving current to next: index ${currentStationIndex}`);
         }
-        
-        console.log(`🎯 Current station index: ${currentStationIndex}, Station: ${stations[currentStationIndex]?.StationName || 'Unknown'}`);
-
-        const trainDelay = train.LateBy || 0;
 
         stations.forEach((station, index) => {
             console.log(`🚉 Station ${index}:`, station);
@@ -1296,16 +1357,16 @@ class MobileApp {
             // Calculate position based on distance (as percentage of inner container width)
             const positionPercent = totalDistance > 0 ? (distance / totalDistance) * 100 : (index / (stations.length - 1)) * 100;
 
-            // Determine station status based on current station index
+            // Determine station status
             let status = 'upcoming';
             let timeClass = '';
 
             if (index < currentStationIndex) {
-                // Stations before current are completed
+                // Stations before current (including reached stations) are completed
                 status = 'completed';
                 timeClass = 'completed-time';
             } else if (index === currentStationIndex) {
-                // Current station
+                // Current/next station where train is heading
                 status = 'current';
                 timeClass = 'current-time';
             } else {
@@ -1326,9 +1387,21 @@ class MobileApp {
             // Only format if not already formatted
             const formattedTime = isAlreadyFormatted ? displayTime : this.formatTimeAMPM(displayTime);
 
+            // Get ETA and status info for popover
+            const etaTime = status !== 'completed' ? formattedTime : '--:--';
+            const statusText = status === 'completed' ? 'Completed' : status === 'current' ? 'Next Station' : 'Upcoming';
+            const lastUpdated = train.LastUpdated ? this.formatLastUpdated(new Date(train.LastUpdated)) : '--:--';
+            
             html += `
-                <div class="station-point ${status}" data-station="${stationName}" data-distance="${distance}" style="left: ${positionPercent}%;">
-                    <div class="station-dot ${status === 'current' ? 'pulse' : ''}"></div>
+                <div class="station-point ${status}" 
+                     data-station="${stationName}" 
+                     data-distance="${distance}" 
+                     data-scheduled="${scheduledTime}"
+                     data-eta="${etaTime}"
+                     data-status="${statusText}"
+                     data-last-updated="${lastUpdated}"
+                     style="left: ${positionPercent}%;">
+                    <div class="station-dot"></div>
                     <div class="station-info">
                         <div class="station-name">${stationName}</div>
                         <div class="station-time ${timeClass}">${formattedTime}</div>
@@ -1350,39 +1423,113 @@ class MobileApp {
         // Also populate vertical route stations
         this.populateVerticalRouteStations(stations, train);
         
-        // Update progress bar with current position (last reached station)
-        let progressStationIndex = stations.findIndex(s =>
-            s.StationName && currentLocation &&
-            (s.StationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
-             currentLocation.toLowerCase().includes(s.StationName.toLowerCase()))
-        );
-
-        // If current station not found, try to find next station and use previous index
-        if (progressStationIndex === -1 && nextLocation) {
-            const nextStationIndex = stations.findIndex(s =>
-                s.StationName && nextLocation &&
-                (s.StationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
-                 nextLocation.toLowerCase().includes(s.StationName.toLowerCase()))
-            );
-            if (nextStationIndex > 0) {
-                progressStationIndex = nextStationIndex - 1; // Use station before next
-                console.log(`🔍 Using station before next station: index ${progressStationIndex}`);
-            }
-        }
-
-        // Only use fallback if absolutely no station info available
-        if (progressStationIndex === -1) {
-            progressStationIndex = 0; // Default to origin if no station found
-            console.log(`⚠️ Could not determine current station, defaulting to origin`);
-        }
+        // Update progress bar - use the last completed station index
+        // If train has reached next station, progress should stop at that station
+        // Otherwise, progress shows movement towards next station
+        let progressStationIndex = hasReachedNextStation ? nextStationIndex : (nextStationIndex > 0 ? nextStationIndex - 1 : 0);
+        console.log(`📊 Progress bar index: ${progressStationIndex} (${hasReachedNextStation ? 'reached' : 'traveling to'} next station)`);
         
         // Update progress bar
         this.updateProgressBar(stations, progressStationIndex, train);
         
-        // Scroll to current station in horizontal view
+        // Scroll to current station
         setTimeout(() => {
             this.scrollToCurrentStation();
         }, 100);
+    }
+    
+    addStationPopovers() {
+        const stationPoints = document.querySelectorAll('.route-stations-inner .station-point');
+        const locomotive = document.getElementById('trainLocomotive');
+        
+        // Remove any existing popover
+        const existingPopover = document.querySelector('.station-popover.persistent');
+        if (existingPopover) {
+            existingPopover.remove();
+        }
+        
+        if (!locomotive) {
+            console.warn('⚠️ Locomotive element not found');
+            return;
+        }
+        
+        // Find the next/current station for popover data
+        let targetPoint = null;
+        let hasReachedStation = false;
+        
+        stationPoints.forEach((point, index) => {
+            if (point.classList.contains('current')) {
+                targetPoint = point;
+                
+                // Check if train has actually reached this station
+                const eta = point.getAttribute('data-eta') || '--:--';
+                
+                if (eta && eta !== '--:--' && this.currentTrainData) {
+                    const etaMinutes = this.parseTimeToMinutes(eta);
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    
+                    if (etaMinutes !== null) {
+                        let minutesUntilArrival = etaMinutes - currentMinutes;
+                        if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
+                        
+                        if (minutesUntilArrival <= 2) {
+                            hasReachedStation = true;
+                        }
+                    }
+                }
+            }
+        });
+        
+        // If no current station found, use first station
+        if (!targetPoint && stationPoints.length > 0) {
+            targetPoint = stationPoints[0];
+            hasReachedStation = true;
+        }
+        
+        // Create popover on the locomotive (always visible)
+        if (targetPoint) {
+            const scheduled = targetPoint.getAttribute('data-scheduled') || '--:--';
+            const eta = targetPoint.getAttribute('data-eta') || '--:--';
+            const status = targetPoint.getAttribute('data-status') || 'Unknown';
+            const lastUpdated = targetPoint.getAttribute('data-last-updated') || '--:--';
+            const stationName = targetPoint.getAttribute('data-station') || 'Unknown';
+            
+            // Only show "Current:" label if train has reached the station
+            const currentLabelHTML = hasReachedStation ? `
+                <div class="popover-row popover-station-name">
+                    <span class="popover-label">Current:</span>
+                    <span class="popover-value">${stationName}</span>
+                </div>
+            ` : '';
+            
+            const popover = document.createElement('div');
+            popover.className = 'station-popover persistent locomotive-popover';
+            popover.innerHTML = `
+                <div class="popover-content">
+                    ${currentLabelHTML}
+                    <div class="popover-row">
+                        <span class="popover-label">Next:</span>
+                        <span class="popover-value">${stationName}</span>
+                    </div>
+                    <div class="popover-row">
+                        <span class="popover-label">ETA:</span>
+                        <span class="popover-value">${eta}</span>
+                    </div>
+                    <div class="popover-row">
+                        <span class="popover-label">Status:</span>
+                        <span class="popover-value">${status}</span>
+                    </div>
+                    <div class="popover-row">
+                        <span class="popover-label">Updated:</span>
+                        <span class="popover-value">${lastUpdated}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Append popover to the locomotive
+            locomotive.appendChild(popover);
+        }
     }
 
 
@@ -1741,107 +1888,83 @@ class MobileApp {
     updateProgressBar(stations, currentStationIndex, train) {
         if (!stations || stations.length === 0) return;
 
-        // Calculate total route distance
+        // Get total route distance
         const totalDistance = stations[stations.length - 1]?.DistanceFromOrigin || 0;
-
-        // Calculate progress percentage based on distance
+        
+        // Calculate progress percentage
         let progressPercentage = 0;
 
-        if (currentStationIndex >= 0 && stations.length > 1) {
-            // Calculate base progress up to current station (index-based for accuracy)
-            const baseProgress = (currentStationIndex / (stations.length - 1)) * 100;
-
-            // Only add partial progress if train is running between stations
-            // Use NextStationETA and scheduled times to calculate time-based progress
-            if (currentStationIndex < stations.length - 1 && train && train.Status === 'R') {
+        if (currentStationIndex >= 0 && stations.length > 1 && totalDistance > 0) {
+            const currentStation = stations[currentStationIndex];
+            const currentDistance = currentStation?.DistanceFromOrigin || 0;
+            
+            // Base progress at current station (based on distance, not index)
+            const baseProgress = (currentDistance / totalDistance) * 100;
+            
+            // Add partial progress if train is moving to next station
+            if (currentStationIndex < stations.length - 1 && train.NextStationETA && train.NextStationETA !== '--:--') {
                 const nextStation = stations[currentStationIndex + 1];
-                const nextDistance = nextStation?.DistanceFromOrigin || currentDistance;
+                const nextDistance = nextStation?.DistanceFromOrigin || 0;
+                
+                // Distance segment between current and next station
                 const segmentDistance = nextDistance - currentDistance;
-
-                // Calculate partial progress using NextStationETA (real-time API data)
-                let partialProgress = 0;
-                if (train.NextStationETA && train.NextStationETA !== '--:--') {
+                
+                // Get scheduled time for next station
+                const scheduledTime = nextStation?.ArrivalTime || nextStation?.DepartureTime;
+                
+                if (scheduledTime && scheduledTime !== '--:--' && segmentDistance > 0) {
                     try {
-                        // Get current clock time
+                        // Get current time
                         const now = new Date();
                         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-                        // Parse NextStationETA from API
+                        
+                        // Parse ETA
                         const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
-
-                        // Calculate time remaining until ETA
-                        let timeRemaining = etaMinutes - currentMinutes;
-                        if (timeRemaining < 0) timeRemaining += 1440; // Handle day boundary
-
-                        // Estimate total segment time based on speed and distance
-                        // Or use a reasonable estimate if speed not available
-                        let estimatedTotalTime = 30; // Default 30 minutes between stations
-
-                        if (train.Speed && train.Speed > 0 && segmentDistance > 0) {
-                            // Calculate time based on speed (distance/speed * 60 for minutes)
-                            estimatedTotalTime = Math.round((segmentDistance / train.Speed) * 60);
-                            console.log(`⚡ Speed-based calculation: ${segmentDistance}km at ${train.Speed}km/h = ${estimatedTotalTime}min`);
-                        } else if (nextStation && currentStation) {
-                            // Try to use scheduled times as fallback
-                            const scheduledArrival = nextStation.ArrivalTime || nextStation.DepartureTime;
-                            const currentDeparture = currentStation.DepartureTime || currentStation.ArrivalTime;
-
-                            if (scheduledArrival && currentDeparture) {
-                                const arrivalMinutes = this.parseTimeToMinutes(scheduledArrival);
-                                const departureMinutes = this.parseTimeToMinutes(currentDeparture);
-                                let scheduledTime = arrivalMinutes - departureMinutes;
-                                if (scheduledTime < 0) scheduledTime += 1440;
-                                if (scheduledTime > 0) {
-                                    estimatedTotalTime = scheduledTime;
-                                    console.log(`📅 Scheduled time: ${estimatedTotalTime}min`);
-                                }
+                        
+                        // Get departure time from current station
+                        const departureTime = currentStation?.DepartureTime || currentStation?.ArrivalTime;
+                        const departureMinutes = departureTime ? this.parseTimeToMinutes(departureTime) : null;
+                        
+                        if (etaMinutes !== null && departureMinutes !== null) {
+                            // Calculate total segment time and elapsed time
+                            let totalSegmentTime = etaMinutes - departureMinutes;
+                            if (totalSegmentTime < 0) totalSegmentTime += 1440; // Handle day boundary
+                            
+                            let elapsedTime = currentMinutes - departureMinutes;
+                            if (elapsedTime < 0) elapsedTime += 1440; // Handle day boundary
+                            
+                            // Calculate partial progress (0 to 1)
+                            let partialProgress = 0;
+                            if (totalSegmentTime > 0 && elapsedTime >= 0) {
+                                partialProgress = Math.min(elapsedTime / totalSegmentTime, 0.99); // Cap at 99% until arrival
                             }
-                        }
-
-                        // Calculate elapsed time based on ETA
-                        // If we have ETA and estimated total time, elapsed = total - remaining
-                        let elapsedTime = estimatedTotalTime - timeRemaining;
-
-                        // Ensure elapsed time is positive and within bounds
-                        if (elapsedTime < 0) elapsedTime = 0;
-                        if (elapsedTime > estimatedTotalTime) elapsedTime = estimatedTotalTime;
-
-                        console.log(`⏱️ ETA-based calculation:`);
-                        console.log(`   Current time: ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
-                        console.log(`   NextStationETA: ${train.NextStationETA}`);
-                        console.log(`   Time remaining: ${timeRemaining}min`);
-                        console.log(`   Estimated total: ${estimatedTotalTime}min`);
-                        console.log(`   Elapsed: ${elapsedTime}min`);
-
-                        if (estimatedTotalTime > 0 && elapsedTime >= 0) {
-                            // Calculate progress as percentage of time elapsed
-                            partialProgress = elapsedTime / estimatedTotalTime;
-                            // Cap at 95% until actually reached
-                            partialProgress = Math.min(Math.max(partialProgress, 0), 0.95);
-                            console.log(`📊 ETA-based progress: ${(partialProgress * 100).toFixed(1)}% (${elapsedTime}/${estimatedTotalTime} minutes)`);
+                            
+                            // Calculate how much distance the train has covered in this segment
+                            const distanceCovered = segmentDistance * partialProgress;
+                            
+                            // Add the partial distance to current distance and convert to percentage
+                            progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
+                            
+                            console.log(`📍 Distance-based Progress: CurrentDist=${currentDistance}km, SegmentDist=${segmentDistance}km, Covered=${distanceCovered.toFixed(1)}km, Total=${totalDistance}km => ${progressPercentage.toFixed(1)}%`);
+                        } else {
+                            progressPercentage = baseProgress;
                         }
                     } catch (error) {
-                        console.error('Error calculating ETA-based progress:', error);
+                        console.error('Error calculating partial progress:', error);
+                        progressPercentage = baseProgress;
                     }
-                }
-
-                // Apply partial progress to segment
-                if (partialProgress > 0) {
-                    const partialDistance = segmentDistance * partialProgress;
-                    // Add partial progress to the current station progress
-                    const segmentProgress = (1 / (stations.length - 1)) * partialProgress;
-                    progressPercentage = baseProgress + segmentProgress;
                 } else {
-                    // If train status is 'R' but no ETA, just show current station progress
                     progressPercentage = baseProgress;
                 }
             } else {
-                // Train is at station (A) or departed (D), show progress up to current station only
+                // No next station or no ETA, just show at current station
                 progressPercentage = baseProgress;
             }
-        } else if (currentStationIndex >= 0 && stations.length > 1) {
+        } else if (totalDistance === 0) {
             // Fallback to index-based calculation if no distance data
-            progressPercentage = (currentStationIndex / (stations.length - 1)) * 100;
+            const baseProgress = stations.length > 1 ? (currentStationIndex / (stations.length - 1)) * 100 : 0;
+            progressPercentage = baseProgress;
+            console.log(`⚠️ No distance data available, using index-based progress: ${progressPercentage.toFixed(1)}%`);
         }
 
         // Ensure progress is within bounds
@@ -1858,7 +1981,8 @@ class MobileApp {
 
         const trainSpeed = train && train.Speed ? train.Speed : 0;
         const trainStatus = train && train.Status ? train.Status : 'Unknown';
-        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${stations[currentStationIndex]?.DistanceFromOrigin || 0}/${totalDistance} km)`);
+        const currentDistance = stations[currentStationIndex]?.DistanceFromOrigin || 0;
+        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${currentDistance}/${totalDistance} km)`);
     }
 
     getCurrentTime() {
@@ -2028,7 +2152,8 @@ class MobileApp {
     // Calculate delay by comparing NextStationETA with scheduled time
     calculateDelayFromETA(train) {
         try {
-            // Need both NextStationETA and scheduled time
+            // Calculate delay from NextStationETA - Scheduled Time (Original formula)
+            // This is more accurate than API's LateBy field
             if (!train.NextStationETA || train.NextStationETA === '--:--' || !train.NextStation) {
                 return null;
             }
@@ -2051,9 +2176,9 @@ class MobileApp {
             let delayMinutes = etaMinutes - scheduledMinutes;
 
             // Handle day boundary crossing with more conservative approach
-            if (delayMinutes > 360) { // More than 6 hours ahead (was 12 hours)
+            if (delayMinutes > 360) { // More than 6 hours ahead
                 delayMinutes -= 1440; // Subtract 24 hours
-            } else if (delayMinutes < -360) { // More than 6 hours behind (was 12 hours)
+            } else if (delayMinutes < -360) { // More than 6 hours behind
                 delayMinutes += 1440; // Add 24 hours
             }
 
@@ -2482,7 +2607,7 @@ class MobileApp {
     }
 
     startAutoRefresh() {
-        // Refresh every 30 seconds
+        // Refresh every 10 seconds
         setInterval(async () => {
             if (this.currentScreen === 'home' || this.currentScreen === 'liveTracking') {
                 // Load schedule data first, then live trains (to ensure schedule data is available)
@@ -2500,11 +2625,14 @@ class MobileApp {
                     }
                 }
             }
-        }, 30000);
+        }, 10000); // 10 seconds
     }
 
     startLastUpdatedCountdown() {
-        // Update every second
+        // Update immediately
+        this.updateLastUpdatedTimestamps();
+        
+        // Then update every second
         setInterval(() => {
             this.updateLastUpdatedTimestamps();
         }, 1000);
@@ -2543,6 +2671,17 @@ class MobileApp {
                 scheduleEl.textContent = `Last updated: ${elapsed}`;
             } else {
                 scheduleEl.textContent = 'Last updated: Loading...';
+            }
+        }
+
+        // Update train detail last updated
+        const trainDetailEl = document.getElementById('trainDetailLastUpdated');
+        if (trainDetailEl) {
+            if (this.trainDetailLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.trainDetailLastUpdatedTime);
+                trainDetailEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                trainDetailEl.textContent = 'Last updated: Loading...';
             }
         }
     }
@@ -4619,6 +4758,24 @@ class MobileApp {
         const nextStation = train.NextStation || 'Unknown';
         const eta = train.NextStationETA || '--:--';
         
+        // Check if train has reached the station (within 2 minutes of ETA)
+        let hasReachedStation = false;
+        if (eta && eta !== '--:--') {
+            const etaMinutes = this.parseTimeToMinutes(eta);
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            if (etaMinutes !== null) {
+                let minutesUntilArrival = etaMinutes - currentMinutes;
+                if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day boundary
+                
+                // Train has reached if within 2 minutes or passed
+                if (minutesUntilArrival <= 2) {
+                    hasReachedStation = true;
+                }
+            }
+        }
+        
         // Improved direction detection logic
         const trainNameUp = String(trainName).toUpperCase();
         const trainNumberUp = String(trainNumber).toUpperCase();
@@ -4643,6 +4800,9 @@ class MobileApp {
         // Get the correct train ID for the View Details button
         const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
         
+        // Only show "Current:" label if train has reached the station
+        const currentLabel = hasReachedStation ? `<p style="margin: 5px 0; font-weight: bold; color: #059669;">Current: ${currentLocation}</p>` : '';
+        
         const popupContent = `
             <div style="text-align: center; min-width: 200px;">
                 <h3 style="margin: 0 0 10px 0; color: #1f2937;">${trainName}</h3>
@@ -4650,7 +4810,7 @@ class MobileApp {
                 <p style="margin: 5px 0;">Speed: ${speed} km/h</p>
                 <p style="margin: 5px 0;">Status: ${status}</p>
                 <p style="margin: 5px 0;">Direction: ${direction}</p>
-                <p style="margin: 5px 0;">Current: ${currentLocation}</p>
+                ${currentLabel}
                 <p style="margin: 5px 0;">Next: ${nextStation}</p>
                 <p style="margin: 5px 0;">ETA: ${eta}</p>
                 ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">View Details</button>` : ''}
@@ -4788,6 +4948,25 @@ class MobileApp {
         const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
         const nextStation = train.NextStation || 'Unknown';
         const eta = train.NextStationETA || '--:--';
+        
+        // Check if train has reached the station (within 2 minutes of ETA)
+        let hasReachedStation = false;
+        if (eta && eta !== '--:--') {
+            const etaMinutes = this.parseTimeToMinutes(eta);
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            if (etaMinutes !== null) {
+                let minutesUntilArrival = etaMinutes - currentMinutes;
+                if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day boundary
+                
+                // Train has reached if within 2 minutes or passed
+                if (minutesUntilArrival <= 2) {
+                    hasReachedStation = true;
+                }
+            }
+        }
+        
         // Improved direction detection logic
         const trainNameUp = String(trainName).toUpperCase();
         const trainNumberUp = String(trainNumber).toUpperCase();
@@ -4823,7 +5002,14 @@ class MobileApp {
         if (statusElement) statusElement.textContent = `${status} (${direction})`;
 
         const nextStationElement = document.getElementById('nextStation');
-        if (nextStationElement) nextStationElement.textContent = `${currentLocation} → ${nextStation}`;
+        // Only show "Current: " prefix if train has reached the station
+        if (nextStationElement) {
+            if (hasReachedStation) {
+                nextStationElement.textContent = `Current: ${currentLocation} → ${nextStation}`;
+            } else {
+                nextStationElement.textContent = `${nextStation}`;
+            }
+        }
 
         const etaElement = document.getElementById('trainETA');
         if (etaElement) etaElement.textContent = eta;

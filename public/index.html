@@ -324,7 +324,7 @@
                         </button>
                         <div class="header-title-section">
                             <h2>Train Details</h2>
-                            <div class="last-updated-header" id="trainDetailLastUpdated">Last updated: --</div>
+                            <div class="header-clock" id="trainDetailClock">--:--:-- --</div>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn refresh-btn" onclick="mobileApp.refreshTrainDetails()">
@@ -346,6 +346,9 @@
                             </button>
                         </div>
                     </div>
+                </div>
+                <div class="last-updated-header">
+                    <span id="trainDetailLastUpdated">Last updated: Just now</span>
                 </div>
 
                 <div class="train-detail-content">

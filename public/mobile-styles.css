@@ -21,16 +21,27 @@ html::-webkit-scrollbar {
 div.mobile-app {
     position: relative;
     min-height: 100vh;
+    height: 100vh;
     overflow-x: hidden;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 80px;
+}
+
+div.mobile-app::-webkit-scrollbar {
+    display: none;
 }
 
 body.mobile-app {
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #2563EB 100%);
     min-height: 100vh;
+    height: 100vh;
     overflow-x: hidden;
-    overflow-y: auto;
-    padding-bottom: 80px;
+    overflow-y: hidden;
+    padding-bottom: 0;
     line-height: 1.5;
     color: #1e293b;
     transition: all 0.3s ease;
@@ -234,7 +245,7 @@ body.mobile-app::-webkit-scrollbar {
 }
 
 .route-progress {
-    padding: 0 20px 20px;
+    padding: 0 20px 0;
 }
 
 .progress-header {
@@ -395,10 +406,18 @@ body.mobile-app::-webkit-scrollbar {
 
 /* Last Updated Header Styles */
 .last-updated-header {
-    font-size: 0.8em;
+    font-size: 0.75em;
     color: #6B7280;
     margin-top: 2px;
     font-weight: 500;
+}
+
+.header-clock {
+    font-size: 0.85em;
+    color: #3B82F6;
+    margin-top: 2px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
 }
 
 .header-title-section {
@@ -411,7 +430,6 @@ body.mobile-app::-webkit-scrollbar {
     margin: 0;
     font-size: 1.2em;
     font-weight: 600;
-}
 }
 
 *::-webkit-scrollbar {
@@ -698,32 +716,34 @@ body.mobile-app.dark-mode .station-route-section {
     margin-bottom: 15px;
 }
 
-/* Journey Map */
+/* Journey Map - Updated 2025 */
 .journey-map {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
-    padding: 20px;
+
     margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 150px !important;
 }
 
 .route-progress {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    width: 100%;
 }
 
 .route-stations {
     display: block;
     position: relative;
     z-index: 2;
-    margin-bottom: 15px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 15px 20px 20px 20px;
-    min-height: 100px;
     scroll-behavior: smooth;
     width: 100%;
 }
@@ -734,8 +754,10 @@ body.mobile-app.dark-mode .station-route-section {
 
 .route-stations-inner {
     position: relative;
-    height: 100%;
-    padding: 0 40px;
+    height: auto;
+    min-height: 80px;
+    padding: 0 !important;
+    margin: 0 40px !important;
 }
 
 .route-stations .station-point,
@@ -744,9 +766,14 @@ body.mobile-app.dark-mode .station-route-section {
     min-width: 80px;
     max-width: 120px;
     text-align: center;
-    top: 50%;
+    top: 0;
+    left: 0;
     transform: translateX(-50%);
-    margin-top: -8px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 /* Station Status Styles */
@@ -781,6 +808,115 @@ body.mobile-app.dark-mode .station-route-section {
     font-weight: 500;
 }
 
+.station-last-updated {
+    font-size: 0.7em;
+    color: #6b7280;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+/* Station Popover Styles */
+.station-popover {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 200px;
+}
+
+.station-popover.persistent {
+    background: rgba(59, 130, 246, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 0.7em;
+    padding: 10px 14px;
+    min-width: 200px;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: visible;
+    position: relative;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 30px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.station-popover .popover-content {
+    text-align: left;
+}
+
+.station-popover .popover-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    gap: 8px;
+}
+
+.station-popover .popover-row:last-child {
+    margin-bottom: 0;
+}
+
+.station-popover .popover-label {
+    font-weight: 600;
+    color: #f3f4f6;
+    font-size: 0.9em;
+}
+
+.station-popover .popover-value {
+    color: #d1d5db;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.station-popover .popover-station-name {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+}
+
+.station-popover .popover-station-name .popover-value {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1em;
+}
+
+.station-popover .popover-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #f3f4f6;
+}
+
+.station-popover .popover-text {
+    color: #d1d5db;
+    font-size: 0.9em;
+}
+
+/* Add arrow to popover */
+.station-popover::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 10px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    margin-top: -1px;
+}
+
+.station-popover.persistent::after {
+    border-top-color: rgba(59, 130, 246, 0.95);
+    border-width: 10px;
+}
+
 .station-time.current-time {
     color: #f59e0b;
     font-weight: 600;
@@ -801,7 +937,8 @@ body.mobile-app.dark-mode .station-route-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
+    position: relative;
 }
 
 .station-dot {
@@ -809,11 +946,11 @@ body.mobile-app.dark-mode .station-route-section {
     height: 16px;
     border-radius: 50%;
     background: #e0e0e0;
-    margin: 0 auto 10px auto;
+    margin: 0 auto 8px auto;
     border: 3px solid white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     position: relative;
-    z-index: 3;
+    z-index: 5;
     flex-shrink: 0;
 }
 
@@ -829,21 +966,18 @@ body.mobile-app.dark-mode .station-route-section {
 .station-info {
     text-align: center;
     padding: 0 4px;
+    margin-top: 8px;
 }
 
 .station-name {
-    font-size: 0.5em;
+    font-size: 0.75em;
     font-weight: 500;
     color: #374151;
     margin-bottom: 0;
     line-height: 1.2;
     word-wrap: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    max-height: 2.4em;
+    overflow: visible;
+    white-space: nowrap;
 }
 
 .route-stations .station-time,
@@ -858,23 +992,70 @@ body.mobile-app.dark-mode .station-route-section {
 
 .route-line {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 40px;
-    right: 40px;
-    width: calc(100% - 80px);
+    top: 8px;
+    left: 0;
+    right: 0;
+    width: 100%;
     height: 4px;
     background: #e5e7eb;
     z-index: 1;
     border-radius: 2px;
     pointer-events: none;
+    overflow: visible;
 }
 
 .progress-indicator {
     height: 100%;
     background: #22c55e;
     border-radius: 2px;
-    transition: width 0.8s ease;
+    transition: width 1s linear;
+    position: relative;
+    overflow: visible;
+}
+
+/* Train Locomotive Icon */
+.train-locomotive {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    transform: translateX(-50%);
+    z-index: 50;
+    animation: pulse 2s infinite;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    line-height: 1;
+    font-size: 24px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 1s linear;
+}
+
+.train-locomotive span {
+    display: block;
+    line-height: 1;
+}
+
+/* Locomotive Popover */
+.locomotive-popover {
+    position: absolute;
+    bottom: calc(100% + 15px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.locomotive-popover::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    margin-top: 0;
 }
 
 /* Station Route Section */
@@ -2097,7 +2278,7 @@ body.mobile-app.dark-mode .train-info h3 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    padding-top: 50px;
 }
 
 .from-station, .to-station {
@@ -2372,7 +2553,9 @@ body.mobile-app.dark-mode .train-info h3 {
 /* Main Content Container */
 .main-content {
     padding: 0;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
+    overflow-y: visible;
+    position: relative;
 }
 
 /* Floating Header Styles */
@@ -2468,8 +2651,9 @@ body.mobile-app.dark-mode .train-info h3 {
     border: 1px solid white;
 }
 
-/* Sticky Header for Screens */
+/* Sticky Header for Screens and Homepage */
 .sticky-header {
+    position: -webkit-sticky;
     position: sticky;
     top: 0;
     left: 0;
@@ -2480,6 +2664,7 @@ body.mobile-app.dark-mode .train-info h3 {
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
 }
 
 .header-content-sticky {
