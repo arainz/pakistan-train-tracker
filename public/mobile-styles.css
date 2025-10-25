@@ -410,6 +410,8 @@ body.mobile-app::-webkit-scrollbar {
     color: #6B7280;
     margin-top: 2px;
     font-weight: 500;
+    text-align: center;
+    width: 100%;
 }
 
 .header-clock {
@@ -423,7 +425,9 @@ body.mobile-app::-webkit-scrollbar {
 .header-title-section {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    flex: 1;
+    text-align: center;
 }
 
 .header-title-section h2 {
@@ -720,7 +724,6 @@ body.mobile-app.dark-mode .station-route-section {
 .journey-map {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
-
     margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -728,6 +731,7 @@ body.mobile-app.dark-mode .station-route-section {
     align-items: center !important;
     justify-content: center !important;
     min-height: 150px !important;
+    overflow: visible !important;
 }
 
 .route-progress {
@@ -746,6 +750,7 @@ body.mobile-app.dark-mode .station-route-section {
     -ms-overflow-style: none;
     scroll-behavior: smooth;
     width: 100%;
+    padding: 140px 0 0 0 !important;
 }
 
 .route-stations::-webkit-scrollbar {
@@ -758,6 +763,7 @@ body.mobile-app.dark-mode .station-route-section {
     min-height: 80px;
     padding: 0 !important;
     margin: 0 40px !important;
+    overflow: visible !important;
 }
 
 .route-stations .station-point,
@@ -1060,24 +1066,26 @@ body.mobile-app.dark-mode .station-route-section {
 
 /* Locomotive Popover */
 .locomotive-popover {
-    position: fixed;
-    bottom: auto;
-    left: 0;
-    top: 0;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid rgba(102, 126, 234, 0.3);
-    border-radius: 12px;
-    padding: 12px 16px;
-    min-width: 200px;
-    max-width: 280px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    z-index: 10000;
-    pointer-events: auto;
-    backdrop-filter: blur(10px);
-    display: block;
-    visibility: visible;
-    opacity: 1;
+    position: absolute !important;
+    bottom: calc(100% + 12px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: rgba(102, 126, 234, 0.95) !important;
+    color: white !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    min-width: 160px !important;
+    max-width: 220px !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5) !important;
+    z-index: 50001 !important;
+    pointer-events: none !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    white-space: nowrap !important;
 }
 
 .locomotive-popover::after {
@@ -1086,21 +1094,29 @@ body.mobile-app.dark-mode .station-route-section {
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 8px solid transparent;
-    border-top-color: rgba(255, 255, 255, 0.98);
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.1));
+    border: 10px solid transparent;
+    border-top-color: rgba(102, 126, 234, 0.95);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    z-index: -1;
 }
 
 .locomotive-popover .popover-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 4px;
-    font-size: 0.9em;
-    line-height: 1.4;
-    color: #374151;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    min-height: 28px;
+    padding: 2px 0;
+    font-size: 0.7em;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    width: 100%;
+}
+
+.locomotive-popover .popover-row span {
+    text-align: right;
+    flex-shrink: 0;
+    margin-left: 4px;
 }
 
 .locomotive-popover .popover-row:last-child {
@@ -1108,13 +1124,14 @@ body.mobile-app.dark-mode .station-route-section {
 }
 
 .locomotive-popover .popover-row:first-child {
-    padding-top: 8px;
+    padding-top: 2px;
 }
 
 .locomotive-popover .popover-row strong {
-    color: #667eea;
-    margin-right: 12px;
+    color: rgba(255, 255, 255, 1);
+    margin-right: 6px;
     font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes fadeInPopover {
@@ -2393,7 +2410,7 @@ body.mobile-app.dark-mode .train-info h3 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 50px;
+
 }
 
 .from-station, .to-station {

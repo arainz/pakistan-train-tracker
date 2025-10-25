@@ -1788,6 +1788,7 @@ class MobileApp {
                 timingInfoHTML = '';
             } else if (status === 'current') {
                 // For current station, show scheduled time and ETA prominently
+                const lastUpdated = train.LastUpdated ? this.formatLastUpdated(train.LastUpdated) : 'Unknown';
                 timingInfoHTML = `
                     <div class="station-timing-info">
                         <div class="timing-row">
@@ -1806,6 +1807,12 @@ class MobileApp {
                             <span class="timing-group">
                                 <span class="timing-label">Status:</span>
                                 <span class="delay-value ${delayClass}">${stationDelay}</span>
+                            </span>
+                        </div>
+                        <div class="timing-row">
+                            <span class="timing-group">
+                                <span class="timing-label">Last Updated:</span>
+                                <span class="timing-value">${lastUpdated}</span>
                             </span>
                         </div>
                     </div>
@@ -1842,7 +1849,8 @@ class MobileApp {
                 additionalInfoParts.push(`<span class="platform-info">🚉 Platform ${station.Platform}</span>`);
             }
             if (station.DistanceFromOrigin) {
-                additionalInfoParts.push(`<span class="distance-info">📍 ${station.DistanceFromOrigin} km</span>`);
+                const distance = parseFloat(station.DistanceFromOrigin).toFixed(2);
+                additionalInfoParts.push(`<span class="distance-info">📍 ${distance} km</span>`);
             }
             const additionalInfoHTML = additionalInfoParts.length > 0
                 ? `<div class="additional-info">${additionalInfoParts.join('')}</div>`
@@ -2084,15 +2092,14 @@ class MobileApp {
     updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex) {
         if (!locomotiveIcon || !train || !stations || stations.length === 0) return;
         
-        // Check if popover already exists
+        // Check if popover already exists as child of locomotive
         let popover = locomotiveIcon.querySelector('.locomotive-popover');
         
         if (!popover) {
-            // Create popover element
+            // Create popover element and append to locomotive icon itself
             popover = document.createElement('div');
             popover.className = 'locomotive-popover';
             locomotiveIcon.appendChild(popover);
-            console.log('🎈 Created locomotive popover');
         }
         
         // Get next station info
@@ -2109,49 +2116,31 @@ class MobileApp {
         const delay = this.calculateDelayFromETA(train);
         const delayText = this.formatDelayDisplay(delay);
         
-        // Update popover content
-        popover.innerHTML = `
-            <div class="popover-row">
-                <strong>Next:</strong> ${nextStationName}
-            </div>
-            <div class="popover-row">
-                <strong>ETA:</strong> ${eta}
-            </div>
-            <div class="popover-row">
-                <strong>Speed:</strong> ${speed} km/h
-            </div>
-            <div class="popover-row">
-                <strong>Status:</strong> ${status}
-            </div>
-            <div class="popover-row">
-                <strong>Delay:</strong> ${delayText}
-            </div>
-        `;
+        // Get last updated
+        const lastUpdated = train.LastUpdated ? this.formatLastUpdated(train.LastUpdated) : 'Unknown';
         
-        // Position popover above locomotive using fixed positioning
-        // First set display to get accurate height, then position
-        popover.style.display = 'block';
-        popover.style.visibility = 'hidden'; // Hide while measuring
+        // Clear and rebuild popover content
+        popover.innerHTML = '';
         
-        // Wait for layout to complete before measuring
-        setTimeout(() => {
-            requestAnimationFrame(() => {
-                const rect = locomotiveIcon.getBoundingClientRect();
-                const popoverHeight = popover.offsetHeight;
-                
-                // If height is still too small, use minimum
-                const actualHeight = popoverHeight > 50 ? popoverHeight : 160;
-                
-                const leftPos = rect.left + rect.width / 2;
-                const topPos = rect.top - actualHeight - 15; // 15px gap above locomotive
-                
-                popover.style.left = `${leftPos}px`;
-                popover.style.top = `${topPos}px`;
-                popover.style.visibility = 'visible'; // Show after positioning
-                
-                console.log(`🎈 Popover positioned at: left=${leftPos}px, top=${topPos}px, height=${popoverHeight}px (used: ${actualHeight}px), locRect:`, rect);
-            });
-        }, 10);
+        // Add rows directly
+        const rows = [
+            { label: 'Next', value: nextStationName },
+            { label: 'ETA', value: eta },
+            { label: 'Speed', value: `${speed} km/h` },
+            { label: 'Status', value: status },
+            { label: 'Delay', value: delayText },
+            { label: 'Last Updated', value: lastUpdated }
+        ];
+        
+        rows.forEach(row => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'popover-row';
+            rowDiv.innerHTML = `<strong>${row.label}:</strong> <span>${row.value}</span>`;
+            popover.appendChild(rowDiv);
+        });
+        
+        // Popover will automatically position itself via CSS (bottom: 100% of locomotive)
+        console.log(`🎈 Popover created and will auto-position via CSS`);
     }
 
     updateJourneyMap(stations, currentStationIndex, train) {
@@ -3577,7 +3566,7 @@ class MobileApp {
                         </div>
                     </div>
                     <div class="station-meta-info">
-                        ${station.DistanceFromOrigin ? `<div class="station-distance">${station.DistanceFromOrigin} km</div>` : ''}
+                        ${station.DistanceFromOrigin ? `<div class="station-distance">${parseFloat(station.DistanceFromOrigin).toFixed(2)} km</div>` : ''}
                         ${platform ? `<div class="station-platform">Platform ${platform}</div>` : ''}
                     </div>
                 </div>
@@ -3689,6 +3678,29 @@ class MobileApp {
             return;
         }
 
+        // Filter to only show passenger trains (exclude freight trains)
+        liveTrains = liveTrains.filter(train => {
+            const trainName = String(train.TrainName || train.trainName || '').toUpperCase();
+            
+            // Exclude freight trains and engines (contain 'FREIGHT', 'FRT', 'GOODS', 'CARGO', 'ENGINE NO', 'ENG NUM' in name)
+            const isFreight = trainName.includes('FREIGHT') || 
+                            trainName.includes('FRT') || 
+                            trainName.includes('GOODS') ||
+                            trainName.includes('CARGO') ||
+                            trainName.includes('ENGINE NO') ||
+                            trainName.includes('ENG NUM');
+            
+            return !isFreight; // Only include non-freight (passenger) trains
+        });
+
+        console.log(`📊 Filtered to ${liveTrains.length} passenger trains`);
+
+        if (liveTrains.length === 0) {
+            console.log('❌ No passenger trains available');
+            container.innerHTML = '<div class="no-updates">No passenger trains available</div>';
+            return;
+        }
+
         // Always include all favorite trains first, then add most recent trains
         console.log('📊 Preparing trains for live updates...');
 
@@ -3780,12 +3792,10 @@ class MobileApp {
             // Calculate ETA for next station
             const eta = this.calculateTrainETA(train);
 
-            // Get meaningful train info - use current location and status instead of unknown origin/destination
+            // Get meaningful train info - just show next station
             const currentLocation = currentStation;
-            const statusInfo = train.Status === 'A' ? 'At station' :
-                             train.Status === 'D' ? 'Departed' :
-                             train.Status === 'R' ? 'Running' : 'En route';
-            const routeInfo = `${statusInfo} - ${currentLocation}`;
+            const nextStation = train.NextStation || train.nextStation || currentLocation;
+            const routeInfo = `Next station - ${nextStation}`;
             
             // Determine status class and message
             let statusClass = 'on-time';
@@ -3801,9 +3811,11 @@ class MobileApp {
             // Create update message
             let updateMessage = `At ${currentStation}`;
             if (train.Status && train.Status.toLowerCase().includes('departed')) {
-                actionText = `Departed from ${currentStation}`;
+                actionText = `Departed from ${currentLocation}`;
             } else if (train.Status && train.Status.toLowerCase().includes('arrived')) {
-                actionText = `Arrived at ${currentStation}`;
+                actionText = `Arrived at ${currentLocation}`;
+            } else if (train.Speed > 5 && nextStation) {
+                actionText = `En route to ${nextStation}`;
             }
 
             const isFavorite = this.isFavorite(trainNumber);
