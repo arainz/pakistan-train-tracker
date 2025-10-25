@@ -1013,6 +1013,36 @@ body.mobile-app.dark-mode .station-route-section {
     overflow: visible;
 }
 
+/* Locomotive Icon on Progress Bar */
+.train-locomotive-icon {
+    position: absolute;
+    top: 8px;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    transition: left 1s linear;
+    pointer-events: none;
+}
+
+.train-locomotive-icon img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    animation: locomotive-pulse 2s ease-in-out infinite;
+}
+
+@keyframes locomotive-pulse {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    }
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 4px 12px rgba(52, 199, 89, 0.8));
+    }
+}
+
 /* Train Locomotive Icon */
 .train-locomotive {
     position: absolute;

@@ -1242,6 +1242,26 @@ class MobileApp {
         console.log(`🚀🚀🚀 [${new Date().toLocaleTimeString()}] populateRouteStations called with ${stations.length} stations`);
         console.log(`🚀 First station:`, stations[0]);
 
+        // Calculate distances if not provided in station data
+        if (!stations[0]?.DistanceFromOrigin && stations.length > 0 && stations[0]?.Latitude && stations[0]?.Longitude) {
+            console.log('📏 Calculating distances from coordinates...');
+            let cumulativeDistance = 0;
+            stations[0].DistanceFromOrigin = 0;
+            
+            for (let i = 1; i < stations.length; i++) {
+                if (stations[i].Latitude && stations[i].Longitude && 
+                    stations[i-1].Latitude && stations[i-1].Longitude) {
+                    const segmentDistance = this.calculateDistance(
+                        stations[i-1].Latitude, stations[i-1].Longitude,
+                        stations[i].Latitude, stations[i].Longitude
+                    );
+                    cumulativeDistance += segmentDistance;
+                    stations[i].DistanceFromOrigin = cumulativeDistance;
+                    console.log(`📏 Station ${i} (${stations[i].StationName}): ${cumulativeDistance.toFixed(2)} km from origin`);
+                }
+            }
+        }
+        
         // Store stations for realtime progress updates
         this.currentRouteStations = stations;
 
@@ -1279,10 +1299,13 @@ class MobileApp {
 
         let html = `<div class="route-stations-inner" style="position: relative; min-width: ${minWidth}px; height: 100%;">`;
 
-        // Add route line and progress indicator
+        // Add route line and progress indicator with locomotive
         html += `
             <div class="route-line">
                 <div class="progress-indicator" id="progressIndicator" style="width: 0%"></div>
+            </div>
+            <div class="train-locomotive-icon" id="trainLocomotiveIcon" style="left: 0%;">
+                <img src="/locomotive_1f682.png" alt="Train" />
             </div>
         `;
 
@@ -1901,8 +1924,62 @@ class MobileApp {
             // Base progress at current station (based on distance, not index)
             const baseProgress = (currentDistance / totalDistance) * 100;
             
-            // Add partial progress if train is moving to next station
-            if (currentStationIndex < stations.length - 1 && train.NextStationETA && train.NextStationETA !== '--:--') {
+            // Try to use train's actual coordinates for precise positioning (like map)
+            let useCoordinatePosition = false;
+            console.log(`🔍 Checking coordinate-based positioning: TrainLat=${train.Latitude}, TrainLng=${train.Longitude}, CurrentIdx=${currentStationIndex}, NextIdx=${currentStationIndex + 1}`);
+            
+            if (train.Latitude && train.Longitude && currentStationIndex < stations.length - 1) {
+                const nextStation = stations[currentStationIndex + 1];
+                console.log(`📊 Current: ${currentStation.StationName} (${currentStation.Latitude}, ${currentStation.Longitude}), Next: ${nextStation.StationName} (${nextStation.Latitude}, ${nextStation.Longitude})`);
+                
+                if (currentStation.Latitude && currentStation.Longitude && 
+                    nextStation.Latitude && nextStation.Longitude) {
+                    
+                    // Calculate distance from train to current and next stations
+                    const distToCurrent = this.calculateDistance(
+                        train.Latitude, train.Longitude,
+                        currentStation.Latitude, currentStation.Longitude
+                    );
+                    const distToNext = this.calculateDistance(
+                        train.Latitude, train.Longitude,
+                        nextStation.Latitude, nextStation.Longitude
+                    );
+                    const segmentLength = this.calculateDistance(
+                        currentStation.Latitude, currentStation.Longitude,
+                        nextStation.Latitude, nextStation.Longitude
+                    );
+                    
+                    if (segmentLength > 0) {
+                        // Calculate how far along the segment the train is
+                        // The train has moved distToCurrent away from current station
+                        // So progress = distance from current / total segment length
+                        const progressAlongSegment = Math.min(distToCurrent / segmentLength, 1.0);
+                        
+                        // Get distance segment from station data
+                        const nextDistance = nextStation?.DistanceFromOrigin || 0;
+                        const segmentDistance = nextDistance - currentDistance;
+                        
+                        // Calculate actual distance covered in this segment
+                        const distanceCovered = segmentDistance * progressAlongSegment;
+                        
+                        // Add the partial distance to current distance and convert to percentage
+                        progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
+                        
+                        useCoordinatePosition = true;
+                        console.log(`🌍 Coordinate-based Progress: TrainPos=(${train.Latitude.toFixed(4)},${train.Longitude.toFixed(4)}), DistToCurrent=${distToCurrent.toFixed(2)}km, DistToNext=${distToNext.toFixed(2)}km, SegmentLen=${segmentLength.toFixed(2)}km, Progress=${(progressAlongSegment*100).toFixed(1)}% => Bar:${progressPercentage.toFixed(1)}%`);
+                    } else {
+                        console.log(`⚠️ Segment length is 0, cannot use coordinate-based positioning`);
+                    }
+                } else {
+                    console.log(`⚠️ Station coordinates missing - Current: ${currentStation.Latitude},${currentStation.Longitude}, Next: ${nextStation.Latitude},${nextStation.Longitude}`);
+                }
+            } else {
+                console.log(`⚠️ Cannot use coordinates - TrainHasCoords: ${!!(train.Latitude && train.Longitude)}, HasNextStation: ${currentStationIndex < stations.length - 1}`);
+            }
+            
+            // Fallback to time-based calculation if coordinates not available
+            if (!useCoordinatePosition && currentStationIndex < stations.length - 1 && 
+                train.NextStationETA && train.NextStationETA !== '--:--') {
                 const nextStation = stations[currentStationIndex + 1];
                 const nextDistance = nextStation?.DistanceFromOrigin || 0;
                 
@@ -1945,7 +2022,7 @@ class MobileApp {
                             // Add the partial distance to current distance and convert to percentage
                             progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
                             
-                            console.log(`📍 Distance-based Progress: CurrentDist=${currentDistance}km, SegmentDist=${segmentDistance}km, Covered=${distanceCovered.toFixed(1)}km, Total=${totalDistance}km => ${progressPercentage.toFixed(1)}%`);
+                            console.log(`⏱️ Time-based Progress: CurrentDist=${currentDistance}km, SegmentDist=${segmentDistance}km, Covered=${distanceCovered.toFixed(1)}km, Total=${totalDistance}km => ${progressPercentage.toFixed(1)}%`);
                         } else {
                             progressPercentage = baseProgress;
                         }
@@ -1956,7 +2033,7 @@ class MobileApp {
                 } else {
                     progressPercentage = baseProgress;
                 }
-            } else {
+            } else if (!useCoordinatePosition) {
                 // No next station or no ETA, just show at current station
                 progressPercentage = baseProgress;
             }
@@ -1970,10 +2047,16 @@ class MobileApp {
         // Ensure progress is within bounds
         progressPercentage = Math.max(0, Math.min(100, progressPercentage));
 
-        // Update the progress bar
+        // Update the progress bar and locomotive position
         const progressIndicator = document.querySelector('.progress-indicator');
+        const locomotiveIcon = document.getElementById('trainLocomotiveIcon');
+        
         if (progressIndicator) {
             progressIndicator.style.width = `${progressPercentage}%`;
+        }
+        
+        if (locomotiveIcon) {
+            locomotiveIcon.style.left = `${progressPercentage}%`;
         }
 
         // Update journey map stations
