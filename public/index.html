@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>Pakistan Train Tracker - Mobile</title>
     <link rel="stylesheet" href="mobile-styles.css?v=1729607000">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body class="mobile-app">
     <div class="mobile-app">
@@ -323,6 +324,7 @@
                         </button>
                         <div class="header-title-section">
                             <h2>Train Details</h2>
+                            <div class="last-updated-header" id="trainDetailLastUpdated">Last updated: --</div>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn refresh-btn" onclick="mobileApp.refreshTrainDetails()">
@@ -428,8 +430,56 @@
                 </div>
 
                 <div class="map-container">
-                    <div class="map-placeholder">
-                        <p>📍 Live train map coming soon</p>
+                    <div id="liveMap" style="height: 100%; width: 100%; border-radius: 12px;"></div>
+                </div>
+                
+                <!-- Train Selection Panel -->
+                <div class="train-selection-panel" id="trainSelectionPanel">
+                    <div class="panel-header">
+                        <h3>Select Train to Track</h3>
+                        <button class="close-panel-btn" onclick="mobileApp.closeTrainSelection()">×</button>
+                    </div>
+                    <div class="train-list" id="trainList">
+                        <div class="loading">Loading active trains...</div>
+                    </div>
+                </div>
+                
+                <!-- Train Info Panel -->
+                <div class="train-info-panel" id="trainInfoPanel" style="display: none;">
+                    <div class="panel-header">
+                        <h3 id="selectedTrainName">Train Information</h3>
+                        <button class="close-panel-btn" onclick="mobileApp.closeTrainInfo()">×</button>
+                    </div>
+                    <div class="train-stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Speed</div>
+                            <div class="stat-value" id="trainSpeed">-- km/h</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-value" id="trainStatus">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Next Station</div>
+                            <div class="stat-value" id="nextStation">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">ETA</div>
+                            <div class="stat-value" id="trainETA">--</div>
+                        </div>
+                    </div>
+                    <div class="route-progress">
+                        <div class="progress-header">
+                            <span id="originStation">Origin</span>
+                            <span id="progressPercent">0%</span>
+                            <span id="destinationStation">Destination</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar" style="width: 0%">
+                                <span id="progressText">0% Complete</span>
+                            </div>
+                            <div class="train-icon" id="trainIcon" style="left: 0%">🚂</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -859,6 +909,7 @@
 
     <!-- Capacitor Scripts -->
     <script type="module" src="capacitor.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="config.js"></script>
     <script src="mobile-app.js"></script>
 </body>

@@ -50,6 +50,370 @@ body.mobile-app::-webkit-scrollbar {
     -ms-overflow-style: none;
 }
 
+/* Map Screen Styles */
+.map-container {
+    height: calc(100vh - 120px);
+    width: 100%;
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.train-selection-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 60vh;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.train-selection-panel.show {
+    transform: translateY(0);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-panel-btn:hover {
+    background: #f3f4f6;
+}
+
+.train-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 0 20px 20px;
+}
+
+.train-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.train-item:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.train-item.selected {
+    background: #dbeafe;
+    border: 2px solid #3b82f6;
+}
+
+.train-info {
+    flex: 1;
+}
+
+.train-number {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #1f2937;
+}
+
+.train-name {
+    font-size: 0.9em;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.train-status {
+    text-align: right;
+}
+
+.train-speed {
+    font-weight: 600;
+    color: #059669;
+}
+
+.train-location {
+    font-size: 0.8em;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.train-direction {
+    font-size: 0.7em;
+    color: #059669;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.train-next {
+    font-size: 0.7em;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.train-eta {
+    font-size: 0.7em;
+    color: #3b82f6;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.train-info-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    max-height: 50vh;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.train-info-panel.show {
+    transform: translateY(0);
+}
+
+.train-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-label {
+    font-size: 0.8em;
+    color: #6b7280;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.route-progress {
+    padding: 0 20px 20px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #6b7280;
+}
+
+.progress-bar {
+    height: 40px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #48bb78 0%, #667eea 100%);
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.train-icon {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    background: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: left 0.5s ease;
+}
+
+/* Map Controls */
+.map-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.map-control-btn {
+    background: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: all 0.2s ease;
+}
+
+.map-control-btn:hover {
+    background: #f8f9fa;
+    transform: scale(1.05);
+}
+
+.map-control-btn.active {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Out of Coverage Styles */
+.train-card.out-of-coverage {
+    opacity: 0.7;
+    border: 2px solid #6B7280;
+    background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+}
+
+.train-card.out-of-coverage .train-card-header {
+    background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+}
+
+.header-out-of-coverage {
+    background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%) !important;
+}
+
+.out-of-coverage-badge {
+    background: #6B7280;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: inline-block;
+}
+
+.live-indicator.out-of-coverage {
+    background: #6B7280;
+    color: white;
+}
+
+.live-indicator.out-of-coverage .live-dot {
+    background: #9CA3AF;
+    animation: none;
+}
+
+.live-indicator.out-of-coverage .live-dot.out-of-coverage {
+    background: #9CA3AF;
+    animation: none;
+}
+
+.out-of-coverage-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.out-of-coverage-indicator .out-of-coverage-badge {
+    background: #EF4444;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.out-of-coverage-indicator .offline-icon {
+    font-size: 1.1em;
+}
+
+/* Out of coverage train cards styling */
+.train-card.out-of-coverage .train-info-grid .info-text {
+    color: #6B7280;
+}
+
+.train-card.out-of-coverage .train-route {
+    opacity: 0.6;
+}
+
+.train-card.out-of-coverage .train-route-arrow {
+    color: #9CA3AF;
+}
+
+/* Last Updated Header Styles */
+.last-updated-header {
+    font-size: 0.8em;
+    color: #6B7280;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.header-title-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.header-title-section h2 {
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+}
+
 *::-webkit-scrollbar {
     display: none;
 }

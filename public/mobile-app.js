@@ -17,6 +17,14 @@ class MobileApp {
         this.homeLastUpdatedTime = null;
         this.liveTrackingLastUpdatedTime = null;
         this.scheduleLastUpdatedTime = null;
+        
+        // Map-related properties
+        this.map = null;
+        this.trainMarkers = [];
+        this.routeLines = [];
+        this.selectedTrain = null;
+        this.mapRefreshInterval = null;
+        
         this.init();
     }
 
@@ -84,6 +92,14 @@ class MobileApp {
             e.preventDefault();
             this.goBack();
         }, false);
+
+        // Handle escape key for web browsers
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                console.log('🔙 Escape key pressed');
+                this.goBack();
+            }
+        });
     }
 
     navigateTo(screen, data = null) {
@@ -138,6 +154,9 @@ class MobileApp {
             const url = screenId === 'home' ? '#home' : `#${screenId}`;
             history.pushState({ screen: screenId, previous: previousScreen }, '', url);
             console.log('📚 Navigation stack:', this.navigationStack);
+        } else if (!pushHistory) {
+            // Don't add to stack if it's a back navigation
+            console.log('📚 Back navigation - not adding to stack');
         }
 
         // Special case for home/dashboard
@@ -158,6 +177,7 @@ class MobileApp {
         // Show target screen
         const targetScreen = document.getElementById(screenId);
         if (targetScreen) {
+            console.log(`✅ Found target screen: ${screenId}`);
             targetScreen.classList.remove('hidden');
             targetScreen.classList.add('active');
             
@@ -167,7 +187,8 @@ class MobileApp {
             // Load screen data
             this.loadScreenData(screenId);
         } else {
-            console.warn(`Screen ${screenId} not found`);
+            console.error(`❌ Screen ${screenId} not found! Available screens:`, 
+                Array.from(document.querySelectorAll('.screen')).map(s => s.id));
         }
     }
 
@@ -251,12 +272,48 @@ class MobileApp {
 
     goBack() {
         console.log('⬅️ Going back from:', this.currentScreen);
+        console.log('📚 Navigation stack:', this.navigationStack);
 
-        // Use browser history to go back
-        if (window.history.length > 1) {
-            window.history.back();
+        // Special handling for map screen - always go to home
+        if (this.currentScreen === 'mapScreen') {
+            console.log('⬅️ From map screen, going to home');
+            this.navigateToScreen('home', false);
+            return;
+        }
+
+        // Special handling for train detail screens - go to live tracking
+        if (this.currentScreen === 'liveTrainDetail') {
+            console.log('⬅️ From train detail, going to live tracking');
+            // Remove current screen from stack
+            if (this.navigationStack.length > 1) {
+                this.navigationStack.pop();
+            }
+            // Ensure we're going to the correct screen
+            this.navigateToScreen('liveTracking', false);
+            // Load live trains data when returning to live tracking
+            setTimeout(() => {
+                this.loadLiveTrains();
+                this.populateLiveTrackingScreen();
+            }, 100);
+            return;
+        }
+
+        // Special handling for schedule details - go to schedule
+        if (this.currentScreen === 'scheduleDetailsScreen') {
+            console.log('⬅️ From schedule details, going to schedule');
+            this.navigateToScreen('scheduleScreen', false);
+            return;
+        }
+
+        // Remove current screen from stack
+        if (this.navigationStack.length > 1) {
+            this.navigationStack.pop(); // Remove current screen
+            const previousScreen = this.navigationStack[this.navigationStack.length - 1];
+            console.log('⬅️ Navigating to previous screen:', previousScreen);
+            this.navigateToScreen(previousScreen, false);
         } else {
-            // Fallback to home if no history
+            // Fallback to home if no previous screens
+            console.log('⬅️ No previous screens, going to home');
             this.navigateToScreen('home', false);
         }
     }
@@ -300,7 +357,7 @@ class MobileApp {
 
     showMap() {
         this.navigateToScreen('mapScreen');
-        // Map functionality would go here
+        this.initializeMap();
     }
 
     async loadLiveTrains() {
@@ -586,8 +643,8 @@ class MobileApp {
             const trainNumber = train.TrainNumber ? train.TrainNumber.toString() : '';
             const location = train.Location ? train.Location.toLowerCase() : '';
             
-            return trainName.includes(searchQuery) || 
-                   trainNumber.includes(searchQuery) || 
+            return String(trainName).includes(searchQuery) || 
+                   String(trainNumber).includes(searchQuery) || 
                    location.includes(searchQuery);
         });
         
@@ -807,31 +864,35 @@ class MobileApp {
         const currentTime = this.getCurrentTime();
         console.log(`🕐 Clock time: ${currentTime} (${now.toLocaleTimeString()})`);
 
-        // Find current station index
+        // Find current station index using the same logic as populateRouteStations
         const currentLocation = this.currentTrainData.CurrentStation ||
                                this.currentTrainData.LastStation ||
                                this.currentTrainData.NextStation || '';
         const nextLocation = this.currentTrainData.NextStation || '';
         const stations = this.currentRouteStations;
 
-        let currentStationIndex = stations.findIndex(s =>
-            s.StationName && currentLocation &&
-            (s.StationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
-             currentLocation.toLowerCase().includes(s.StationName.toLowerCase()))
-        );
-
-        // If current station not found, try using next station and go back one
+        let currentStationIndex = -1;
+        if (currentLocation) {
+            currentStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
+                       currentLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
+        }
+        
+        // If current station not found, try to find based on next station (go back one)
         if (currentStationIndex === -1 && nextLocation) {
-            const nextStationIndex = stations.findIndex(s =>
-                s.StationName && nextLocation &&
-                (s.StationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
-                 nextLocation.toLowerCase().includes(s.StationName.toLowerCase()))
-            );
+            const nextStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
+                       nextLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
             if (nextStationIndex > 0) {
                 currentStationIndex = nextStationIndex - 1;
             }
         }
-
+        
+        // Fallback: if still not found, assume first station
         if (currentStationIndex === -1) {
             currentStationIndex = 0;
         }
@@ -886,12 +947,41 @@ class MobileApp {
             return;
         }
         
+        // Check if train is out of coverage
+        const isOutOfCoverage = this.isTrainOutOfCoverage(train);
+        
         // Update basic train info
         document.getElementById('trainDetailName').textContent = train.TrainName || 'Unknown Train';
         document.getElementById('trainDetailNumber').textContent = train.TrainNumber || '000';
         
-        // Add favorite button to header if it doesn't exist
+        // Add out of coverage indicator to header
         const header = document.querySelector('#liveTrainDetail .sticky-header');
+        if (header) {
+            // Remove existing out of coverage indicator
+            const existingIndicator = header.querySelector('.out-of-coverage-indicator');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+            
+            // Add out of coverage indicator if needed
+            if (isOutOfCoverage) {
+                const indicator = document.createElement('div');
+                indicator.className = 'out-of-coverage-indicator';
+                indicator.innerHTML = `
+                    <div class="out-of-coverage-badge">
+                        <span class="offline-icon">📡</span>
+                        OUT OF COVERAGE
+                    </div>
+                `;
+                
+                const headerContent = header.querySelector('.header-content-sticky');
+                if (headerContent) {
+                    headerContent.appendChild(indicator);
+                }
+            }
+        }
+        
+        // Add favorite button to header if it doesn't exist
         let headerActions = header ? header.querySelector('.header-right-actions') : null;
 
         if (headerActions) {
@@ -931,12 +1021,21 @@ class MobileApp {
         const displayDelay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
         // Update metrics
-        document.getElementById('trainSpeed').textContent = `${train.Speed || 0} km/h`;
-        document.getElementById('trainDelay').textContent = this.formatDelayDisplay(displayDelay);
-        document.getElementById('nextStation').textContent = train.NextStation || 'Unknown';
+        if (isOutOfCoverage) {
+            document.getElementById('trainSpeed').textContent = 'N/A';
+            document.getElementById('trainDelay').textContent = 'OUT OF COVERAGE';
+            document.getElementById('nextStation').textContent = 'Location Unknown';
+        } else {
+            document.getElementById('trainSpeed').textContent = `${train.Speed || 0} km/h`;
+            document.getElementById('trainDelay').textContent = this.formatDelayDisplay(displayDelay);
+            document.getElementById('nextStation').textContent = train.NextStation || 'Unknown';
+        }
 
         // Update last updated time
         this.updateLastUpdatedDisplay();
+        
+        // Update header last updated time
+        this.updateTrainDetailLastUpdated();
 
         // Update route stations progress bar (with slight delay to allow DOM to settle)
         setTimeout(() => {
@@ -949,6 +1048,27 @@ class MobileApp {
 
     updateLastUpdatedDisplay() {
         const lastUpdatedEl = document.getElementById('lastUpdated');
+        if (lastUpdatedEl && this.lastUpdatedTime) {
+            const now = new Date();
+            const diffSeconds = Math.floor((now - this.lastUpdatedTime) / 1000);
+
+            let timeText;
+            if (diffSeconds < 60) {
+                timeText = 'Just now';
+            } else if (diffSeconds < 3600) {
+                const minutes = Math.floor(diffSeconds / 60);
+                timeText = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else {
+                const hours = Math.floor(diffSeconds / 3600);
+                timeText = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            }
+
+            lastUpdatedEl.textContent = `Last updated: ${timeText}`;
+        }
+    }
+
+    updateTrainDetailLastUpdated() {
+        const lastUpdatedEl = document.getElementById('trainDetailLastUpdated');
         if (lastUpdatedEl && this.lastUpdatedTime) {
             const now = new Date();
             const diffSeconds = Math.floor((now - this.lastUpdatedTime) / 1000);
@@ -1134,6 +1254,35 @@ class MobileApp {
         const currentLocation = train.CurrentStation || train.LastStation || train.NextStation || train.Location || '';
         const nextLocation = train.NextStation || '';
         console.log(`🎯 Current location (last reached): ${currentLocation}, Next: ${nextLocation}`);
+        
+        // Find the actual current station index based on train's last passed station
+        let currentStationIndex = -1;
+        if (currentLocation) {
+            currentStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
+                       currentLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
+        }
+        
+        // If current station not found, try to find based on next station (go back one)
+        if (currentStationIndex === -1 && nextLocation) {
+            const nextStationIndex = stations.findIndex(s => {
+                const stationName = s.StationName || s.name || '';
+                return stationName.toLowerCase().includes(nextLocation.toLowerCase()) ||
+                       nextLocation.toLowerCase().includes(stationName.toLowerCase());
+            });
+            if (nextStationIndex > 0) {
+                currentStationIndex = nextStationIndex - 1;
+            }
+        }
+        
+        // Fallback: if still not found, assume first station
+        if (currentStationIndex === -1) {
+            currentStationIndex = 0;
+        }
+        
+        console.log(`🎯 Current station index: ${currentStationIndex}, Station: ${stations[currentStationIndex]?.StationName || 'Unknown'}`);
 
         const trainDelay = train.LateBy || 0;
 
@@ -1147,23 +1296,22 @@ class MobileApp {
             // Calculate position based on distance (as percentage of inner container width)
             const positionPercent = totalDistance > 0 ? (distance / totalDistance) * 100 : (index / (stations.length - 1)) * 100;
 
-            // Determine station status
+            // Determine station status based on current station index
             let status = 'upcoming';
             let timeClass = '';
 
-            if (stationName.toLowerCase().includes(currentLocation.toLowerCase()) || currentLocation.toLowerCase().includes(stationName.toLowerCase())) {
+            if (index < currentStationIndex) {
+                // Stations before current are completed
+                status = 'completed';
+                timeClass = 'completed-time';
+            } else if (index === currentStationIndex) {
+                // Current station
                 status = 'current';
                 timeClass = 'current-time';
-            } else if (index < stations.length - 1) {
-                // Simple logic: assume stations before current are passed
-                const currentIndex = stations.findIndex(s =>
-                    s.StationName && currentLocation &&
-                    (s.StationName.toLowerCase().includes(currentLocation.toLowerCase()) ||
-                     currentLocation.toLowerCase().includes(s.StationName.toLowerCase()))
-                );
-                if (currentIndex >= 0 && index < currentIndex) {
-                    status = 'completed';
-                }
+            } else {
+                // Stations after current are upcoming
+                status = 'upcoming';
+                timeClass = 'upcoming-time';
             }
 
             // Calculate ETA (scheduled + delay) for current and upcoming stations
@@ -1599,13 +1747,9 @@ class MobileApp {
         // Calculate progress percentage based on distance
         let progressPercentage = 0;
 
-        if (currentStationIndex >= 0 && stations.length > 1 && totalDistance > 0) {
-            // Get current station distance
-            const currentStation = stations[currentStationIndex];
-            const currentDistance = currentStation?.DistanceFromOrigin || 0;
-
-            // Base progress on actual distance to current station
-            const baseProgress = (currentDistance / totalDistance) * 100;
+        if (currentStationIndex >= 0 && stations.length > 1) {
+            // Calculate base progress up to current station (index-based for accuracy)
+            const baseProgress = (currentStationIndex / (stations.length - 1)) * 100;
 
             // Only add partial progress if train is running between stations
             // Use NextStationETA and scheduled times to calculate time-based progress
@@ -1684,7 +1828,9 @@ class MobileApp {
                 // Apply partial progress to segment
                 if (partialProgress > 0) {
                     const partialDistance = segmentDistance * partialProgress;
-                    progressPercentage = ((currentDistance + partialDistance) / totalDistance) * 100;
+                    // Add partial progress to the current station progress
+                    const segmentProgress = (1 / (stations.length - 1)) * partialProgress;
+                    progressPercentage = baseProgress + segmentProgress;
                 } else {
                     // If train status is 'R' but no ETA, just show current station progress
                     progressPercentage = baseProgress;
@@ -1904,10 +2050,10 @@ class MobileApp {
             // Calculate delay in minutes (ETA - Scheduled)
             let delayMinutes = etaMinutes - scheduledMinutes;
 
-            // Handle day boundary crossing (e.g., scheduled 23:50, ETA 00:10)
-            if (delayMinutes > 720) { // More than 12 hours ahead
+            // Handle day boundary crossing with more conservative approach
+            if (delayMinutes > 360) { // More than 6 hours ahead (was 12 hours)
                 delayMinutes -= 1440; // Subtract 24 hours
-            } else if (delayMinutes < -720) { // More than 12 hours behind
+            } else if (delayMinutes < -360) { // More than 6 hours behind (was 12 hours)
                 delayMinutes += 1440; // Add 24 hours
             }
 
@@ -2148,6 +2294,9 @@ class MobileApp {
             const trainName = train.TrainName || `Train ${train.TrainNumber}`;
             const speed = train.Speed || 0;
 
+            // Check if train is out of coverage
+            const isOutOfCoverage = this.isTrainOutOfCoverage(train);
+
             // Calculate accurate delay from ETA
             const calculatedDelay = this.calculateDelayFromETA(train);
             const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
@@ -2157,7 +2306,10 @@ class MobileApp {
             let statusBadge = 'LIVE';
             let badgeColor = '#10B981';
 
-            if (delay > 15) {
+            if (isOutOfCoverage) {
+                statusBadge = 'OUT OF COVERAGE';
+                badgeColor = '#6B7280';
+            } else if (delay > 15) {
                 statusBadge = this.formatDelayDisplay(delay).replace(' Late', '');
                 badgeColor = '#EF4444';
             } else if (delay > 5) {
@@ -2180,18 +2332,19 @@ class MobileApp {
             const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated);
 
             html += `
-                <div class="train-card" onclick="mobileApp.openTrainDetails('${trainId}')">
-                    <div class="train-card-header ${delay > 0 ? 'header-delayed' : 'header-ontime'}">
+                <div class="train-card ${isOutOfCoverage ? 'out-of-coverage' : ''}" onclick="mobileApp.openTrainDetails('${trainId}')">
+                    <div class="train-card-header ${isOutOfCoverage ? 'header-out-of-coverage' : (delay > 0 ? 'header-delayed' : 'header-ontime')}">
                         <div class="train-header-content">
                             <div class="train-name">${trainName}</div>
+                            ${isOutOfCoverage ? '<div class="out-of-coverage-badge">OUT OF COVERAGE</div>' : ''}
                         </div>
                         <div class="header-actions">
                             <button class="favorite-btn ${this.favoriteTrains.includes(train.TrainNumber) ? 'favorited' : ''}" onclick="event.stopPropagation(); mobileApp.toggleFavorite('${train.TrainNumber}')" title="${this.favoriteTrains.includes(train.TrainNumber) ? 'Remove from favorites' : 'Add to favorites'}">
                                 <span>${this.favoriteTrains.includes(train.TrainNumber) ? '⭐' : '☆'}</span>
                             </button>
-                            <div class="live-indicator">
-                                <span class="live-dot"></span>
-                                LIVE
+                            <div class="live-indicator ${isOutOfCoverage ? 'out-of-coverage' : ''}">
+                                <span class="live-dot ${isOutOfCoverage ? 'out-of-coverage' : ''}"></span>
+                                ${isOutOfCoverage ? 'OFFLINE' : 'LIVE'}
                             </div>
                         </div>
                     </div>
@@ -2886,8 +3039,8 @@ class MobileApp {
             
             const searchQuery = query.toLowerCase();
             
-            return trainNumber.includes(searchQuery) || 
-                   trainName.includes(searchQuery) || 
+            return String(trainNumber).includes(searchQuery) || 
+                   String(trainName).includes(searchQuery) || 
                    route.includes(searchQuery);
         });
         
@@ -3525,15 +3678,12 @@ class MobileApp {
         const currentStationName = this.nearestStation.name.toLowerCase();
         const locationBasedTrains = [];
 
-        // Get list of nearby/connected stations for expanded search
-        const nearbyStationNames = this.getNearbyStations(currentStationName);
-        console.log(`📍 Searching for trains near: ${currentStationName} and nearby stations:`, nearbyStationNames);
+        console.log(`📍 Searching for trains at: ${currentStationName}`);
 
-        // Find trains related to current station, next station, and previous station
+        // Find trains at current station only
         liveTrains.forEach(train => {
             const trainCurrentStation = (train.CurrentStation || train.NextStation || train.LastStation || '').toLowerCase();
             const trainNextStation = (train.NextStation || '').toLowerCase();
-            const trainLastStation = (train.LastStation || '').toLowerCase();
             const trainNumber = String(train.TrainNumber || train.trainNumber);
             const trainName = (train.TrainName || train.trainName || '').toUpperCase();
 
@@ -3542,10 +3692,10 @@ class MobileApp {
             let isDownTrain = false;
 
             // Check train name and number for UP/DOWN indicators
-            if (trainName.includes('UP') || trainNumber.includes('UP')) {
+            if (String(trainName).includes('UP') || String(trainNumber).includes('UP')) {
                 isUpTrain = true;
-            } else if (trainName.includes('DOWN') || trainName.includes('DN') ||
-                       trainNumber.includes('DOWN') || trainNumber.includes('DN')) {
+            } else if (String(trainName).includes('DOWN') || String(trainName).includes('DN') ||
+                       String(trainNumber).includes('DOWN') || String(trainNumber).includes('DN')) {
                 isDownTrain = true;
             } else {
                 // Fallback to train number parity
@@ -3562,28 +3712,8 @@ class MobileApp {
                                      trainNextStation.includes(currentStationName) ||
                                      currentStationName.includes(trainNextStation);
 
-            // Check if train is at a nearby/previous station (1 station before user's location)
-            // For UP trains: check if train is at stations that come before user's station in UP direction
-            // For DOWN trains: check if train is at stations that come before user's station in DOWN direction
-            let isAtPreviousStation = false;
-            for (const nearbyStation of nearbyStationNames) {
-                if (trainCurrentStation.includes(nearbyStation) ||
-                    nearbyStation.includes(trainCurrentStation) ||
-                    trainNextStation.includes(nearbyStation) ||
-                    nearbyStation.includes(trainNextStation) ||
-                    trainLastStation.includes(nearbyStation) ||
-                    nearbyStation.includes(trainLastStation)) {
-                    isAtPreviousStation = true;
-                    console.log(`🚂 Train ${trainNumber} found at previous/nearby station: ${nearbyStation}`);
-                    break;
-                }
-            }
-
             if (isAtCurrentStation) {
                 console.log(`🚂 Found train ${trainNumber} (${isUpTrain ? 'UP' : isDownTrain ? 'DOWN' : 'UNKNOWN'}) at/near ${currentStationName}`);
-                locationBasedTrains.push(train);
-            } else if (isAtPreviousStation) {
-                console.log(`🚂 Found train ${trainNumber} (${isUpTrain ? 'UP' : isDownTrain ? 'DOWN' : 'UNKNOWN'}) at previous station approaching ${currentStationName}`);
                 locationBasedTrains.push(train);
             }
         });
@@ -3591,59 +3721,6 @@ class MobileApp {
         return locationBasedTrains;
     }
 
-    getNearbyStations(currentStationName) {
-        // Define common station groups and connections for major routes
-        // This helps find trains at previous stations heading toward user's location
-        const stationGroups = {
-            // Karachi area
-            'karachi': ['drigh road', 'city', 'cantt', 'junction'],
-            'drigh': ['karachi', 'cantt'],
-            'cantt': ['karachi', 'drigh', 'city'],
-
-            // Lahore area
-            'lahore': ['junction', 'cantt', 'badami bagh', 'shahdara'],
-            'junction': ['lahore', 'cantt'],
-            'badami': ['lahore', 'shahdara'],
-            'shahdara': ['lahore', 'badami', 'gujranwala'],
-
-            // Rawalpindi/Islamabad area
-            'rawalpindi': ['islamabad', 'golra', 'chaklala'],
-            'islamabad': ['rawalpindi', 'golra'],
-            'golra': ['rawalpindi', 'islamabad'],
-
-            // Multan area
-            'multan': ['cantt', 'bahawalpur', 'khanewal'],
-
-            // Faisalabad area
-            'faisalabad': ['lyallpur', 'gojra', 'chiniot'],
-            'lyallpur': ['faisalabad'],
-
-            // Other major connections
-            'gujranwala': ['lahore', 'wazirabad', 'shahdara'],
-            'wazirabad': ['gujranwala', 'lalamusa'],
-            'lalamusa': ['wazirabad', 'gujrat'],
-            'sahiwal': ['okara', 'khanewal'],
-            'khanewal': ['sahiwal', 'multan'],
-            'bahawalpur': ['multan', 'lodhran']
-        };
-
-        // Find nearby stations based on current station
-        const currentLower = currentStationName.toLowerCase();
-        const nearbyStations = [];
-
-        // Search for matching station groups
-        for (const [key, stations] of Object.entries(stationGroups)) {
-            if (currentLower.includes(key) || key.includes(currentLower)) {
-                nearbyStations.push(...stations);
-                break;
-            }
-        }
-
-        // Remove duplicates and current station itself
-        return [...new Set(nearbyStations)].filter(s =>
-            !currentLower.includes(s.toLowerCase()) && !s.toLowerCase().includes(currentLower)
-        );
-    }
 
     showLiveUpdatesError() {
         const container = document.getElementById('liveUpdatesFeed');
@@ -4030,6 +4107,11 @@ class MobileApp {
                     break;
                 case 'liveTracking':
                     this.loadLiveTrains();
+                    // Ensure the screen is populated after loading data
+                    setTimeout(() => {
+                        this.populateLiveTrackingScreen();
+                        this.initializeLiveTrackingSearch();
+                    }, 100);
                     break;
                 case 'scheduleScreen':
                     this.loadSchedule();
@@ -4053,7 +4135,7 @@ class MobileApp {
                     this.loadProfile();
                     break;
                 case 'mapScreen':
-                    console.log('🗺️ Map screen - functionality coming soon');
+                    this.initializeMap();
                     break;
                 default:
                     console.log('ℹ️ No specific data loading for screen:', screenId);
@@ -4307,6 +4389,518 @@ class MobileApp {
         }
     }
 
+    // Check if train is out of coverage
+    isTrainOutOfCoverage(train) {
+        // Check for missing critical data
+        const hasTrainNumber = train.TrainNumber && train.TrainNumber !== 'undefined';
+        const hasLocation = train.CurrentStation || train.NextStation || train.LastStation;
+        const hasCoordinates = train.Latitude && train.Longitude;
+        const hasRecentUpdate = train.LastUpdated && new Date(train.LastUpdated) > new Date(Date.now() - 30 * 60 * 1000); // 30 minutes
+        
+        // Check if train has been updated recently (within 30 minutes)
+        const isRecentlyUpdated = hasRecentUpdate;
+        
+        // Train is out of coverage if:
+        // 1. No train number
+        // 2. No location data
+        // 3. No coordinates
+        // 4. No recent updates
+        const isOutOfCoverage = !hasTrainNumber || !hasLocation || !hasCoordinates || !isRecentlyUpdated;
+        
+        if (isOutOfCoverage) {
+            console.log('🚫 Train out of coverage:', {
+                trainNumber: train.TrainNumber,
+                hasLocation: !!hasLocation,
+                hasCoordinates: !!hasCoordinates,
+                isRecentlyUpdated: isRecentlyUpdated,
+                lastUpdated: train.LastUpdated
+            });
+        }
+        
+        return isOutOfCoverage;
+    }
+
+    // Map functionality methods
+    initializeMap() {
+        console.log('🗺️ Initializing map...');
+        
+        if (this.map) {
+            console.log('🗺️ Map already initialized');
+            return;
+        }
+
+        try {
+            // Initialize Leaflet map
+            this.map = L.map('liveMap').setView([30.3753, 69.3451], 7);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.map);
+            
+            console.log('🗺️ Map initialized successfully');
+            
+            // Load active trains and show train selection panel
+            this.loadMapTrains();
+            this.showTrainSelectionPanel();
+            
+        } catch (error) {
+            console.error('❌ Error initializing map:', error);
+            this.showError('Failed to initialize map');
+        }
+    }
+
+    async loadMapTrains() {
+        try {
+            console.log('🚂 Loading trains for map...');
+            const response = await fetch(getAPIUrl('live'));
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                this.trainData.active = data.data;
+                this.populateTrainSelection();
+                this.updateMapWithTrains(data.data);
+            } else {
+                console.error('❌ Failed to load train data for map');
+                this.showError('Failed to load train data');
+            }
+        } catch (error) {
+            console.error('❌ Error loading map trains:', error);
+            this.showError('Failed to load train data');
+        }
+    }
+
+    populateTrainSelection() {
+        const trainList = document.getElementById('trainList');
+        if (!trainList) return;
+
+        if (!this.trainData.active || this.trainData.active.length === 0) {
+            trainList.innerHTML = '<div class="loading">No active trains found</div>';
+            return;
+        }
+
+        let html = '';
+        this.trainData.active.forEach(train => {
+            const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
+            const trainName = train.TrainName || `Train ${trainNumber}`;
+            const speed = train.Speed || 0;
+            const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
+            const nextStation = train.NextStation || 'Unknown';
+            const eta = train.NextStationETA || '--:--';
+            // Improved direction detection logic
+            const trainNameUp = String(trainName).toUpperCase();
+            const trainNumberUp = String(trainNumber).toUpperCase();
+            let direction = train.Direction || 'Unknown';
+            
+            if (direction === 'Unknown') {
+                // Check both train name and train number for UP/DOWN indicators
+                if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
+                    direction = 'UP';
+                } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
+                           trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
+                    direction = 'DOWN';
+                } else {
+                    // Fallback to train number parity only if no text indicators
+                    const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
+                    if (!isNaN(numericPart)) {
+                        direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
+                    }
+                }
+            }
+            
+            html += `
+                <div class="train-item" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
+                    <div class="train-info">
+                        <div class="train-number">${trainNumber}</div>
+                        <div class="train-name">${trainName}</div>
+                        <div class="train-direction">${direction}</div>
+                    </div>
+                    <div class="train-status">
+                        <div class="train-speed">${speed} km/h</div>
+                        <div class="train-location">${currentLocation}</div>
+                        <div class="train-next">Next: ${nextStation}</div>
+                        <div class="train-eta">ETA: ${eta}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        trainList.innerHTML = html;
+    }
+
+    selectTrain(trainId) {
+        console.log('🚂 Selecting train:', trainId);
+        
+        const train = this.trainData.active.find(t => 
+            t.InnerKey === trainId || t.TrainId === trainId || t.TrainNumber === trainId
+        );
+        
+        if (!train) {
+            console.error('❌ Train not found:', trainId);
+            return;
+        }
+
+        this.selectedTrain = train;
+        this.hideTrainSelectionPanel();
+        this.showTrainInfoPanel();
+        this.updateMapWithSelectedTrain(train);
+        this.startMapAutoRefresh();
+    }
+
+    updateMapWithTrains(trains) {
+        if (!this.map) return;
+
+        // Clear existing markers
+        this.clearMapMarkers();
+
+        trains.forEach(train => {
+            if (train.Latitude && train.Longitude) {
+                this.addTrainMarker(train);
+            }
+        });
+    }
+
+    updateMapWithSelectedTrain(train) {
+        if (!this.map) return;
+
+        // Clear existing markers
+        this.clearMapMarkers();
+
+        // Add selected train marker
+        if (train.Latitude && train.Longitude) {
+            this.addTrainMarker(train, true);
+            this.map.setView([train.Latitude, train.Longitude], 12);
+        }
+
+        // Load and display route if available
+        this.loadTrainRoute(train);
+    }
+
+    addTrainMarker(train, isSelected = false) {
+        if (!this.map) return;
+
+        const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
+        const trainName = train.TrainName || `Train ${trainNumber}`;
+        const speed = train.Speed || 0;
+        const status = speed > 0 ? 'Moving' : 'Stopped';
+        
+        // Create train icon
+        const trainIcon = L.divIcon({
+            html: `
+                <div style="
+                    background: ${isSelected ? '#3b82f6' : '#059669'};
+                    color: white;
+                    border-radius: 50%;
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    border: 2px solid white;
+                ">
+                    🚂
+                </div>
+            `,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15],
+            className: 'train-marker'
+        });
+
+        const marker = L.marker([train.Latitude, train.Longitude], {
+            icon: trainIcon
+        }).addTo(this.map);
+
+        // Add popup
+        const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
+        const nextStation = train.NextStation || 'Unknown';
+        const eta = train.NextStationETA || '--:--';
+        
+        // Improved direction detection logic
+        const trainNameUp = String(trainName).toUpperCase();
+        const trainNumberUp = String(trainNumber).toUpperCase();
+        let direction = train.Direction || 'Unknown';
+        
+        if (direction === 'Unknown') {
+            // Check both train name and train number for UP/DOWN indicators
+            if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
+                direction = 'UP';
+            } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
+                       trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
+                direction = 'DOWN';
+            } else {
+                // Fallback to train number parity only if no text indicators
+                const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
+                if (!isNaN(numericPart)) {
+                    direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
+                }
+            }
+        }
+        
+        // Get the correct train ID for the View Details button
+        const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
+        
+        const popupContent = `
+            <div style="text-align: center; min-width: 200px;">
+                <h3 style="margin: 0 0 10px 0; color: #1f2937;">${trainName}</h3>
+                <p style="margin: 5px 0; font-weight: bold; color: #059669;">Train #${trainNumber}</p>
+                <p style="margin: 5px 0;">Speed: ${speed} km/h</p>
+                <p style="margin: 5px 0;">Status: ${status}</p>
+                <p style="margin: 5px 0;">Direction: ${direction}</p>
+                <p style="margin: 5px 0;">Current: ${currentLocation}</p>
+                <p style="margin: 5px 0;">Next: ${nextStation}</p>
+                <p style="margin: 5px 0;">ETA: ${eta}</p>
+                ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">View Details</button>` : ''}
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        if (isSelected) {
+            marker.openPopup();
+        }
+
+        this.trainMarkers.push(marker);
+    }
+
+    async loadTrainRoute(train) {
+        if (!train.TrainNumber) return;
+
+        try {
+            const response = await fetch(`${API_CONFIG.getBaseURL()}/api/train/${train.TrainNumber}`);
+            const data = await response.json();
+            
+            if (data.success && data.data && data.data.schedule) {
+                this.displayTrainRoute(data.data.schedule);
+            }
+        } catch (error) {
+            console.error('❌ Error loading train route:', error);
+        }
+    }
+
+    displayTrainRoute(stations) {
+        if (!this.map || !stations || stations.length === 0) return;
+
+        // Clear existing route lines
+        this.clearRouteLines();
+
+        const coordinates = [];
+        const stationMarkers = [];
+
+        stations.forEach((station, index) => {
+            if (station.Latitude && station.Longitude) {
+                coordinates.push([station.Latitude, station.Longitude]);
+                
+                // Add station marker
+                const stationMarker = L.circleMarker([station.Latitude, station.Longitude], {
+                    radius: 6,
+                    fillColor: '#667eea',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(this.map);
+                
+                stationMarker.bindPopup(`
+                    <strong>${station.StationName}</strong><br>
+                    Arrival: ${station.ArrivalTime || '--:--'}<br>
+                    Departure: ${station.DepartureTime || '--:--'}
+                `);
+                
+                stationMarkers.push(stationMarker);
+            }
+        });
+
+        // Draw route line
+        if (coordinates.length > 1) {
+            const routeLine = L.polyline(coordinates, {
+                color: '#8B4513',
+                weight: 6,
+                opacity: 0.8
+            }).addTo(this.map);
+
+            // Add track rails
+            const trackRails = L.polyline(coordinates, {
+                color: '#C0C0C0',
+                weight: 2,
+                opacity: 1,
+                dashArray: '5,2'
+            }).addTo(this.map);
+
+            this.routeLines.push(routeLine, trackRails);
+        }
+    }
+
+    clearMapMarkers() {
+        this.trainMarkers.forEach(marker => {
+            if (this.map) this.map.removeLayer(marker);
+        });
+        this.trainMarkers = [];
+    }
+
+    clearRouteLines() {
+        this.routeLines.forEach(line => {
+            if (this.map) this.map.removeLayer(line);
+        });
+        this.routeLines = [];
+    }
+
+    showTrainSelectionPanel() {
+        const panel = document.getElementById('trainSelectionPanel');
+        if (panel) {
+            panel.classList.add('show');
+        }
+    }
+
+    hideTrainSelectionPanel() {
+        const panel = document.getElementById('trainSelectionPanel');
+        if (panel) {
+            panel.classList.remove('show');
+        }
+    }
+
+    showTrainInfoPanel() {
+        const panel = document.getElementById('trainInfoPanel');
+        if (panel && this.selectedTrain) {
+            this.updateTrainInfoPanel();
+            panel.classList.add('show');
+        }
+    }
+
+    hideTrainInfoPanel() {
+        const panel = document.getElementById('trainInfoPanel');
+        if (panel) {
+            panel.classList.remove('show');
+        }
+    }
+
+    updateTrainInfoPanel() {
+        if (!this.selectedTrain) return;
+
+        const train = this.selectedTrain;
+        const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
+        const trainName = train.TrainName || `Train ${trainNumber}`;
+        const speed = train.Speed || 0;
+        const status = speed > 0 ? 'Moving' : 'Stopped';
+        const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
+        const nextStation = train.NextStation || 'Unknown';
+        const eta = train.NextStationETA || '--:--';
+        // Improved direction detection logic
+        const trainNameUp = String(trainName).toUpperCase();
+        const trainNumberUp = String(trainNumber).toUpperCase();
+        let direction = train.Direction || 'Unknown';
+        
+        if (direction === 'Unknown') {
+            // Check both train name and train number for UP/DOWN indicators
+            if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
+                direction = 'UP';
+            } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
+                       trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
+                direction = 'DOWN';
+            } else {
+                // Fallback to train number parity only if no text indicators
+                const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
+                if (!isNaN(numericPart)) {
+                    direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
+                }
+            }
+        }
+
+        // Update panel title
+        const titleElement = document.getElementById('selectedTrainName');
+        if (titleElement) {
+            titleElement.textContent = `${trainName} (#${trainNumber})`;
+        }
+
+        // Update stats
+        const speedElement = document.getElementById('trainSpeed');
+        if (speedElement) speedElement.textContent = `${speed} km/h`;
+
+        const statusElement = document.getElementById('trainStatus');
+        if (statusElement) statusElement.textContent = `${status} (${direction})`;
+
+        const nextStationElement = document.getElementById('nextStation');
+        if (nextStationElement) nextStationElement.textContent = `${currentLocation} → ${nextStation}`;
+
+        const etaElement = document.getElementById('trainETA');
+        if (etaElement) etaElement.textContent = eta;
+    }
+
+    startMapAutoRefresh() {
+        if (this.mapRefreshInterval) {
+            clearInterval(this.mapRefreshInterval);
+        }
+
+        this.mapRefreshInterval = setInterval(() => {
+            this.refreshMapData();
+        }, 10000); // Refresh every 10 seconds
+    }
+
+    stopMapAutoRefresh() {
+        if (this.mapRefreshInterval) {
+            clearInterval(this.mapRefreshInterval);
+            this.mapRefreshInterval = null;
+        }
+    }
+
+    async refreshMapData() {
+        if (this.currentScreen !== 'mapScreen') return;
+
+        try {
+            const response = await fetch(getAPIUrl('live'));
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                this.trainData.active = data.data;
+                
+                if (this.selectedTrain) {
+                    // Update selected train data - use multiple identifiers for better matching
+                    const updatedTrain = data.data.find(t => 
+                        t.InnerKey === this.selectedTrain.InnerKey || 
+                        t.TrainId === this.selectedTrain.TrainId ||
+                        t.TrainNumber === this.selectedTrain.TrainNumber
+                    );
+                    
+                    if (updatedTrain) {
+                        console.log('🔄 Updating selected train:', updatedTrain.TrainName);
+                        this.selectedTrain = updatedTrain;
+                        this.updateMapWithSelectedTrain(updatedTrain);
+                        this.updateTrainInfoPanel();
+                    } else {
+                        console.log('⚠️ Selected train not found in refresh data, keeping current selection');
+                        // Keep current selection but update the map with current data
+                        this.updateMapWithSelectedTrain(this.selectedTrain);
+                    }
+                } else {
+                    // Update all trains on map
+                    this.updateMapWithTrains(data.data);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error refreshing map data:', error);
+        }
+    }
+
+    closeTrainSelection() {
+        this.hideTrainSelectionPanel();
+    }
+
+    closeTrainInfo() {
+        this.hideTrainInfoPanel();
+        this.selectedTrain = null;
+        this.stopMapAutoRefresh();
+        this.updateMapWithTrains(this.trainData.active);
+    }
+
+    showTrainDetails() {
+        if (this.selectedTrain) {
+            const trainId = this.selectedTrain.InnerKey || this.selectedTrain.TrainId;
+            this.openTrainDetails(trainId);
+        }
+    }
 }
 // Navigation functions
 function navigateTo(screen) {
