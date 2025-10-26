@@ -572,10 +572,44 @@ body.mobile-app.dark-mode .station-route-section {
     padding: 20px;
     margin-bottom: 20px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* First row: train-title + status-indicator */
+.train-status-card > .train-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.train-title .train-number {
+    flex-shrink: 0;
+    order: 1;
+}
+
+.train-title h3 {
+    order: 2;
+    margin: 0;
+    font-size: 1.1em;
+    color: #2c3e50;
+    font-weight: 700;
+    line-height: 1.2;
+    flex: 1;
+    text-align: left;
+}
+
+/* Move status-indicator to be on same line */
+.train-status-card > .status-indicator {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+.train-status-card {
+    position: relative;
 }
 
 .train-main-title h3 {
@@ -592,15 +626,18 @@ body.mobile-app.dark-mode .station-route-section {
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: bold;
+    margin-left: 12px;
+    flex-shrink: 0;
 }
 
 .status-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
+    margin-left: 12px;
 }
 
 .status-dot {
@@ -5525,4 +5562,364 @@ body.mobile-app.dark-mode .section-header {
 body.mobile-app.dark-mode .info-text,
 body.mobile-app.dark-mode .train-name {
     text-shadow: none
+}
+
+/* ========== NOTIFICATION STYLES ========== */
+
+.notification-settings {
+    background: transparent;
+    border-radius: 0;
+    margin: 16px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+
+.notification-header:active {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.notification-header-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 28px;
+}
+
+.notification-count {
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+    margin-left: 28px;
+}
+
+.notification-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.notification-settings.accordion .notification-toggle {
+    transform: rotate(0deg);
+}
+
+.notification-settings.accordion.open .notification-toggle {
+    transform: rotate(180deg);
+}
+
+.notification-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0;
+}
+
+.notification-settings.accordion.open .notification-body {
+    max-height: 2000px;
+    padding: 12px 0 0 0;
+}
+
+.notification-description {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+.notification-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #1e293b;
+    background: white;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.time-options {
+    display: flex;
+    gap: 10px;
+}
+
+.time-option {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-option:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.time-option.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-add-notification {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-add-notification:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add-notification:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.active-notifications {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid #e2e8f0;
+}
+
+.active-notifications h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(102, 126, 234, 0.05);
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.notification-info {
+    flex: 1;
+}
+
+.notification-station {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.notification-time {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.btn-remove-notification {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-notification:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.1);
+}
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100000;
+    transition: all 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.toast-notification.show {
+    bottom: 100px;
+}
+
+/* Dark Mode for Notifications */
+body.mobile-app.dark-mode .notification-settings {
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .notification-header:active {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+body.mobile-app.dark-mode .notification-title {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-subtitle {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-count {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .notification-toggle {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-description {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .form-group label {
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .form-select {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .time-option {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .time-option.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+body.mobile-app.dark-mode .active-notifications {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .active-notifications h4 {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-item {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+body.mobile-app.dark-mode .notification-station {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-time {
+    color: #94a3b8;
 }
