@@ -3097,14 +3097,15 @@ body.mobile-app.dark-mode .logo-icon {
 }
 
 .stats-overview .stat-icon {
-    font-size: 2.2em;
-    margin-bottom: 4px;
+    font-size: 2em;
+    margin-bottom: 8px;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .stat-svg {
@@ -3119,6 +3120,19 @@ body.mobile-app.dark-mode .logo-icon {
 .stat-card:hover .stat-svg {
     transform: scale(1.1);
     filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
+}
+
+.stat-locomotive-icon {
+    width: 36px;
+    height: 36px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: trainBounce 2s ease-in-out infinite;
+}
+
+.stat-card:hover .stat-locomotive-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.4));
 }
 
 /* Stat Icon Specific Animations */
@@ -3150,11 +3164,12 @@ body.mobile-app.dark-mode .logo-icon {
 }
 
 .stats-overview .stat-number {
-    font-size: 2.4em;
+    font-size: 2.2em;
     font-weight: 800;
     color: #2c3e50;
-    line-height: 1;
+    line-height: 1.2;
     margin-bottom: 4px;
+    margin-top: 4px;
 }
 
 .stats-overview .stat-label {
@@ -4775,7 +4790,7 @@ input:checked + .toggle-slider:before {
     }
     
     .train-carousel {
-        padding-left: 15px;
+
         gap: 12px;
     }
     

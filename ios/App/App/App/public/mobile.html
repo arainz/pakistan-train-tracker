@@ -29,8 +29,8 @@
                         </svg>
                         <span class="notification-badge"></span>
                     </button>
-                    <button class="header-icon-btn dark-mode-btn" id="darkModeToggle" onclick="mobileApp.toggleDarkMode()">
-                        <svg class="icon-svg moon-icon" id="darkModeIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                        <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
@@ -118,7 +118,7 @@
             </div>
             <!-- Quick Train Access -->
             <div class="quick-train-access">
-                <div class="section-header" style="padding: 0 20px;">
+                <div class="section-header">
                     <h3>Live Trains</h3>
                     <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
                 </div>
@@ -743,7 +743,7 @@
                         <div class="station-header">
                             <h3>ℹ️ About</h3>
                         </div>
-                        <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 16px 0;">
+                        <p class="detail-label">
                             Pakistan Train Tracker provides real-time train tracking and schedule information for Pakistan Railways. 
                             Track trains live, view schedules, and get station information.
                         </p>

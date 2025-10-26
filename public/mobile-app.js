@@ -2071,6 +2071,9 @@ class MobileApp {
             
             // Create or update locomotive popover
             this.updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex);
+            
+            // Keep locomotive in viewport
+            this.scrollLocomotiveIntoView(locomotiveIcon);
         }
 
         // Update journey map stations
@@ -2087,6 +2090,33 @@ class MobileApp {
         const hours = now.getHours();
         const minutes = now.getMinutes();
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    scrollLocomotiveIntoView(locomotiveIcon) {
+        if (!locomotiveIcon) return;
+        
+        const routeStations = document.querySelector('.route-stations');
+        if (!routeStations) return;
+        
+        // Get locomotive position relative to container
+        const locomotiveRect = locomotiveIcon.getBoundingClientRect();
+        const containerRect = routeStations.getBoundingClientRect();
+        
+        // Calculate locomotive position relative to scrollable container
+        const locomotiveLeft = locomotiveIcon.offsetLeft;
+        const containerWidth = routeStations.clientWidth;
+        const scrollLeft = routeStations.scrollLeft;
+        
+        // Calculate the center position we want the locomotive to be at
+        const targetScrollLeft = locomotiveLeft - (containerWidth / 2);
+        
+        // Smooth scroll to keep locomotive centered
+        routeStations.scrollTo({
+            left: targetScrollLeft,
+            behavior: 'smooth'
+        });
+        
+        console.log(`🎯 Scrolling locomotive into view: Left=${locomotiveLeft}px, Target=${targetScrollLeft}px`);
     }
 
     updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex) {

@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>Pakistan Train Tracker - Mobile</title>
     <link rel="stylesheet" href="mobile-styles.css?v=1729607000">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body class="mobile-app">
     <div class="mobile-app">
@@ -29,8 +30,8 @@
                         </svg>
                         <span class="notification-badge"></span>
                     </button>
-                    <button class="header-icon-btn dark-mode-btn" id="darkModeToggle" onclick="mobileApp.toggleDarkMode()">
-                        <svg class="icon-svg moon-icon" id="darkModeIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <button class="header-icon-btn dark-mode-btn" onclick="mobileApp.toggleDarkMode()">
+                        <svg class="icon-svg moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
@@ -49,13 +50,7 @@
             <div class="stats-overview">
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <svg class="stat-svg train-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M4 10h16M8 18v2M16 18v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            <circle cx="8" cy="15" r="1" fill="currentColor"/>
-                            <circle cx="16" cy="15" r="1" fill="currentColor"/>
-                            <path d="M12 6V4M10 4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
+                        <img src="/locomotive_1f682.png" alt="Train" class="stat-locomotive-icon" />
                     </div>
                     <div class="stat-number" id="activeTrainsCount">0</div>
                     <div class="stat-label">Active</div>
@@ -118,7 +113,7 @@
             </div>
             <!-- Quick Train Access -->
             <div class="quick-train-access">
-                <div class="section-header" style="padding: 0 20px;">
+                <div class="section-header">
                     <h3>Live Trains</h3>
                     <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
                 </div>
@@ -323,6 +318,7 @@
                         </button>
                         <div class="header-title-section">
                             <h2>Train Details</h2>
+                            <div class="header-clock" id="trainDetailClock">--:--:-- --</div>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn refresh-btn" onclick="mobileApp.refreshTrainDetails()">
@@ -344,6 +340,9 @@
                             </button>
                         </div>
                     </div>
+                </div>
+                <div class="last-updated-header">
+                    <span id="trainDetailLastUpdated">Last updated: Just now</span>
                 </div>
 
                 <div class="train-detail-content">
@@ -428,8 +427,56 @@
                 </div>
 
                 <div class="map-container">
-                    <div class="map-placeholder">
-                        <p>📍 Live train map coming soon</p>
+                    <div id="liveMap" style="height: 100%; width: 100%; border-radius: 12px;"></div>
+                </div>
+                
+                <!-- Train Selection Panel -->
+                <div class="train-selection-panel" id="trainSelectionPanel">
+                    <div class="panel-header">
+                        <h3>Select Train to Track</h3>
+                        <button class="close-panel-btn" onclick="mobileApp.closeTrainSelection()">×</button>
+                    </div>
+                    <div class="train-list" id="trainList">
+                        <div class="loading">Loading active trains...</div>
+                    </div>
+                </div>
+                
+                <!-- Train Info Panel -->
+                <div class="train-info-panel" id="trainInfoPanel" style="display: none;">
+                    <div class="panel-header">
+                        <h3 id="selectedTrainName">Train Information</h3>
+                        <button class="close-panel-btn" onclick="mobileApp.closeTrainInfo()">×</button>
+                    </div>
+                    <div class="train-stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Speed</div>
+                            <div class="stat-value" id="trainSpeed">-- km/h</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-value" id="trainStatus">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Next Station</div>
+                            <div class="stat-value" id="nextStation">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">ETA</div>
+                            <div class="stat-value" id="trainETA">--</div>
+                        </div>
+                    </div>
+                    <div class="route-progress">
+                        <div class="progress-header">
+                            <span id="originStation">Origin</span>
+                            <span id="progressPercent">0%</span>
+                            <span id="destinationStation">Destination</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar" style="width: 0%">
+                                <span id="progressText">0% Complete</span>
+                            </div>
+                            <div class="train-icon" id="trainIcon" style="left: 0%">🚂</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -743,7 +790,7 @@
                         <div class="station-header">
                             <h3>ℹ️ About</h3>
                         </div>
-                        <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 16px 0;">
+                        <p class="detail-label">
                             Pakistan Train Tracker provides real-time train tracking and schedule information for Pakistan Railways. 
                             Track trains live, view schedules, and get station information.
                         </p>
@@ -859,6 +906,7 @@
 
     <!-- Capacitor Scripts -->
     <script type="module" src="capacitor.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="config.js"></script>
     <script src="mobile-app.js"></script>
 </body>
