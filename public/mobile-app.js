@@ -394,6 +394,9 @@ class MobileApp {
                 // Further filter out trains that reached destination and stopped for 30+ minutes
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
                 
+                // Filter out trains with unrealistic delays (24+ hours)
+                filteredTrains = this.filterUnrealisticDelays(filteredTrains);
+                
                 this.trainData.active = filteredTrains;
                 console.log('✅ Live trains loaded and filtered:', filteredTrains.length, 'trains (from', data.data.length, 'total)');
                 this.populateLiveTrains();
@@ -412,17 +415,19 @@ class MobileApp {
         }
     }
 
-    // Filter duplicate train instances - keep only first 2 UP and 2 DOWN per train number AS THEY APPEAR IN API
+    // Filter duplicate train instances - keep only trains from last 2 dates per train number/direction
     filterDuplicateTrains(trains) {
-        console.log('🔍 Filtering duplicate train instances...');
+        console.log('🔍 Filtering duplicate train instances by date...');
         console.log('📊 Total trains from API:', trains.length);
         
+        // First, filter out trains not matching last 3 dates
+        const trainsWithValidDates = this.filterByRecentDates(trains, 3);
+        
         // Group trains by train number AND direction (UP/DN)
-        // IMPORTANT: Keep the order as received from API
         const trainsByNumberAndDirection = {};
         const seenKeys = []; // Track order of first appearance
         
-        trains.forEach(train => {
+        trainsWithValidDates.forEach(train => {
             const trainNumber = String(train.TrainNumber);
             const trainName = train.TrainName || '';
             
@@ -443,49 +448,114 @@ class MobileApp {
             trainsByNumberAndDirection[key].push(train);
         });
         
-        // For each train number + direction, keep only the FIRST 2 instances (as they appear in API response)
+        // For each train number + direction, keep only the latest 2 DATES
         const filteredTrains = [];
         
         seenKeys.forEach(key => {
             const instances = trainsByNumberAndDirection[key];
             const [trainNumber, direction] = key.split('_');
             
-            if (instances.length > 2) {
-                console.log(`⚠️ Train #${trainNumber} ${direction} (${instances[0]?.TrainName}) has ${instances.length} instances, keeping first 2 from API`);
+            // Group by date
+            const instancesByDate = {};
+            instances.forEach(train => {
+                const dateInfo = this.extractDateFromInnerKey(train.InnerKey, train.TrainNumber);
+                if (dateInfo) {
+                    const dateKey = dateInfo.sortKey;
+                    if (!instancesByDate[dateKey]) {
+                        instancesByDate[dateKey] = [];
+                    }
+                    instancesByDate[dateKey].push(train);
+                }
+            });
+            
+            // Sort dates descending (most recent first) and keep top 2 dates
+            const sortedDates = Object.keys(instancesByDate).sort((a, b) => b.localeCompare(a));
+            const latestTwoDates = sortedDates.slice(0, 2);
+            
+            console.log(`🚂 Train #${trainNumber} ${direction} (${instances[0]?.TrainName}): Found ${sortedDates.length} dates, keeping latest 2`);
+            
+            // Keep all instances from the latest 2 dates (but max 2 per date)
+            latestTwoDates.forEach(dateKey => {
+                const dateInstances = instancesByDate[dateKey];
+                const kept = dateInstances.slice(0, 2); // Keep first 2 from this date
                 
-                // Log all instances for debugging
-                instances.forEach((inst, idx) => {
-                    const lastUpdated = new Date(inst.LastUpdated || inst.__last_updated || inst.last_updated || 0);
-                    const timeAgo = this.getTimeElapsed(new Date(), lastUpdated);
-                    console.log(`  Instance ${idx + 1}: InnerKey=${inst.InnerKey}, NextStation=${inst.NextStation}, Speed=${inst.Speed}km/h, Updated=${timeAgo}`);
-                });
+                const dateInfo = this.extractDateFromInnerKey(kept[0].InnerKey, kept[0].TrainNumber);
+                console.log(`  📅 Date ${dateInfo.dateString}: ${kept.length} instance(s) kept`);
+                
+                filteredTrains.push(...kept);
+            });
+        });
+        
+        // Sort by train number, then by date (most recent first)
+        filteredTrains.sort((a, b) => {
+            // First sort by train number
+            const trainNumA = parseInt(a.TrainNumber) || 0;
+            const trainNumB = parseInt(b.TrainNumber) || 0;
+            
+            if (trainNumA !== trainNumB) {
+                return trainNumA - trainNumB;
             }
             
-            // Take FIRST 2 instances as they appear in API response (NO SORTING)
-            const topInstances = instances.slice(0, 2);
+            // If same train number, sort by date (most recent first)
+            const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
+            const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
             
-            if (instances.length > 2) {
-                console.log(`✅ Kept first 2 for Train #${trainNumber} ${direction}:`);
-                topInstances.forEach((inst, idx) => {
-                    const lastUpdated = new Date(inst.LastUpdated || inst.__last_updated || inst.last_updated || 0);
-                    const timeAgo = this.getTimeElapsed(new Date(), lastUpdated);
-                    console.log(`  ✓ Kept ${idx + 1}: InnerKey=${inst.InnerKey}, NextStation=${inst.NextStation}, Speed=${inst.Speed}km/h, Updated=${timeAgo}`);
-                });
-                
-                const filteredOut = instances.slice(2);
-                console.log(`  ✗ Filtered out ${filteredOut.length} instances:`);
-                filteredOut.forEach((inst, idx) => {
-                    const lastUpdated = new Date(inst.LastUpdated || inst.__last_updated || inst.last_updated || 0);
-                    const timeAgo = this.getTimeElapsed(new Date(), lastUpdated);
-                    console.log(`    ✗ Removed ${idx + 1}: InnerKey=${inst.InnerKey}, NextStation=${inst.NextStation}, Speed=${inst.Speed}km/h, Updated=${timeAgo}`);
-                });
+            if (dateA && dateB) {
+                return dateB.sortKey.localeCompare(dateA.sortKey); // Most recent first
             }
             
-            filteredTrains.push(...topInstances);
+            return 0;
         });
         
         console.log(`📊 Filtered result: ${filteredTrains.length} trains from ${trains.length} total (removed ${trains.length - filteredTrains.length} duplicates)`);
-        console.log(`📋 Kept InnerKeys:`, filteredTrains.map(t => t.InnerKey).join(', '));
+        console.log(`📋 Kept InnerKeys (sorted by train# then date):`, filteredTrains.map(t => `${t.TrainNumber}:${t.InnerKey}`).join(', '));
+        return filteredTrains;
+    }
+
+    // Filter trains to keep only those from the last N dates
+    filterByRecentDates(trains, maxDays = 3) {
+        console.log(`🗓️ Filtering trains to keep only last ${maxDays} dates...`);
+        
+        // Extract all unique dates from InnerKeys
+        const datesSet = new Set();
+        const trainsByDate = {};
+        
+        trains.forEach(train => {
+            const dateInfo = this.extractDateFromInnerKey(train.InnerKey, train.TrainNumber);
+            if (dateInfo) {
+                const dateKey = dateInfo.sortKey;
+                datesSet.add(dateKey);
+                
+                if (!trainsByDate[dateKey]) {
+                    trainsByDate[dateKey] = [];
+                }
+                trainsByDate[dateKey].push(train);
+            }
+        });
+        
+        // Sort dates descending and get the last N dates
+        const sortedDates = Array.from(datesSet).sort((a, b) => b.localeCompare(a));
+        const recentDates = sortedDates.slice(0, maxDays);
+        
+        console.log(`📅 Found ${sortedDates.length} unique dates in data`);
+        console.log(`✅ Keeping trains from dates: ${recentDates.map(d => {
+            const y = d.slice(0, 4);
+            const m = d.slice(4, 6);
+            const day = d.slice(6, 8);
+            return `${day}/${m}/${y}`;
+        }).join(', ')}`);
+        
+        // Keep only trains from recent dates
+        const filteredTrains = [];
+        recentDates.forEach(dateKey => {
+            filteredTrains.push(...trainsByDate[dateKey]);
+        });
+        
+        const removedCount = trains.length - filteredTrains.length;
+        if (removedCount > 0) {
+            console.log(`🗑️ Filtered out ${removedCount} trains from older dates`);
+        }
+        
         return filteredTrains;
     }
 
@@ -583,6 +653,44 @@ class MobileApp {
         
         return hasReached;
     }
+
+    // Filter out trains with unrealistic delays (24+ hours = 1440+ minutes)
+    filterUnrealisticDelays(trains) {
+        console.log('🔍 Filtering trains with unrealistic delays (24+ hours)...');
+        
+        const activeTrains = [];
+        const filteredOutTrains = [];
+        const MAX_REALISTIC_DELAY = 1440; // 24 hours in minutes
+        
+        trains.forEach(train => {
+            // Calculate delay from ETA if possible, otherwise use LateBy
+            const calculatedDelay = this.calculateDelayFromETA(train);
+            const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
+            
+            const delayMinutes = Math.abs(delay); // Use absolute value
+            
+            if (delayMinutes >= MAX_REALISTIC_DELAY) {
+                const delayHours = Math.floor(delayMinutes / 60);
+                filteredOutTrains.push({
+                    train,
+                    delay: delayMinutes,
+                    reason: `Unrealistic delay: ${delayHours}h (${delayMinutes}min)`
+                });
+            } else {
+                activeTrains.push(train);
+            }
+        });
+        
+        if (filteredOutTrains.length > 0) {
+            console.log(`⚠️ Filtered out ${filteredOutTrains.length} trains with unrealistic delays:`);
+            filteredOutTrains.forEach(({ train, delay, reason }) => {
+                console.log(`  ✗ ${train.TrainName} (${train.InnerKey}): ${reason}`);
+            });
+        }
+        
+        console.log(`✅ Trains with realistic delays remaining: ${activeTrains.length}`);
+        return activeTrains;
+    }
     
     // Load sample data for testing
     loadSampleData() {
@@ -676,7 +784,7 @@ class MobileApp {
 
             // Get last updated time and train date
             const lastUpdated = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated);
-            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated);
+            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated, train.InnerKey, train.TrainNumber);
 
             html += `
                 <div class="train-card" onclick="mobileApp.openTrainDetails('${trainId}')">
@@ -877,7 +985,7 @@ class MobileApp {
 
             // Get last updated time and train date
             const lastUpdated = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated);
-            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated);
+            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated, train.InnerKey, train.TrainNumber);
 
             html += `
                 <div class="train-card" onclick="mobileApp.openTrainDetails('${trainId}')">
@@ -2286,7 +2394,7 @@ class MobileApp {
             
             // Position locomotive at: popover width + 60px from left edge of SCREEN (not container)
             // This ensures the popover is fully visible on the left side
-            const offset = popoverWidth + 60;
+            const offset = popoverWidth - 100;
             const locomotiveLeft = locomotiveIcon.offsetLeft;
             
             // Target scroll position to keep locomotive + popover visible
@@ -2776,7 +2884,85 @@ class MobileApp {
         }
     }
 
-    getTrainDate(lastUpdated) {
+    // Extract train date from InnerKey using train number to locate date position
+    // Format: InnerKey like "125109900" = Train#1 + Date(25/10) + TrainId suffix(9900)
+    // TrainId = Train# + 9900 (e.g., 1 + 9900 = 19900)
+    // Returns: { day: 25, month: 10, year: 2025, dateString: "25/10/2025" }
+    extractDateFromInnerKey(innerKey, trainNumber) {
+        try {
+            if (!innerKey) return null;
+            
+            const innerKeyStr = String(innerKey);
+            const trainNumStr = String(trainNumber);
+            
+            // InnerKey format: [TrainNumber][DDMM][9900]
+            // Example: 125109900 = Train 1 + Date 25/10 + 9900 (TrainId: 19900)
+            // Example: 226109900 = Train 2 + Date 26/10 + 9900 (TrainId: 29900)
+            // Example: 10527109900 = Train 105 + Date 27/10 + 9900 (TrainId: 1059900)
+            
+            // Verify InnerKey starts with the train number
+            if (!innerKeyStr.startsWith(trainNumStr)) {
+                console.warn(`⚠️ InnerKey ${innerKey} doesn't start with train number ${trainNumber}`);
+                return null;
+            }
+            
+            // The last 4 digits are always "9900" (TrainId suffix)
+            // After train number, next 4 digits are DDMM
+            const trainNumLength = trainNumStr.length;
+            
+            // Check if we have enough characters for date
+            if (innerKeyStr.length < trainNumLength + 8) { // Train# + DDMM(4) + 9900(4)
+                console.warn(`⚠️ InnerKey ${innerKey} too short for train ${trainNumber}`);
+                return null;
+            }
+            
+            // Extract DDMM: 4 characters starting after train number
+            const ddmm = innerKeyStr.substr(trainNumLength, 4);
+            const day = parseInt(ddmm.slice(0, 2));
+            const month = parseInt(ddmm.slice(2, 4));
+            
+            console.log(`📅 InnerKey ${innerKey}: Train#${trainNumber} + DDMM="${ddmm}" → ${day}/${month}`);
+            
+            // Validate day and month
+            if (day < 1 || day > 31 || month < 1 || month > 12) {
+                console.warn(`⚠️ Invalid date extracted: day=${day}, month=${month}`);
+                return null;
+            }
+            
+            // Verify the remaining part is "9900"
+            const suffix = innerKeyStr.substr(trainNumLength + 4, 4);
+            if (suffix !== '9900') {
+                console.warn(`⚠️ Expected suffix "9900" but got "${suffix}" in InnerKey ${innerKey}`);
+                return null;
+            }
+            
+            // Use current year as base (trains don't run for more than a year with same number)
+            const currentYear = new Date().getFullYear();
+            const dateString = `${day}/${month}/${currentYear}`;
+            
+            return {
+                day,
+                month,
+                year: currentYear,
+                dateString,
+                sortKey: `${currentYear}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`
+            };
+        } catch (e) {
+            console.error('Error extracting date from InnerKey:', innerKey, e);
+            return null;
+        }
+    }
+
+    getTrainDate(lastUpdated, innerKey = null, trainNumber = null) {
+        // Try to extract from InnerKey first
+        if (innerKey && trainNumber) {
+            const extractedDate = this.extractDateFromInnerKey(innerKey, trainNumber);
+            if (extractedDate) {
+                return extractedDate.dateString;
+            }
+        }
+        
+        // Fallback to LastUpdated
         if (!lastUpdated) return new Date().toLocaleDateString();
         
         try {
@@ -2892,7 +3078,7 @@ class MobileApp {
             
             // Get last updated time and train date
             const lastUpdated = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated);
-            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated);
+            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated, train.InnerKey, train.TrainNumber);
 
             html += `
                 <div class="train-card ${isOutOfCoverage ? 'out-of-coverage' : ''}" onclick="mobileApp.openTrainDetails('${trainId}')">
@@ -3012,8 +3198,8 @@ class MobileApp {
             const arrivalTime = lastStation && lastStation.ArrivalTime ? this.formatTimeAMPM(lastStation.ArrivalTime) : '--:--';
             const route = firstStation && lastStation ? `${firstStation.StationName} → ${lastStation.StationName}` : 'Route not available';
             
-            // Check if this train has live data
-            const liveTrainData = this.findLiveTrainData(train.trainNumber);
+            // Check if this train has live data matching direction
+            const liveTrainData = this.findLiveTrainDataForSchedule(train.trainNumber, train.trainName, firstStation?.StationName, lastStation?.StationName);
             const isLive = !!liveTrainData;
 
             html += `
@@ -3263,51 +3449,54 @@ class MobileApp {
 
         let html = '';
 
-        // Get all available live trains (no date filtering - show most recent)
+        // Get all available live trains
         const allAvailableTrains = this.trainData.active || [];
         console.log('🔍 Available trains for favorites:', allAvailableTrains.length);
-
-        // Sort by most recent train date (using LastUpdated which determines train date)
-        const recentLiveTrains = [...allAvailableTrains].sort((a, b) => {
-            // Use LastUpdated for train date comparison (same as shown on train cards)
-            const timeA = new Date(a.LastUpdated || a.__last_updated || a.last_updated || a.UpdateTime || a.updateTime || Date.now());
-            const timeB = new Date(b.LastUpdated || b.__last_updated || b.last_updated || b.UpdateTime || b.updateTime || Date.now());
-
-            // Handle invalid dates by putting them at the end
-            const timeAValid = !isNaN(timeA.getTime()) && timeA.getFullYear() !== 1970;
-            const timeBValid = !isNaN(timeB.getTime()) && timeB.getFullYear() !== 1970;
-
-            if (timeAValid && !timeBValid) return -1;
-            if (!timeAValid && timeBValid) return 1;
-            if (!timeAValid && !timeBValid) return 0;
-
-            return timeB - timeA; // Most recent first
-        });
-
-        console.log('📅 All trains available for favorites:', recentLiveTrains.length);
 
         // Get live train data to show current info for favorite trains
         this.favoriteTrains.forEach(trainNumber => {
             console.log(`🔍 Looking for favorite train number: "${trainNumber}" (type: ${typeof trainNumber})`);
 
             // Find all matching trains for this train number
-            const matchingTrains = recentLiveTrains.filter(train => {
+            const matchingTrains = allAvailableTrains.filter(train => {
                 const trainNum = String(train.TrainNumber || train.trainNumber);
                 const favoriteNum = String(trainNumber);
-                const matches = trainNum === favoriteNum;
-                if (!matches && recentLiveTrains.indexOf(train) < 3) {
-                    console.log(`  Comparing: "${trainNum}" vs "${favoriteNum}" = ${matches}`);
-                }
-                return matches;
+                return trainNum === favoriteNum;
             });
 
-            console.log(`  Found ${matchingTrains.length} matching trains`);
+            console.log(`  Found ${matchingTrains.length} matching train instances`);
 
-            // Show only last (most recent) live train - limit 1 train per category (train number)
+            // Sort all matching trains by date (most recent first)
+            matchingTrains.sort((a, b) => {
+                const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
+                const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
+                
+                if (dateA && dateB) {
+                    return dateB.sortKey.localeCompare(dateA.sortKey); // Most recent first
+                }
+                return 0;
+            });
+
+            // Show only the most recent train (could be UP or DN)
             const liveTrainData = matchingTrains.length > 0 ? matchingTrains[0] : null;
 
-            console.log(`⭐ Checking favorite train ${trainNumber}:`, liveTrainData ? 'FOUND' : 'NOT FOUND');
-            
+            if (!liveTrainData) {
+                console.log(`  No live data found for train #${trainNumber}`);
+                // Try to show schedule data if no live train
+                const scheduleTrainData = this.scheduleData?.find(train =>
+                    String(train.trainNumber || train.TrainNumber) === String(trainNumber)
+                );
+                
+                if (scheduleTrainData) {
+                    console.log(`  Showing schedule data for train #${trainNumber}`);
+                    // Show schedule data card (existing logic handles this below)
+                } else {
+                    return; // Skip if no data at all
+                }
+            }
+
+            console.log(`  Showing most recent train: ${liveTrainData?.TrainName} (${liveTrainData?.InnerKey})`);
+
             // Try to find schedule data for this train
             const scheduleTrainData = this.scheduleData?.find(train =>
                 String(train.trainNumber || train.TrainNumber) === String(trainNumber)
@@ -3315,7 +3504,7 @@ class MobileApp {
             
             // Show favorite trains with their best available data (live or schedule)
             if (!liveTrainData && !scheduleTrainData) {
-                console.log(`⚪ Skipping favorite train ${trainNumber} - no data available`);
+                console.log(`⚪ Skipping - no data available`);
                 return; // Skip only if we have no data at all
             }
             
@@ -3329,6 +3518,9 @@ class MobileApp {
             const currentStation = liveTrainData?.CurrentStation || 
                                   liveTrainData?.NextStation || 
                                   (isLive ? 'En route' : 'Schedule only');
+            
+            // Get train date from InnerKey
+            const trainDate = liveTrainData ? this.getTrainDate(liveTrainData.LastUpdated, liveTrainData.InnerKey, liveTrainData.TrainNumber) : '';
             
             // Calculate accurate delay from ETA if live data exists
             let delay = 0;
@@ -3345,7 +3537,7 @@ class MobileApp {
                 statusText = `${delay} min late`;
             }
             
-            console.log(`⭐ Showing favorite train: ${trainName} (${isLive ? 'LIVE' : 'SCHEDULED'})`);
+            console.log(`⭐ Showing favorite: ${trainName} (${isLive ? 'LIVE' : 'SCHEDULED'}) - Date: ${trainDate}`);
             
             html += `
                 <div class="favorite-train-card ${isLive ? 'has-live' : ''}" onclick="mobileApp.${isLive ? 'openTrainDetails' : 'openTrainScheduleDetails'}('${liveTrainData?.InnerKey || scheduleTrainData?.trainId || trainNumber}')">
@@ -3361,6 +3553,7 @@ class MobileApp {
                     </div>
                     <div class="favorite-details">
                         ${isLive ? `<div class="current-location">📍 ${currentStation}</div>` : ''}
+                        ${isLive && trainDate ? `<div class="train-date">📅 ${trainDate}</div>` : ''}
                         <div class="status-info">${statusText}</div>
                     </div>
                 </div>
@@ -3456,8 +3649,8 @@ class MobileApp {
             const arrivalTime = lastStation && lastStation.ArrivalTime ? this.formatTimeAMPM(lastStation.ArrivalTime) : '--:--';
             const route = firstStation && lastStation ? `${firstStation.StationName} → ${lastStation.StationName}` : 'Route not available';
             
-            // Find corresponding live train data
-            const liveTrainData = this.findLiveTrainData(train.trainNumber);
+            // Find corresponding live train data matching direction
+            const liveTrainData = this.findLiveTrainDataForSchedule(train.trainNumber, train.trainName, firstStation?.StationName, lastStation?.StationName);
             const isLive = !!liveTrainData;
             const trainId = train.trainId || train.trainNumber;
             const trainName = train.trainName || `Train ${train.trainNumber}`;
@@ -3474,7 +3667,7 @@ class MobileApp {
 
             const currentStation = liveTrainData?.NextStation || firstStation?.StationName || 'Starting Station';
             const lastUpdated = liveTrainData ? this.formatLastUpdated(liveTrainData.LastUpdated) : 'Scheduled';
-            const trainDate = liveTrainData ? this.getTrainDate(liveTrainData.LastUpdated) : new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            const trainDate = liveTrainData ? this.getTrainDate(liveTrainData.LastUpdated, liveTrainData.InnerKey, liveTrainData.TrainNumber) : new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'});
             
             html += `
                 <div class="train-card" onclick="mobileApp.openTrainScheduleDetails('${trainId}')">
@@ -3523,7 +3716,7 @@ class MobileApp {
                     ${isLive ? `
                     <!-- Live Information Section -->
                     <div class="info-section live-section">
-                        <div class="section-header">🔴 Live Information</div>
+                        <div class="section-header">🔴 Live Information (${trainDate})</div>
                         <div class="train-info-grid">
                             <div class="info-row">
                                 <span class="info-icon">📍</span>
@@ -3652,10 +3845,73 @@ class MobileApp {
     findLiveTrainData(trainNumber) {
         if (!this.trainData.active) return null;
         
-        return this.trainData.active.find(train => 
+        // Find all matching trains for this train number
+        const matchingTrains = this.trainData.active.filter(train => 
             String(train.TrainNumber) === String(trainNumber) ||
             String(train.TrainName).toLowerCase().includes(String(trainNumber).toLowerCase())
         );
+
+        if (matchingTrains.length === 0) return null;
+        if (matchingTrains.length === 1) return matchingTrains[0];
+
+        // Sort by date (most recent first) using InnerKey
+        matchingTrains.sort((a, b) => {
+            const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
+            const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
+            
+            if (dateA && dateB) {
+                return dateB.sortKey.localeCompare(dateA.sortKey); // Most recent first
+            }
+            return 0;
+        });
+
+        // Return the most recent train
+        return matchingTrains[0];
+    }
+
+    // Find live train data that matches the schedule train's direction and route
+    findLiveTrainDataForSchedule(trainNumber, scheduledTrainName, originStation, destinationStation) {
+        if (!this.trainData.active) return null;
+        
+        // Find all matching trains for this train number
+        const matchingTrains = this.trainData.active.filter(train => 
+            String(train.TrainNumber) === String(trainNumber)
+        );
+
+        if (matchingTrains.length === 0) return null;
+        if (matchingTrains.length === 1) return matchingTrains[0];
+
+        console.log(`🔍 Found ${matchingTrains.length} live instances for train #${trainNumber}, matching with schedule: ${scheduledTrainName}`);
+
+        // Try to match by train name direction (UP/DN)
+        const scheduleDirection = scheduledTrainName?.toUpperCase().includes('DN') || scheduledTrainName?.toUpperCase().includes('DOWN') ? 'DN' : 'UP';
+        
+        const directionMatches = matchingTrains.filter(train => {
+            const liveTrainName = train.TrainName || '';
+            const liveDirection = liveTrainName.toUpperCase().includes('DN') || liveTrainName.toUpperCase().includes('DOWN') ? 'DN' : 'UP';
+            return liveDirection === scheduleDirection;
+        });
+
+        console.log(`  Schedule direction: ${scheduleDirection}, Found ${directionMatches.length} matching direction`);
+
+        // Use direction matches if we have any, otherwise use all matches
+        const trainsToSort = directionMatches.length > 0 ? directionMatches : matchingTrains;
+
+        // Sort by date (most recent first) using InnerKey
+        trainsToSort.sort((a, b) => {
+            const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
+            const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
+            
+            if (dateA && dateB) {
+                return dateB.sortKey.localeCompare(dateA.sortKey); // Most recent first
+            }
+            return 0;
+        });
+
+        const selectedTrain = trainsToSort[0];
+        console.log(`  ✅ Selected: ${selectedTrain?.TrainName} (${selectedTrain?.InnerKey})`);
+
+        return selectedTrain;
     }
 
     generateLiveInfo(liveTrainData) {
