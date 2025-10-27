@@ -5033,7 +5033,7 @@ class MobileApp {
                     this.loadSchedule();
                     break;
                 case 'stationScreen':
-                    this.loadMajorStations();
+                    this.loadStations();
                     break;
                 case 'trainSearchScreen':
                     // Search screen loads on demand
@@ -5180,44 +5180,387 @@ class MobileApp {
         routesContainer.innerHTML = html;
     }
 
-    loadStations() {
-        const stationsContainer = document.getElementById('stationsContainer');
-        if (stationsContainer) {
-            stationsContainer.innerHTML = '<div class="loading">Loading stations...</div>';
-            this.loadMajorStations();
+    async loadStations() {
+        console.log('🚉 Loading all stations...');
+        
+        // Ensure we have schedule and live train data
+        if (!this.scheduleData || this.scheduleData.length === 0) {
+            await this.loadScheduledTrainsForHome();
         }
+        if (!this.trainData.active || this.trainData.active.length === 0) {
+            await this.loadLiveTrains();
+        }
+        
+        // Extract all unique stations from schedule data
+        const allStations = this.extractAllStationsFromSchedule();
+        
+        // Store for search functionality
+        this.allStationsData = allStations;
+        
+        // Populate stations list
+        this.populateStationsList(allStations);
+        
+        // Initialize search
+        this.initializeStationSearch();
     }
 
-    loadMajorStations() {
-        const majorContainer = document.getElementById('majorStations');
-        if (!majorContainer) return;
+    extractAllStationsFromSchedule() {
+        console.log('📊 Extracting stations from schedule data...');
+        const stationsMap = new Map();
         
-        const majorStations = [
-            { name: 'Karachi Cantt', code: 'KCT', city: 'Karachi', trains: 25 },
-            { name: 'Lahore Junction', code: 'LHR', city: 'Lahore', trains: 30 },
-            { name: 'Rawalpindi', code: 'RWP', city: 'Rawalpindi', trains: 20 },
-            { name: 'Multan Cantt', code: 'MTC', city: 'Multan', trains: 18 },
-            { name: 'Faisalabad', code: 'FSD', city: 'Faisalabad', trains: 22 },
-            { name: 'Peshawar Cantt', code: 'PSH', city: 'Peshawar', trains: 15 }
-        ];
+        if (!this.scheduleData) return [];
+        
+        // Go through each train's schedule and collect all stations
+        this.scheduleData.forEach(train => {
+            if (train.stations && Array.isArray(train.stations)) {
+                train.stations.forEach(station => {
+                    const stationName = station.StationName || station.stationName;
+                    if (stationName && !stationsMap.has(stationName)) {
+                        stationsMap.set(stationName, {
+                            name: stationName,
+                            trainCount: 0,
+                            upcomingTrains: []
+                        });
+                    }
+                });
+            }
+        });
+        
+        const stations = Array.from(stationsMap.values());
+        console.log(`✅ Found ${stations.length} unique stations`);
+        
+        // Sort stations alphabetically
+        stations.sort((a, b) => a.name.localeCompare(b.name));
+        
+        return stations;
+    }
+
+    populateStationsList(stations) {
+        const container = document.getElementById('stationsList');
+        if (!container) return;
+        
+        if (!stations || stations.length === 0) {
+            container.innerHTML = '<div class="empty-state">No stations data available</div>';
+            return;
+        }
+        
+        console.log(`🚉 Populating ${stations.length} stations with train data...`);
+        console.log(`📊 Active trains available: ${this.trainData.active?.length || 0}`);
+        
+        // Debug: Show sample of train NextStation values
+        if (this.trainData.active && this.trainData.active.length > 0) {
+            console.log('🔍 Sample train NextStation values:', 
+                this.trainData.active.slice(0, 5).map(t => ({
+                    train: t.TrainName,
+                    nextStation: t.NextStation,
+                    currentStation: t.CurrentStation
+                }))
+            );
+        }
         
         let html = '';
-        majorStations.forEach(station => {
+        let totalUpTrains = 0;
+        let totalDownTrains = 0;
+        
+        stations.forEach(station => {
+            // Find all upcoming trains for this station (both UP and DOWN)
+            const upcomingTrains = this.findUpcomingTrainsForStation(station.name);
+            
+            totalUpTrains += upcomingTrains.up.length;
+            totalDownTrains += upcomingTrains.down.length;
+            
             html += `
-                <div class="station-card" onclick="mobileApp.openStationDetails('${station.code}')">
-                    <div class="station-info">
-                        <div class="station-name">${station.name}</div>
-                        <div class="station-code">${station.code}</div>
+                <div class="station-card-expandable">
+                    <div class="station-header" onclick="mobileApp.toggleStationTrains('${station.name.replace(/'/g, "\\'")}')">
+                        <div class="station-info">
+                            <div class="station-name">🚉 ${station.name}</div>
+                            <div class="station-meta">
+                                ${upcomingTrains.up.length} UP • ${upcomingTrains.down.length} DN
+                            </div>
+                        </div>
+                        <div class="expand-icon" id="expand-${this.sanitizeId(station.name)}">▼</div>
                     </div>
-                    <div class="station-meta">
-                        <div class="city-name">${station.city}</div>
-                        <div class="trains-count">${station.trains} trains</div>
+                    <div class="station-trains-list" id="trains-${this.sanitizeId(station.name)}" style="display: none;">
+                        ${this.generateStationTrainsHTML(upcomingTrains)}
                     </div>
                 </div>
             `;
         });
         
-        majorContainer.innerHTML = html;
+        container.innerHTML = html;
+        
+        console.log(`✅ Found total: ${totalUpTrains} UP trains, ${totalDownTrains} DN trains across all stations`);
+        
+        // Update results count
+        const resultsCount = document.getElementById('stationsResultsCount');
+        if (resultsCount) {
+            resultsCount.textContent = `${stations.length} stations`;
+        }
+    }
+
+    findUpcomingTrainsForStation(stationName) {
+        const upTrains = [];
+        const downTrains = [];
+        
+        if (!this.trainData.active || !this.scheduleData) {
+            return { up: upTrains, down: downTrains };
+        }
+        
+        // Normalize station name for better matching
+        const normalizedStationName = this.normalizeStationName(stationName);
+        
+        this.trainData.active.forEach(liveTrain => {
+            // Get the schedule for this train
+            const schedule = this.scheduleData.find(s => 
+                String(s.trainNumber) === String(liveTrain.TrainNumber)
+            );
+            
+            if (!schedule || !schedule.stations) return;
+            
+            // Find if this station exists in the train's route
+            const stationIndex = schedule.stations.findIndex(station => {
+                const scheduleStationName = this.normalizeStationName(station.StationName);
+                return scheduleStationName === normalizedStationName || 
+                       scheduleStationName.includes(normalizedStationName) ||
+                       normalizedStationName.includes(scheduleStationName);
+            });
+            
+            if (stationIndex === -1) return; // Station not in this train's route
+            
+            // Get the station details from schedule
+            const stationInRoute = schedule.stations[stationIndex];
+            
+            // Find current position of train in its route
+            const currentStationIndex = schedule.stations.findIndex(station => {
+                const scheduleStationName = this.normalizeStationName(station.StationName);
+                const nextStationName = this.normalizeStationName(liveTrain.NextStation || '');
+                return scheduleStationName === nextStationName || 
+                       scheduleStationName.includes(nextStationName);
+            });
+            
+            // Only show trains that haven't passed this station yet
+            // (current station index should be before or at this station)
+            if (currentStationIndex !== -1 && currentStationIndex > stationIndex) {
+                return; // Train has already passed this station
+            }
+            
+            // Calculate ETA for this specific station
+            let stationETA = stationInRoute.ArrivalTime || stationInRoute.DepartureTime || '--:--';
+            
+            // If this is the next station, use live ETA
+            if (currentStationIndex === stationIndex) {
+                stationETA = liveTrain.NextStationETA || stationETA;
+            }
+            
+            const trainInfo = {
+                trainNumber: liveTrain.TrainNumber,
+                trainName: liveTrain.TrainName,
+                innerKey: liveTrain.InnerKey,
+                nextStation: liveTrain.NextStation,
+                stationName: stationInRoute.StationName, // Actual station name from route
+                eta: stationETA,
+                arrivalTime: stationInRoute.ArrivalTime,
+                departureTime: stationInRoute.DepartureTime,
+                speed: liveTrain.Speed || 0,
+                delay: this.calculateDelayFromETA(liveTrain) || 0,
+                trainDate: this.getTrainDate(liveTrain.LastUpdated, liveTrain.InnerKey, liveTrain.TrainNumber),
+                isNextStation: currentStationIndex === stationIndex
+            };
+            
+            // Determine direction
+            const trainName = liveTrain.TrainName || '';
+            if (trainName.toUpperCase().includes('DN') || trainName.toUpperCase().includes('DOWN')) {
+                downTrains.push(trainInfo);
+            } else {
+                upTrains.push(trainInfo);
+            }
+        });
+        
+        // Sort by ETA (closest first)
+        const sortByETA = (a, b) => {
+            if (!a.eta || a.eta === '--:--') return 1;
+            if (!b.eta || b.eta === '--:--') return -1;
+            
+            const timeA = this.parseTimeToMinutes(a.eta);
+            const timeB = this.parseTimeToMinutes(b.eta);
+            
+            return timeA - timeB;
+        };
+        
+        upTrains.sort(sortByETA);
+        downTrains.sort(sortByETA);
+        
+        return { up: upTrains, down: downTrains };
+    }
+
+    normalizeStationName(name) {
+        if (!name) return '';
+        
+        return name
+            .toLowerCase()
+            .trim()
+            // Remove common suffixes
+            .replace(/\s+(jn|junc|junction|cantt|cant|station|stn)$/i, '')
+            // Remove extra spaces
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    generateStationTrainsHTML(upcomingTrains) {
+        let html = '';
+        
+        if (upcomingTrains.up.length === 0 && upcomingTrains.down.length === 0) {
+            return '<div class="empty-state-small">No upcoming trains at this station</div>';
+        }
+        
+        // UP Trains Section
+        if (upcomingTrains.up.length > 0) {
+            html += '<div class="direction-section"><div class="direction-header">⬆️ UP Trains</div>';
+            upcomingTrains.up.forEach(train => {
+                html += this.generateStationTrainCard(train);
+            });
+            html += '</div>';
+        }
+        
+        // DOWN Trains Section
+        if (upcomingTrains.down.length > 0) {
+            html += '<div class="direction-section"><div class="direction-header">⬇️ DOWN Trains</div>';
+            upcomingTrains.down.forEach(train => {
+                html += this.generateStationTrainCard(train);
+            });
+            html += '</div>';
+        }
+        
+        return html;
+    }
+
+    generateStationTrainCard(train) {
+        const delayClass = train.delay > 15 ? 'delayed' : (train.delay > 0 ? 'slightly-delayed' : 'on-time');
+        const delayText = train.delay > 0 ? `${this.formatDelayDisplay(train.delay)}` : 'On Time';
+        const statusClass = train.speed > 0 ? 'status-moving' : 'status-stopped';
+        const headerClass = train.delay > 0 ? 'header-delayed' : 'header-ontime';
+        
+        return `
+            <div class="train-card station-train-item" onclick="mobileApp.openTrainDetails('${train.innerKey}')">
+                <div class="train-card-header ${headerClass}">
+                    <div class="train-header-content">
+                        <div class="train-name">${train.trainName}</div>
+                    </div>
+                </div>
+                <div class="train-route">
+                    <div class="train-number">#${train.trainNumber}</div>
+                    <div class="train-route-arrow">→</div>
+                    <div class="next-station">${train.stationName}</div>
+                </div>
+                <div class="train-info-grid">
+                    ${train.isNextStation ? `
+                    <div class="info-row">
+                        <span class="info-icon">🔴</span>
+                        <span class="info-text">LIVE - Arriving Next</span>
+                    </div>
+                    ` : ''}
+                    <div class="info-row">
+                        <span class="info-icon">🕐</span>
+                        <span class="info-text">ETA: ${train.eta || '--:--'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-icon">📍</span>
+                        <span class="info-text">Arriving at: ${train.stationName}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-icon">⏱️</span>
+                        <span class="info-text">Delay: ${delayText}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-icon">⚡</span>
+                        <span class="info-text">Speed: ${train.speed} km/h</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-icon">📅</span>
+                        <span class="info-text">Train Date: ${train.trainDate}</span>
+                    </div>
+                </div>
+                <div class="train-status-row">
+                    <div class="status-badge ${statusClass}">
+                        ${train.speed > 0 ? 'Moving' : 'Stopped'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    toggleStationTrains(stationName) {
+        const sanitizedId = this.sanitizeId(stationName);
+        const trainsList = document.getElementById(`trains-${sanitizedId}`);
+        const expandIcon = document.getElementById(`expand-${sanitizedId}`);
+        
+        if (trainsList && expandIcon) {
+            if (trainsList.style.display === 'none') {
+                trainsList.style.display = 'block';
+                expandIcon.textContent = '▲';
+            } else {
+                trainsList.style.display = 'none';
+                expandIcon.textContent = '▼';
+            }
+        }
+    }
+
+    sanitizeId(str) {
+        return str.replace(/[^a-zA-Z0-9]/g, '-');
+    }
+
+    initializeStationSearch() {
+        const searchInput = document.getElementById('stationSearchInput');
+        const clearBtn = document.getElementById('clearStationSearch');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                this.filterStationsBySearch(query);
+                
+                if (clearBtn) {
+                    clearBtn.style.display = query ? 'flex' : 'none';
+                }
+            });
+        }
+    }
+
+    filterStationsBySearch(query) {
+        if (!this.allStationsData) return;
+        
+        const searchResults = document.getElementById('stationSearchResults');
+        
+        if (!query) {
+            this.populateStationsList(this.allStationsData);
+            if (searchResults) searchResults.style.display = 'none';
+            return;
+        }
+        
+        const lowerQuery = query.toLowerCase();
+        const filtered = this.allStationsData.filter(station =>
+            station.name.toLowerCase().includes(lowerQuery)
+        );
+        
+        this.populateStationsList(filtered);
+        
+        if (searchResults) {
+            searchResults.textContent = `Found ${filtered.length} stations matching your search`;
+            searchResults.style.display = 'block';
+        }
+    }
+
+    clearStationSearch() {
+        const searchInput = document.getElementById('stationSearchInput');
+        const clearBtn = document.getElementById('clearStationSearch');
+        const searchResults = document.getElementById('stationSearchResults');
+        
+        if (searchInput) searchInput.value = '';
+        if (clearBtn) clearBtn.style.display = 'none';
+        if (searchResults) searchResults.style.display = 'none';
+        
+        if (this.allStationsData) {
+            this.populateStationsList(this.allStationsData);
+        }
     }
 
     // loadFavorites function is defined earlier in the class (line ~2154)
