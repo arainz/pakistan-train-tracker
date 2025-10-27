@@ -51,11 +51,11 @@ class MobileApp {
         // Check notification permission (don't request - will be requested when user sets up a notification)
         if ('Notification' in window) {
             console.log(`🔔 Notification permission: ${Notification.permission}`);
-        }
-        
-        // Start notification monitoring (only if permission already granted)
-        if (Notification.permission === 'granted') {
-            this.startNotificationMonitoring();
+            
+            // Start notification monitoring (only if permission already granted)
+            if (Notification.permission === 'granted') {
+                this.startNotificationMonitoring();
+            }
         }
         
         // Load schedule data FIRST (needed for filtering completed journeys)
@@ -415,15 +415,29 @@ class MobileApp {
 
     async loadLiveTrains() {
         try {
-            console.log('🌐 Loading live trains...');
-            const response = await fetch(getAPIUrl('live'));
+            const startTime = Date.now();
+            const liveUrl = getAPIUrl('live');
+            console.log('🚂 [LIVE DATA] Loading live trains...');
+            console.log('🚂 [LIVE DATA] Source URL:', liveUrl);
+            console.log('🚂 [LIVE DATA] Full URL:', liveUrl);
+            
+            const response = await fetch(liveUrl);
+            console.log('🚂 [LIVE DATA] Response status:', response.status, response.statusText);
+            console.log('🚂 [LIVE DATA] Response headers:', {
+                'content-type': response.headers.get('content-type'),
+                'content-length': response.headers.get('content-length')
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const data = await response.json();
-            console.log('📊 Live trains API response:', { success: data.success, dataLength: data.data?.length });
+            const loadTime = Date.now() - startTime;
+            console.log('✅ [LIVE DATA] SUCCESS - Live trains loaded');
+            console.log('✅ [LIVE DATA] Load time:', loadTime, 'ms');
+            console.log('✅ [LIVE DATA] Response:', { success: data.success, dataLength: data.data?.length });
+            console.log('✅ [LIVE DATA] Data size:', (JSON.stringify(data).length / 1024).toFixed(2), 'KB');
             
             if (data.success && data.data && data.data.length > 0) {
                 // Filter to keep only top 2 most recent instances per train number
@@ -3295,22 +3309,97 @@ class MobileApp {
     async loadScheduledTrainsForHome() {
         try {
             console.log('📅 Loading scheduled trains for home...');
-            const response = await fetch(getAPIUrl('schedule'));
-            const data = await response.json();
             
-            if (data.success && data.data) {
-                // Store schedule data for use in other methods
-                this.scheduleData = data.data;
-                this.populateScheduledTrains(data.data);
-                console.log('📅 Schedule data loaded, refreshing live trains with schedule info');
+            // Use hybrid approach: local files first, remote fallback
+            const schedulesData = await API_CONFIG.fetchStaticData('schedules');
+            const trainsData = await API_CONFIG.fetchStaticData('trains');
+            const stationsData = await API_CONFIG.fetchStaticData('stations');
+            
+            // Extract the actual data (handle Response wrapper if present)
+            const schedules = schedulesData.Response || schedulesData;
+            const trains = trainsData.Response || trainsData;
+            const stations = stationsData.Response || stationsData;
+            
+            // Build schedule data in the format expected by the app
+            this.scheduleData = schedules.map(schedule => {
+                const trainInfo = trains.find(t => t.TrainId === schedule.TrainId);
                 
-                // If live trains are already loaded, refresh them with schedule data
-                if (this.trainData && this.trainData.active) {
-                    this.populateLiveTrains();
-                }
+                return {
+                    trainId: schedule.TrainId,
+                    trainNumber: trainInfo ? trainInfo.TrainNumber : 'N/A',
+                    trainName: trainInfo ? trainInfo.TrainName : 'Unknown',
+                    trainNameUrdu: trainInfo ? trainInfo.TrainNameUrdu : '',
+                    stations: schedule.stations || schedule.Stations || []
+                };
+            });
+            
+            // Store metadata for other uses
+            this.trainsMetadata = trains;
+            this.stationsMetadata = stations;
+            
+            console.log(`✅ Loaded ${this.scheduleData.length} train schedules from hybrid source`);
+            
+            // Populate UI
+            this.populateScheduledTrains(this.scheduleData);
+            
+            // If live trains are already loaded, refresh them with schedule data
+            if (this.trainData && this.trainData.active) {
+                this.populateLiveTrains();
             }
+            
+            // Check for updates in background (non-blocking)
+            this.checkForScheduleUpdates();
+            
         } catch (error) {
             console.error('❌ Error loading scheduled trains for home:', error);
+            this.showError('Unable to load train schedules');
+        }
+    }
+    
+    async checkForScheduleUpdates() {
+        try {
+            console.log('🔍 Checking for schedule updates...');
+            const updateInfo = await API_CONFIG.checkForUpdates();
+            
+            if (updateInfo.hasUpdate) {
+                console.log(`📦 New schedule data available! Local: ${updateInfo.localVersion}, Remote: ${updateInfo.remoteVersion}`);
+                
+                // Optionally show a toast notification to user
+                // this.showToast('New train schedules available! Refresh to update.');
+                
+                // Or auto-update in background
+                // await this.updateScheduleData();
+            } else {
+                console.log('✅ Schedule data is up to date');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not check for updates:', error.message);
+        }
+    }
+    
+    async updateScheduleData() {
+        try {
+            console.log('📥 Downloading latest schedule data...');
+            
+            // Force fetch from remote
+            const schedulesData = await API_CONFIG.fetchStaticData('schedules', true);
+            const trainsData = await API_CONFIG.fetchStaticData('trains', true);
+            const stationsData = await API_CONFIG.fetchStaticData('stations', true);
+            
+            // Cache in localStorage for next launch
+            localStorage.setItem('cachedSchedules', JSON.stringify(schedulesData));
+            localStorage.setItem('cachedTrains', JSON.stringify(trainsData));
+            localStorage.setItem('cachedStations', JSON.stringify(stationsData));
+            localStorage.setItem('cacheTimestamp', Date.now().toString());
+            
+            console.log('✅ Schedule data updated and cached');
+            
+            // Reload the schedule data
+            await this.loadScheduledTrainsForHome();
+            
+            this.showToast('Train schedules updated!');
+        } catch (error) {
+            console.error('❌ Error updating schedule data:', error);
         }
     }
 
@@ -6783,7 +6872,7 @@ class MobileApp {
     }
 
     triggerNotification(notification, train, minutesUntilArrival) {
-        if (Notification.permission === 'granted') {
+        if ('Notification' in window && Notification.permission === 'granted') {
             const title = `🚂 ${notification.trainName}`;
             const body = `Arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`;
             
@@ -6873,7 +6962,7 @@ class MobileApp {
         }
         
         // Start notification monitoring if permission is granted
-        if (Notification.permission === 'granted' && !this.notificationCheckInterval) {
+        if ('Notification' in window && Notification.permission === 'granted' && !this.notificationCheckInterval) {
             this.startNotificationMonitoring();
         }
         
@@ -7062,7 +7151,7 @@ class MobileApp {
             addBtn.addEventListener('click', async () => {
                 if (selectedStation && selectedMinutes) {
                     // Request notification permission if needed (user gesture - allowed here!)
-                    if (Notification.permission === 'default') {
+                    if ('Notification' in window && Notification.permission === 'default') {
                         console.log('🔔 Requesting notification permission...');
                         const permissionGranted = await this.requestNotificationPermission();
                         if (!permissionGranted) {
@@ -7075,7 +7164,7 @@ class MobileApp {
                         }
                     }
                     
-                    if (Notification.permission !== 'granted') {
+                    if (!('Notification' in window) || Notification.permission !== 'granted') {
                         this.showToast('Notification permission is required');
                         return;
                     }
