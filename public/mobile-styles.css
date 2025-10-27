@@ -604,8 +604,9 @@ body.mobile-app.dark-mode .station-route-section {
 /* Move status-indicator to be on same line */
 .train-status-card > .status-indicator {
     position: absolute;
-    right: 20px;
+    right: 60px;
     top: 20px;
+    z-index: 5;
 }
 
 .train-status-card {
@@ -787,7 +788,7 @@ body.mobile-app.dark-mode .station-route-section {
     -ms-overflow-style: none;
     scroll-behavior: smooth;
     width: 100%;
-    padding: 140px 0 0 0 !important;
+    padding: 140px 0 0 45px !important;
 }
 
 .route-stations::-webkit-scrollbar {
@@ -6289,7 +6290,7 @@ body.mobile-app.dark-mode .station-train-card.next-station .eta-label {
 .train-status-card .status-indicator {
     position: absolute;
     top: 16px;
-    right: 16px;
+    right: 60px;
     z-index: 10;
 }
 
@@ -6352,13 +6353,6 @@ body.mobile-app.dark-mode .detail-value.delayed {
     max-width: 100% !important;
     box-sizing: border-box;
     overflow: hidden;
-}
-
-.train-status-card > .status-indicator {
-    position: absolute !important;
-    right: 20px !important;
-    top: 20px !important;
-    z-index: 5;
 }
 
 .train-status-card > .train-title {
