@@ -6479,10 +6479,10 @@ class MobileApp {
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
-            const trainDate = this.getTrainDate(train.UpdatedOn, train.InnerKey || train.TrainId, train.TrainNumber);
+            const trainDate = this.getTrainDate(train.LastUpdated, train.InnerKey || train.TrainId, train.TrainNumber);
             
             // Updated time
-            const updatedTime = train.UpdatedOn ? this.formatTimeAMPM(train.UpdatedOn) : '--:--';
+            const updatedTime = train.LastUpdated ? this.formatTimeAMPM(train.LastUpdated) : '--:--';
             
             // Scheduled time
             const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
@@ -6619,10 +6619,10 @@ class MobileApp {
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
-            const trainDate = this.getTrainDate(train.UpdatedOn, train.InnerKey || train.TrainId, train.TrainNumber);
+            const trainDate = this.getTrainDate(train.LastUpdated, train.InnerKey || train.TrainId, train.TrainNumber);
             
             // Updated time
-            const updatedTime = train.UpdatedOn ? this.formatTimeAMPM(train.UpdatedOn) : '--:--';
+            const updatedTime = train.LastUpdated ? this.formatTimeAMPM(train.LastUpdated) : '--:--';
             
             // Scheduled time
             const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
