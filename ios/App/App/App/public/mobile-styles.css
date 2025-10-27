@@ -6092,7 +6092,6 @@ body.mobile-app.dark-mode .notification-time {
 }
 
 .status-indicator {
-    width: 8px;
     height: 8px;
     border-radius: 50%;
 }
@@ -7016,6 +7015,10 @@ body.mobile-app.dark-mode #stationScreen .results-header .results-count {
 
 #stationScreen .search-results-info {
     margin-top: 12px !important;
+}
+
+#scheduleDetailsScreen .train-status-card .status-indicator {
+    right: 80px;
 }
 
 /* Dark Mode */
