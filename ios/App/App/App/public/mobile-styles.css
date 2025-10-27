@@ -6350,7 +6350,7 @@ body.mobile-app.dark-mode .station-train-card.next-station .eta-label {
 .train-status-card .status-indicator {
     position: absolute;
     top: 16px;
-    right: 60px;
+    right: 16px;
     z-index: 10;
 }
 
@@ -6417,7 +6417,7 @@ body.mobile-app.dark-mode .detail-value.delayed {
 
 .train-status-card > .train-title {
     padding-right: 120px !important;
-    width: 90%;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -7040,7 +7040,7 @@ body.mobile-app.dark-mode #stationScreen .results-header .results-count {
 }
 
 #scheduleDetailsScreen .train-status-card .status-indicator {
-    right: 80px;
+    right: 10px;
 }
 
 /* Dark Mode */
