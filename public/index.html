@@ -772,10 +772,10 @@
                         <div class="station-details">
                             <div class="detail-item">
                                 <div class="detail-label">Version</div>
-                                <div class="detail-value">1.0.0</div>
+                                <div class="detail-value" id="appVersion">--</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">Last Updated</div>
+                                <div class="detail-label">Last Refreshed</div>
                                 <div class="detail-value" id="appLastUpdate">--</div>
                             </div>
                         </div>
@@ -907,17 +907,13 @@
                 <span class="nav-icon">🚂</span>
                 <span class="nav-label">Track</span>
             </div>
-            <div class="nav-item" onclick="mobileApp.navigateToScreen('trainSearchScreen')" data-nav="search">
-                <span class="nav-icon">🔍</span>
-                <span class="nav-label">Search</span>
-            </div>
             <div class="nav-item" onclick="mobileApp.navigateToScreen('favoritesScreen')" data-nav="favorites">
                 <span class="nav-icon">⭐</span>
                 <span class="nav-label">Favorites</span>
             </div>
             <div class="nav-item" onclick="mobileApp.navigateToScreen('profileScreen')" data-nav="profile">
-                <span class="nav-icon">👤</span>
-                <span class="nav-label">Profile</span>
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
             </div>
         </div>
 

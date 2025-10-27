@@ -316,17 +316,13 @@ class MobileApp {
                 document.querySelectorAll('.nav-item')[1].classList.add('active');
                 this.openMostRecentTrain();
                 break;
-            case 'search':
-                document.querySelectorAll('.nav-item')[2].classList.add('active');
-                this.navigateToScreen('trainSearchScreen');
-                break;
             case 'favorites':
-                document.querySelectorAll('.nav-item')[3].classList.add('active');
+                document.querySelectorAll('.nav-item')[2].classList.add('active');
                 this.navigateToScreen('favoritesScreen');
                 // loadFavorites is called by loadScreenData
                 break;
             case 'profile':
-                document.querySelectorAll('.nav-item')[4].classList.add('active');
+                document.querySelectorAll('.nav-item')[3].classList.add('active');
                 this.navigateToScreen('profileScreen');
                 this.loadProfile();
                 break;
@@ -2673,7 +2669,10 @@ class MobileApp {
             this.updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex);
             
             // Ensure locomotive is visible in viewport (scroll to it if needed)
-            this.ensureLocomotiveVisible(locomotiveIcon);
+            // Add small delay to ensure popover is fully rendered before checking visibility
+            setTimeout(() => {
+                this.ensureLocomotiveVisible(locomotiveIcon);
+            }, 100);
         } else {
             console.warn('⚠️ Locomotive icon element not found');
         }
@@ -2700,23 +2699,69 @@ class MobileApp {
         const routeStations = document.querySelector('.route-stations');
         if (!routeStations) return;
         
+        // Get the popover (if exists)
+        const popover = locomotiveIcon.querySelector('.locomotive-popover');
+        
         // Get positions
         const containerRect = routeStations.getBoundingClientRect();
         const locomotiveRect = locomotiveIcon.getBoundingClientRect();
         
-        // Calculate if locomotive is out of view
-        const isOutOfView = 
-            locomotiveRect.left < containerRect.left || 
-            locomotiveRect.right > containerRect.right;
+        const edgePadding = 50; // Add 50px padding from edges for better visibility
         
-        // Only scroll if locomotive is completely out of view
-        if (isOutOfView) {
-            locomotiveIcon.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-                inline: 'center'  // Center the locomotive in the viewport
-            });
-            console.log('🚂 Scrolling locomotive into view');
+        if (popover) {
+            const popoverRect = popover.getBoundingClientRect();
+            
+            // More precise cutoff detection - check if SIGNIFICANTLY cut off
+            const leftCutoff = Math.max(0, (containerRect.left + edgePadding) - popoverRect.left);
+            const rightCutoff = Math.max(0, popoverRect.right - (containerRect.right - edgePadding));
+            
+            // Check if locomotive itself is cut off
+            const locomotiveLeftCutoff = Math.max(0, (containerRect.left + edgePadding) - locomotiveRect.left);
+            const locomotiveRightCutoff = Math.max(0, locomotiveRect.right - (containerRect.right - edgePadding));
+            
+            console.log(`🔍 Visibility: Popover[${popoverRect.left.toFixed(0)}-${popoverRect.right.toFixed(0)}] Container[${containerRect.left.toFixed(0)}-${containerRect.right.toFixed(0)}] LeftCut=${leftCutoff.toFixed(0)}px RightCut=${rightCutoff.toFixed(0)}px LocoLeftCut=${locomotiveLeftCutoff.toFixed(0)}px LocoRightCut=${locomotiveRightCutoff.toFixed(0)}px`);
+            
+            // Only scroll if MORE than 5px is cut off (to prevent tiny adjustments while fixing visible cropping)
+            const significantCutoff = 5;
+            
+            // Determine the maximum cutoff from all checks
+            const maxLeftCutoff = Math.max(leftCutoff, locomotiveLeftCutoff);
+            const maxRightCutoff = Math.max(rightCutoff, locomotiveRightCutoff);
+            
+            if (maxLeftCutoff > significantCutoff) {
+                // Significantly cut off on left
+                console.log(`🚂 Scrolling LEFT (max cutoff: ${maxLeftCutoff.toFixed(0)}px)`);
+                
+                // Manually scroll the container instead of using scrollIntoView
+                const scrollAmount = maxLeftCutoff + edgePadding;
+                routeStations.scrollLeft = Math.max(0, routeStations.scrollLeft - scrollAmount);
+                
+            } else if (maxRightCutoff > significantCutoff) {
+                // Significantly cut off on right
+                console.log(`🚂 Scrolling RIGHT (max cutoff: ${maxRightCutoff.toFixed(0)}px)`);
+                
+                // Manually scroll the container instead of using scrollIntoView
+                const scrollAmount = maxRightCutoff + edgePadding;
+                routeStations.scrollLeft = routeStations.scrollLeft + scrollAmount;
+                
+            } else {
+                console.log(`✅ Locomotive and popover fully visible (LeftCut=${maxLeftCutoff.toFixed(0)}px, RightCut=${maxRightCutoff.toFixed(0)}px <= ${significantCutoff}px tolerance), no scroll needed`);
+            }
+        } else {
+            // No popover, just check locomotive
+            const leftCutoff = Math.max(0, (containerRect.left + edgePadding) - locomotiveRect.left);
+            const rightCutoff = Math.max(0, locomotiveRect.right - (containerRect.right - edgePadding));
+            
+            const significantCutoff = 5;
+            
+            if (leftCutoff > significantCutoff || rightCutoff > significantCutoff) {
+                console.log('🚂 Scrolling locomotive to center');
+                locomotiveIcon.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }
         }
     }
 
@@ -3621,6 +3666,9 @@ class MobileApp {
 
                 // Also refresh live updates
                 this.loadLiveUpdates();
+                
+                // Update last refresh time in settings
+                this.updateLastRefreshTime();
 
                 // If on liveTracking screen and search is active, reapply the current search
                 if (this.currentScreen === 'liveTracking' && this.isLiveSearchActive) {
@@ -3968,27 +4016,104 @@ class MobileApp {
 
 
     // Profile functionality
-    loadProfile() {
-        const lastUpdateEl = document.getElementById('appLastUpdate');
-        if (lastUpdateEl) {
-            lastUpdateEl.textContent = new Date().toLocaleString();
+    async loadProfile() {
+        // Load version from version.json
+        try {
+            const versionData = await window.trainConfig.fetchStaticData('version', false);
+            
+            const versionEl = document.getElementById('appVersion');
+            
+            if (versionEl && versionData?.version) {
+                versionEl.textContent = versionData.version;
+                console.log('📱 App version:', versionData.version);
+            }
+        } catch (error) {
+            console.error('❌ Error loading version data:', error);
         }
+        
+        // Update last refreshed time
+        this.updateLastRefreshTime();
 
         // Load settings
         const autoRefreshToggle = document.getElementById('autoRefreshToggle');
         const notificationsToggle = document.getElementById('notificationsToggle');
         
         if (autoRefreshToggle) {
-            autoRefreshToggle.checked = localStorage.getItem('autoRefresh') !== 'false';
-            autoRefreshToggle.addEventListener('change', (e) => {
+            // Remove any existing event listeners by cloning
+            const newAutoRefreshToggle = autoRefreshToggle.cloneNode(true);
+            autoRefreshToggle.parentNode.replaceChild(newAutoRefreshToggle, autoRefreshToggle);
+            
+            newAutoRefreshToggle.checked = localStorage.getItem('autoRefresh') !== 'false';
+            newAutoRefreshToggle.addEventListener('change', (e) => {
                 localStorage.setItem('autoRefresh', e.target.checked);
+                if (e.target.checked) {
+                    this.showToast('Auto-refresh enabled');
+                    console.log('✅ Auto-refresh enabled');
+                } else {
+                    this.showToast('Auto-refresh disabled');
+                    console.log('⏸️ Auto-refresh disabled');
+                }
             });
         }
 
         if (notificationsToggle) {
-            notificationsToggle.checked = localStorage.getItem('notifications') === 'true';
-            notificationsToggle.addEventListener('change', (e) => {
-                localStorage.setItem('notifications', e.target.checked);
+            // Remove any existing event listeners by cloning
+            const newNotificationsToggle = notificationsToggle.cloneNode(true);
+            notificationsToggle.parentNode.replaceChild(newNotificationsToggle, notificationsToggle);
+            
+            // Check current notification permission status
+            const hasPermission = this.checkNotificationPermission();
+            newNotificationsToggle.checked = hasPermission;
+            
+            newNotificationsToggle.addEventListener('change', async (e) => {
+                if (e.target.checked) {
+                    // Request permission when enabling
+                    console.log('🔔 Requesting notification permission from settings...');
+                    const granted = await this.requestNotificationPermission();
+                    
+                    if (granted) {
+                        this.showToast('Notifications enabled');
+                        console.log('✅ Notifications enabled globally');
+                    } else {
+                        // Permission denied, revert toggle
+                        e.target.checked = false;
+                        this.showToast('Notification permission denied');
+                        console.log('❌ Notification permission denied');
+                    }
+                } else {
+                    // Disabling notifications - show info toast
+                    this.showToast('Notifications disabled. Individual train notifications will not trigger.');
+                    console.log('🔕 Notifications disabled globally');
+                }
+            });
+        }
+    }
+    
+    checkNotificationPermission() {
+        // For Capacitor (native apps)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            // We can't easily check permission status synchronously, so check if any notifications exist
+            const notifications = this.getAllActiveNotifications();
+            return notifications.length > 0;
+        }
+        
+        // For web browsers
+        if ('Notification' in window) {
+            return Notification.permission === 'granted';
+        }
+        
+        return false;
+    }
+    
+    updateLastRefreshTime() {
+        const lastUpdateEl = document.getElementById('appLastUpdate');
+        if (lastUpdateEl) {
+            const now = new Date();
+            lastUpdateEl.textContent = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
             });
         }
     }
@@ -6299,16 +6424,26 @@ class MobileApp {
             
             html += `
                 <div class="train-item" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
-                    <div class="train-info">
-                        <div class="train-number">${trainNumber}</div>
-                        <div class="train-name">${trainName}</div>
-                        <div class="train-direction">${direction}</div>
+                    <div class="train-item-row train-header-row">
+                        <div class="train-number-badge">${trainNumber}</div>
+                        <div class="train-name-text">${trainName}</div>
+                        <div class="train-direction-badge ${direction.toLowerCase()}">${direction}</div>
                     </div>
-                    <div class="train-status">
-                        <div class="train-speed">${speed} km/h</div>
-                        <div class="train-location">${currentLocation}</div>
-                        <div class="train-next">Next: ${nextStation}</div>
-                        <div class="train-eta">ETA: ${eta}</div>
+                    <div class="train-item-row">
+                        <span class="train-label">Speed:</span>
+                        <span class="train-value">${speed} km/h</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">Current Location:</span>
+                        <span class="train-value">${currentLocation}</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">Next Station:</span>
+                        <span class="train-value">${nextStation}</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">ETA:</span>
+                        <span class="train-value train-eta-value">${eta}</span>
                     </div>
                 </div>
             `;
@@ -6403,16 +6538,26 @@ class MobileApp {
             
             html += `
                 <div class="train-item" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
-                    <div class="train-info">
-                        <div class="train-number">${trainNumber}</div>
-                        <div class="train-name">${trainName}</div>
-                        <div class="train-direction">${direction}</div>
+                    <div class="train-item-row train-header-row">
+                        <div class="train-number-badge">${trainNumber}</div>
+                        <div class="train-name-text">${trainName}</div>
+                        <div class="train-direction-badge ${direction.toLowerCase()}">${direction}</div>
                     </div>
-                    <div class="train-status">
-                        <div class="train-speed">${speed} km/h</div>
-                        <div class="train-location">${currentLocation}</div>
-                        <div class="train-next">Next: ${nextStation}</div>
-                        <div class="train-eta">ETA: ${eta}</div>
+                    <div class="train-item-row">
+                        <span class="train-label">Speed:</span>
+                        <span class="train-value">${speed} km/h</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">Current Location:</span>
+                        <span class="train-value">${currentLocation}</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">Next Station:</span>
+                        <span class="train-value">${nextStation}</span>
+                    </div>
+                    <div class="train-item-row">
+                        <span class="train-label">ETA:</span>
+                        <span class="train-value train-eta-value">${eta}</span>
                     </div>
                 </div>
             `;

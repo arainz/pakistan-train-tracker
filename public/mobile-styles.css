@@ -7601,3 +7601,144 @@ body.mobile-app.dark-mode .notification-empty p {
 body.mobile-app.dark-mode .notification-empty small {
     color: #64748b;
 }
+
+/* ============================================
+   Map Train List - Improved Layout
+   ============================================ */
+
+.train-item {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.train-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.train-item:active {
+    transform: scale(0.98);
+}
+
+.train-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.train-item-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.train-header-row {
+    padding-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(37, 99, 235, 0.1);
+    margin-bottom: 8px;
+}
+
+.train-number-badge {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 50px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.train-name-text {
+    flex: 1;
+    font-weight: 600;
+    font-size: 16px;
+    color: #1e293b;
+    margin: 0 12px;
+    line-height: 1.3;
+}
+
+.train-direction-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.train-direction-badge.up {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.train-direction-badge.down {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.train-direction-badge.unknown {
+    background: #94a3b8;
+    color: white;
+}
+
+.train-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.train-value {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    text-align: right;
+}
+
+.train-eta-value {
+    color: #2563eb;
+    font-weight: 700;
+}
+
+/* Dark Mode Support */
+body.mobile-app.dark-mode .train-item {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .train-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode .train-item-row {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.mobile-app.dark-mode .train-header-row {
+    border-bottom-color: rgba(37, 99, 235, 0.2);
+}
+
+body.mobile-app.dark-mode .train-name-text {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .train-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .train-value {
+    color: #e2e8f0;
+}
+
+body.mobile-app.dark-mode .train-eta-value {
+    color: #60a5fa;
+}
