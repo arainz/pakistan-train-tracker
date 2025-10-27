@@ -436,6 +436,16 @@
                         <h3>Select Train to Track</h3>
                         <button class="close-panel-btn" onclick="mobileApp.closeTrainSelection()">×</button>
                     </div>
+                    
+                    <!-- Search Box -->
+                    <div class="map-search-container">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="mapSearchInput" placeholder="Search trains by number or name..." class="search-input">
+                            <button class="clear-search-btn" id="clearMapSearch" onclick="mobileApp.clearMapSearch()" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    
                     <div class="train-list" id="trainList">
                         <div class="loading">Loading active trains...</div>
                     </div>
