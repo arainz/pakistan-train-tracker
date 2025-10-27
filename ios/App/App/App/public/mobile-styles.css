@@ -572,10 +572,45 @@ body.mobile-app.dark-mode .station-route-section {
     padding: 20px;
     margin-bottom: 20px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* First row: train-title + status-indicator */
+.train-status-card > .train-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.train-title .train-number {
+    flex-shrink: 0;
+    order: 1;
+}
+
+.train-title h3 {
+    order: 2;
+    margin: 0;
+    font-size: 1.1em;
+    color: #2c3e50;
+    font-weight: 700;
+    line-height: 1.2;
+    flex: 1;
+    text-align: left;
+}
+
+/* Move status-indicator to be on same line */
+.train-status-card > .status-indicator {
+    position: absolute;
+    right: 60px;
+    top: 20px;
+    z-index: 5;
+}
+
+.train-status-card {
+    position: relative;
 }
 
 .train-main-title h3 {
@@ -592,15 +627,18 @@ body.mobile-app.dark-mode .station-route-section {
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: bold;
+    margin-left: 12px;
+    flex-shrink: 0;
 }
 
 .status-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
+    margin-left: 12px;
 }
 
 .status-dot {
@@ -750,7 +788,7 @@ body.mobile-app.dark-mode .station-route-section {
     -ms-overflow-style: none;
     scroll-behavior: smooth;
     width: 100%;
-    padding: 140px 0 0 0 !important;
+    padding: 140px 0 0 45px !important;
 }
 
 .route-stations::-webkit-scrollbar {
@@ -2135,7 +2173,6 @@ body.mobile-app.dark-mode .eta-value {
     padding: 20px;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.02), rgba(118, 75, 162, 0.01));
     border-radius: 24px;
-    margin: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(16px);
 }
@@ -4265,7 +4302,6 @@ body.mobile-app.dark-mode .logo-icon {
     background: rgba(255, 255, 255, 0.9);
     margin: 15px 20px 20px 20px;
     border-radius: 16px;
-    padding: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
@@ -5525,4 +5561,1784 @@ body.mobile-app.dark-mode .section-header {
 body.mobile-app.dark-mode .info-text,
 body.mobile-app.dark-mode .train-name {
     text-shadow: none
+}
+
+/* ========== NOTIFICATION STYLES ========== */
+
+.notification-settings {
+    background: transparent;
+    border-radius: 0;
+    margin: 16px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+
+.notification-header:active {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.notification-header-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 28px;
+}
+
+.notification-count {
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+    margin-left: 28px;
+}
+
+.notification-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.notification-settings.accordion .notification-toggle {
+    transform: rotate(0deg);
+}
+
+.notification-settings.accordion.open .notification-toggle {
+    transform: rotate(180deg);
+}
+
+.notification-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0;
+}
+
+.notification-settings.accordion.open .notification-body {
+    max-height: 2000px;
+    padding: 12px 0 0 0;
+}
+
+.notification-description {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+.notification-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #1e293b;
+    background: white;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.time-options {
+    display: flex;
+    gap: 10px;
+}
+
+.time-option {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-option:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.time-option.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-add-notification {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-add-notification:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add-notification:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.active-notifications {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid #e2e8f0;
+}
+
+.active-notifications h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(102, 126, 234, 0.05);
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.notification-info {
+    flex: 1;
+}
+
+.notification-station {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.notification-time {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.btn-remove-notification {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-notification:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.1);
+}
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100000;
+    transition: all 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.toast-notification.show {
+    bottom: 100px;
+}
+
+/* Dark Mode for Notifications */
+body.mobile-app.dark-mode .notification-settings {
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .notification-header:active {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+body.mobile-app.dark-mode .notification-title {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-subtitle {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-count {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .notification-toggle {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-description {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .form-group label {
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .form-select {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .time-option {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .time-option.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+body.mobile-app.dark-mode .active-notifications {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .active-notifications h4 {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-item {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+body.mobile-app.dark-mode .notification-station {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-time {
+    color: #94a3b8;
+}
+
+/* Station Cards Styles */
+.station-card-expandable {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.station-info {
+    flex: 1;
+}
+
+.station-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.station-meta {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.expand-icon {
+    font-size: 16px;
+    color: #667eea;
+    transition: transform 0.3s ease;
+    padding: 8px;
+}
+
+.station-trains-list {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.direction-section {
+    margin-bottom: 16px;
+}
+
+.direction-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+}
+
+.station-train-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.station-train-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.train-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.train-card-row:last-child {
+    margin-bottom: 0;
+}
+
+.train-id {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.train-number {
+    font-size: 16px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.train-name-small {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.train-eta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.eta-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.train-date-small {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.train-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.on-time {
+    background: #10b981;
+}
+
+.status-indicator.slightly-delayed {
+    background: #f59e0b;
+}
+
+.status-indicator.delayed {
+    background: #ef4444;
+}
+
+.train-speed {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.empty-state-small {
+    text-align: center;
+    padding: 24px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* Dark Mode for Station Cards */
+body.mobile-app.dark-mode .station-card-expandable {
+    background: rgba(30, 41, 59, 0.95);
+}
+
+body.mobile-app.dark-mode .station-name {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .station-meta {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .expand-icon {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .station-trains-list {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .direction-header {
+    color: #818cf8;
+    background: rgba(129, 140, 248, 0.1);
+}
+
+body.mobile-app.dark-mode .station-train-card {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(129, 140, 248, 0.2);
+}
+
+body.mobile-app.dark-mode .train-number {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .train-name-small,
+body.mobile-app.dark-mode .train-date-small,
+body.mobile-app.dark-mode .train-speed {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .eta-time {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .empty-state-small {
+    color: #64748b;
+}
+
+/* Station Train Card Enhancements */
+.station-train-card.next-station {
+    border: 2px solid #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.train-eta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.eta-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+}
+
+.station-train-card.next-station .eta-label {
+    color: #10b981;
+}
+
+.train-info-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode .station-train-card.next-station {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+body.mobile-app.dark-mode .eta-label {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .station-train-card.next-station .eta-label {
+    color: #34d399;
+}
+
+/* Station Screen Layout Fixes */
+.station-card-expandable {
+    width: 100%;
+    max-width: 100%;
+}
+
+.station-header {
+    width: 100%;
+}
+
+.station-trains-list {
+    width: 100%;
+    padding: 0;
+}
+
+.direction-section {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Next Station Highlight for Station Cards */
+.train-card.next-station-highlight {
+    border: 2px solid #10b981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
+.live-badge {
+    background: #10b981;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.route-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.route-label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.route-station {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.train-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-icon {
+    font-size: 18px;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.detail-value {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.detail-value.on-time {
+    color: #10b981;
+}
+
+.detail-value.slightly-delayed {
+    color: #f59e0b;
+}
+
+.detail-value.delayed {
+    color: #ef4444;
+}
+
+/* Fix Train Detail Page Status Overflow */
+.train-status-card {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.train-status-card .status-indicator {
+    position: absolute;
+    top: 16px;
+    right: 60px;
+    z-index: 10;
+}
+
+.train-status-card .train-title {
+    padding-right: 100px; /* Make room for status indicator */
+}
+
+/* Ensure proper containment */
+.train-detail-content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Dark Mode Updates */
+body.mobile-app.dark-mode .train-card.next-station-highlight {
+    border-color: #34d399;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(52, 211, 153, 0.05) 100%);
+}
+
+body.mobile-app.dark-mode .route-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .route-station {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .detail-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .detail-value {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .detail-value.on-time {
+    color: #34d399;
+}
+
+body.mobile-app.dark-mode .detail-value.slightly-delayed {
+    color: #fbbf24;
+}
+
+body.mobile-app.dark-mode .detail-value.delayed {
+    color: #f87171;
+}
+
+/* Additional Train Status Card Fixes */
+.train-detail-content {
+    position: relative;
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.train-status-card {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.train-status-card > .train-title {
+    padding-right: 120px !important;
+    width: 90%;
+    box-sizing: border-box;
+}
+
+/* ========================================
+   STATIONS SCREEN STYLES - COMPLETE REWRITE
+   ======================================== */
+
+/* Station Screen Container */
+#stationScreen .screen-content {
+    padding: 0;
+    width: 100%;
+}
+
+#stationScreen .schedule-results {
+    width: 100%;
+    padding: 0;
+}
+
+#stationScreen .results-header {
+    padding: 16px;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Stations List Container */
+.stations-list {
+    width: 100%;
+    padding: 0 16px 16px 16px;
+    box-sizing: border-box;
+}
+
+/* Station Card Expandable */
+.station-card-expandable {
+    width: 100%;
+    max-width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Station Header */
+.station-header {
+    width: 100%;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    transition: background 0.2s ease;
+}
+
+.station-header:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.station-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.station-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.station-meta {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.expand-icon {
+    font-size: 18px;
+    color: #667eea;
+    transition: transform 0.3s ease;
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+/* Station Trains List */
+.station-trains-list {
+    width: 100%;
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+/* Direction Section */
+.direction-section {
+    width: 100%;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.direction-section:last-child {
+    margin-bottom: 0;
+}
+
+.direction-header {
+    font-size: 15px;
+    font-weight: 700;
+    color: #667eea;
+    margin: 16px 0 12px 0;
+    padding: 10px 14px;
+    background: rgba(102, 126, 234, 0.08);
+    border-radius: 10px;
+    border-left: 3px solid #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Station Train Item (Individual Train Card) */
+.station-train-item {
+    width: 100%;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.station-train-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Use existing train-card styles but ensure full width */
+.station-train-item.train-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Train Route Section for Station Cards */
+.station-train-item .train-route {
+    padding: 12px 16px;
+    background: rgba(102, 126, 234, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.station-train-item .route-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.station-train-item .route-station {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 600;
+    display: block;
+}
+
+/* Train Info Section */
+.station-train-item .train-info {
+    padding: 16px;
+}
+
+.station-train-item .info-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.station-train-item .info-row:last-child {
+    margin-bottom: 0;
+}
+
+.station-train-item .info-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.station-train-item .info-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.station-train-item .info-value {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.station-train-item .info-value.on-time {
+    color: #10b981;
+}
+
+.station-train-item .info-value.slightly-delayed {
+    color: #f59e0b;
+}
+
+.station-train-item .info-value.delayed {
+    color: #ef4444;
+}
+
+/* Empty State */
+.empty-state-small {
+    text-align: center;
+    padding: 32px 16px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* Dark Mode Styles */
+body.mobile-app.dark-mode .station-card-expandable {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode .station-header:hover {
+    background: rgba(129, 140, 248, 0.1);
+}
+
+body.mobile-app.dark-mode .station-name {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .station-meta {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .expand-icon {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .station-trains-list {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .direction-header {
+    color: #818cf8;
+    background: rgba(129, 140, 248, 0.1);
+    border-left-color: #818cf8;
+}
+
+body.mobile-app.dark-mode .station-train-item .train-route {
+    background: rgba(129, 140, 248, 0.05);
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.mobile-app.dark-mode .station-train-item .route-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .station-train-item .route-station {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .station-train-item .info-label {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .station-train-item .info-value {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .station-train-item .info-value.on-time {
+    color: #34d399;
+}
+
+body.mobile-app.dark-mode .station-train-item .info-value.slightly-delayed {
+    color: #fbbf24;
+}
+
+body.mobile-app.dark-mode .station-train-item .info-value.delayed {
+    color: #f87171;
+}
+
+body.mobile-app.dark-mode .empty-state-small {
+    color: #64748b;
+}
+
+/* ========================================
+   STATIONS SCREEN - MOBILE FRIENDLY
+   Uses Homepage Card Design
+   ======================================== */
+
+/* Station Screen Container */
+#stationScreen .screen-content {
+    padding: 0;
+    width: 100%;
+}
+
+#stationScreen .schedule-results {
+    width: 100%;
+    padding: 0;
+}
+
+#stationScreen .results-header {
+    padding: 16px;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Stations List Container */
+.stations-list {
+    width: 100%;
+    padding: 0 16px 16px 16px;
+    box-sizing: border-box;
+}
+
+/* Station Card Expandable */
+.station-card-expandable {
+    width: 100%;
+    max-width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Station Header */
+.station-header {
+    width: 100%;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    transition: background 0.2s ease;
+}
+
+.station-header:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.station-header:active {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.station-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.station-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.station-meta {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.expand-icon {
+    font-size: 18px;
+    color: #667eea;
+    transition: transform 0.3s ease;
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+/* Station Trains List */
+.station-trains-list {
+    width: 100%;
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+/* Direction Section */
+.direction-section {
+    width: 100%;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.direction-section:last-child {
+    margin-bottom: 0;
+}
+
+.direction-header {
+    font-size: 15px;
+    font-weight: 700;
+    color: #667eea;
+    margin: 16px 0 12px 0;
+    padding: 10px 14px;
+    background: rgba(102, 126, 234, 0.08);
+    border-radius: 10px;
+    border-left: 3px solid #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Station Train Items - Use Homepage Card Styles */
+.station-train-item {
+    width: 100%;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.station-train-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Ensure full width for nested train-card */
+.station-train-item.train-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Empty State */
+.empty-state-small {
+    text-align: center;
+    padding: 32px 16px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* Dark Mode Styles */
+body.mobile-app.dark-mode .station-card-expandable {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode .station-header:hover {
+    background: rgba(129, 140, 248, 0.1);
+}
+
+body.mobile-app.dark-mode .station-header:active {
+    background: rgba(129, 140, 248, 0.15);
+}
+
+body.mobile-app.dark-mode .station-name {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .station-meta {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .expand-icon {
+    color: #818cf8;
+}
+
+body.mobile-app.dark-mode .station-trains-list {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .direction-header {
+    color: #818cf8;
+    background: rgba(129, 140, 248, 0.1);
+    border-left-color: #818cf8;
+}
+
+body.mobile-app.dark-mode .empty-state-small {
+    color: #64748b;
+}
+
+/* Fix Station Screen Results Header */
+#stationScreen .results-header {
+    padding: 16px 16px 12px 16px !important;
+    margin: 0 0 16px 0;
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+#stationScreen .results-header h3 {
+    margin: 0;
+    padding: 0;
+}
+
+#stationScreen .results-header .results-count {
+    margin: 0;
+    padding: 0;
+}
+
+/* Ensure consistent padding throughout */
+#stationScreen .search-panel {
+    padding: 0 16px 16px 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#stationScreen .screen-content {
+    padding: 0 !important;
+}
+
+#stationScreen .schedule-results {
+    padding: 0 !important;
+    width: 100%;
+}
+
+/* Fix Station Screen Results Header - Proper Background and Padding */
+#stationScreen .results-header {
+    padding: 16px !important;
+    margin: 0 16px 16px 16px !important;
+    width: calc(100% - 32px) !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+#stationScreen .results-header h3 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+#stationScreen .results-header .results-count {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    color: #64748b !important;
+    font-weight: 500 !important;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode #stationScreen .results-header {
+    background: rgba(30, 41, 59, 0.95) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.mobile-app.dark-mode #stationScreen .results-header h3 {
+    color: #f1f5f9 !important;
+}
+
+body.mobile-app.dark-mode #stationScreen .results-header .results-count {
+    color: #94a3b8 !important;
+}
+
+/* Fix Station Screen Search Panel */
+#stationScreen .search-panel {
+    padding: 16px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#stationScreen .search-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#stationScreen .search-input-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#stationScreen .search-input {
+    flex: 1 !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#stationScreen .clear-search-btn {
+    flex-shrink: 0 !important;
+}
+
+/* Fix Station Screen Search Panel - Card Style with Margins */
+#stationScreen .search-panel {
+    padding: 16px !important;
+    margin: 16px 16px 16px 16px !important;
+    width: calc(100% - 32px) !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+#stationScreen .search-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#stationScreen .search-input-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#stationScreen .search-input {
+    flex: 1 !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#stationScreen .clear-search-btn {
+    flex-shrink: 0 !important;
+}
+
+#stationScreen .search-results-info {
+    margin-top: 12px !important;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode #stationScreen .search-panel {
+    background: rgba(30, 41, 59, 0.95) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Fix Station Search Input Scaling and Padding */
+#stationScreen .search-input-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 12px !important;
+    padding: 0 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+#stationScreen .search-icon {
+    padding-left: 16px !important;
+    padding-right: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+#stationScreen .search-input {
+    flex: 1 !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 14px 16px 14px 0 !important;
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    font-size: 15px !important;
+}
+
+#stationScreen .clear-search-btn {
+    flex-shrink: 0 !important;
+    padding: 8px 16px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode #stationScreen .search-input-wrapper {
+    background: rgba(51, 65, 85, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.mobile-app.dark-mode #stationScreen .search-input {
+    color: #f1f5f9 !important;
+}
+
+body.mobile-app.dark-mode #stationScreen .search-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* ========================================
+   STATION SCREEN - USE EXISTING STYLES
+   Remove all !important overrides
+   ======================================== */
+
+/* Station screen uses the existing .search-panel styles (lines 4301-4306) */
+/* Just adjust margins to match other screens */
+#stationScreen .search-panel {
+    margin: 15px 20px 20px 20px;
+}
+
+#stationScreen .results-header {
+    margin: 0 20px 15px 20px;
+}
+
+#stationScreen .schedule-results {
+    padding: 0 20px;
+}
+
+#stationScreen .stations-list {
+    padding: 0;
+}
+
+/* ========================================
+   FINAL FIX - Station Screen Layout
+   Use existing styles, fix container padding
+   ======================================== */
+
+/* Station List Container - Same padding as schedule-train-list */
+#stationScreen .stations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 20px 20px 20px;
+}
+
+/* Station Cards - Match existing card design */
+.station-card-expandable {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin: 0;
+}
+
+/* Remove conflicting styles */
+#stationScreen .screen-content {
+    padding: 0;
+}
+
+#stationScreen .schedule-results {
+    padding: 0;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode .station-card-expandable {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   CLEANUP - Remove ALL Station Screen Overrides
+   Let it use the default .search-panel styles
+   ======================================== */
+
+/* Reset any conflicting station screen search styles */
+#stationScreen .search-panel,
+#stationScreen .search-container,
+#stationScreen .search-input-wrapper,
+#stationScreen .search-icon,
+#stationScreen .search-input,
+#stationScreen .clear-search-btn {
+    all: unset;
+}
+
+/* Re-apply the classes so they pick up default styles */
+#stationScreen .search-panel {
+    display: block;
+}
+
+#stationScreen .search-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#stationScreen .search-input-wrapper {
+    display: flex;
+}
+
+#stationScreen .search-input {
+    flex: 1;
+}
+
+/* Let these elements use the global .search-panel styles from line 4301 */
+/* This ensures station screen matches live tracking exactly */
+
+/* ========================================
+   MAKE SCHEDULE & LIVE TRACKING MATCH STATION SCREEN
+   Consistent layout across all screens
+   ======================================== */
+
+/* Live Tracking Screen - Match Station Screen */
+#liveTracking .search-panel {
+    margin: 15px 20px 20px 20px;
+}
+
+#liveTracking .results-header {
+    margin: 0 20px 15px 20px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+#liveTracking .screen-content {
+    padding: 0;
+}
+
+#liveTracking .schedule-results {
+    padding: 0;
+}
+
+#liveTracking .live-trains-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 20px 20px 20px;
+}
+
+/* Schedule Screen - Match Station Screen */
+#scheduleScreen .search-panel {
+    margin: 15px 20px 20px 20px;
+}
+
+#scheduleScreen .results-header {
+    margin: 0 20px 15px 20px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+#scheduleScreen .screen-content {
+    padding: 0;
+}
+
+#scheduleScreen .schedule-results {
+    padding: 0;
+}
+
+#scheduleScreen .schedule-train-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 20px 20px 20px;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode #liveTracking .results-header,
+body.mobile-app.dark-mode #scheduleScreen .results-header {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode #liveTracking .results-header h3,
+body.mobile-app.dark-mode #scheduleScreen .results-header h3 {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode #liveTracking .results-count,
+body.mobile-app.dark-mode #scheduleScreen .results-count {
+    color: #94a3b8;
+}
+
+/* ========================================
+   MAP SCREEN - Search Container Styling
+   Match with other screens for consistency
+   ======================================== */
+
+.map-search-container {
+    padding: 12px 16px;
+    margin: 0 0 12px 0;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.map-search-container .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.map-search-container .search-input-wrapper:focus-within {
+    background: white;
+    border-color: rgba(79, 70, 229, 0.3);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.map-search-container .search-icon {
+    padding-left: 16px;
+    padding-right: 8px;
+    font-size: 18px;
+    color: #64748b;
+}
+
+.map-search-container .search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 14px 16px 14px 0;
+    font-size: 15px;
+    color: #1e293b;
+    outline: none;
+    min-width: 0;
+}
+
+.map-search-container .search-input::placeholder {
+    color: #94a3b8;
+}
+
+.map-search-container .clear-search-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    border: none;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.map-search-container .clear-search-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Train Selection Panel Adjustments */
+.train-selection-panel {
+    max-height: 70vh;
+}
+
+.train-selection-panel .train-list {
+    max-height: calc(70vh - 140px); /* Adjusted for search bar */
+    overflow-y: auto;
+}
+
+/* No results styling */
+.train-list .no-results {
+    padding: 32px 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 15px;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode .map-search-container {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode .map-search-container .search-input-wrapper {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .map-search-container .search-input-wrapper:focus-within {
+    background: rgba(15, 23, 42, 1);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+body.mobile-app.dark-mode .map-search-container .search-icon {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .map-search-container .search-input {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .map-search-container .search-input::placeholder {
+    color: #64748b;
+}
+
+body.mobile-app.dark-mode .map-search-container .clear-search-btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+body.mobile-app.dark-mode .map-search-container .clear-search-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+body.mobile-app.dark-mode .train-list .no-results {
+    color: #94a3b8;
 }

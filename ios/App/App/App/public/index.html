@@ -52,7 +52,7 @@
                     <div class="stat-icon">
                         <img src="/locomotive_1f682.png" alt="Train" class="stat-locomotive-icon" />
                     </div>
-                    <div class="stat-number" id="activeTrainsCount">0</div>
+                    <div class="stat-number" id="activeTrainsCount">--</div>
                     <div class="stat-label">Active</div>
                 </div>
                 <div class="stat-card">
@@ -436,6 +436,16 @@
                         <h3>Select Train to Track</h3>
                         <button class="close-panel-btn" onclick="mobileApp.closeTrainSelection()">×</button>
                     </div>
+                    
+                    <!-- Search Box -->
+                    <div class="map-search-container">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="mapSearchInput" placeholder="Search trains by number or name..." class="search-input">
+                            <button class="clear-search-btn" id="clearMapSearch" onclick="mobileApp.clearMapSearch()" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    
                     <div class="train-list" id="trainList">
                         <div class="loading">Loading active trains...</div>
                     </div>
@@ -491,7 +501,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Station Search</h2>
+                            <h2>Stations</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -510,26 +520,27 @@
                     </div>
                 </div>
 
-                <div class="station-search">
-                    <div class="search-input">
-                        <input type="text" id="stationSearchInput" class="station-search-input" placeholder="Search for station...">
-                        <button class="search-btn-small" onclick="mobileApp.searchStations()">🔍</button>
+                <div class="search-panel">
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="stationSearchInput" placeholder="Search stations..." class="search-input">
+                            <button class="clear-search-btn" id="clearStationSearch" onclick="mobileApp.clearStationSearch()" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    <div class="search-results-info" id="stationSearchResults" style="display: none;">
+                        Found 0 stations matching your search
                     </div>
                 </div>
 
                 <div class="screen-content">
-                    <!-- Major Stations -->
-                    <div class="section-header">
-                        <h3>Major Stations</h3>
-                    </div>
-                    <div class="major-stations" id="majorStations">
-                        <div class="loading">Loading major stations...</div>
-                    </div>
-
-                    <div class="station-results" id="stationResults">
-                        <div class="empty-state">
-                            <p>🚉 Enter a station name to search</p>
-                            <p>Find departures, arrivals, and station information</p>
+                    <div class="schedule-results">
+                        <div class="results-header">
+                            <h3>All Stations</h3>
+                            <div class="results-count" id="stationsResultsCount">Loading...</div>
+                        </div>
+                        <div class="stations-list" id="stationsList">
+                            <div class="loading">Loading stations...</div>
                         </div>
                     </div>
                 </div>
