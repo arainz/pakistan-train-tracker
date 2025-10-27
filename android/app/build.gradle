@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.pakrailtracker.app"
+    namespace "com.abdulnasir.pakrailwayslive"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.pakrailtracker.app"
+        applicationId "com.abdulnasir.pakrailwayslive"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

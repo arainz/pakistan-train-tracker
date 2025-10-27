@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Main Pages -->
+  <url>
+    <loc>https://pakistanrailways.app/</loc>
+    <lastmod>2025-10-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <url>
+    <loc>https://pakistanrailways.app/index.html</loc>
+    <lastmod>2025-10-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- Static Assets -->
+  <url>
+    <loc>https://pakistanrailways.app/manifest.json</loc>
+    <lastmod>2025-10-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <!-- Images -->
+  <url>
+    <loc>https://pakistanrailways.app/locomotive_1f682.png</loc>
+    <lastmod>2025-10-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <image:image>
+      <image:loc>https://pakistanrailways.app/locomotive_1f682.png</image:loc>
+      <image:title>Pakistan Railways Train Icon</image:title>
+      <image:caption>Live train tracking icon for Pakistan Railways</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://pakistanrailways.app/locomotive_1f682.webp</loc>
+    <lastmod>2025-10-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <image:image>
+      <image:loc>https://pakistanrailways.app/locomotive_1f682.webp</image:loc>
+      <image:title>Pakistan Railways Train Icon WebP</image:title>
+      <image:caption>Optimized train tracking icon</image:caption>
+    </image:image>
+  </url>
+
+</urlset>
+

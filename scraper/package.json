@@ -1,0 +1,27 @@
+{
+  "name": "pakrailways-scraper",
+  "version": "1.0.0",
+  "description": "Web scraper for Pakistan Railways train schedules",
+  "main": "pakrailways-scraper.js",
+  "scripts": {
+    "scrape": "node pakrailways-scraper.js",
+    "analyze": "node analyze-rabta.js",
+    "test": "node test-scraper.js"
+  },
+  "keywords": [
+    "pakistan",
+    "railways",
+    "scraper",
+    "train",
+    "schedule"
+  ],
+  "dependencies": {
+    "puppeteer": "^21.5.0",
+    "cheerio": "^1.0.0-rc.12",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+

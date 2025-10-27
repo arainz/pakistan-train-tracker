@@ -51,8 +51,8 @@ class MobileApp {
         // Make sure main content is visible
         this.showMainContent();
         
-        // Request permissions on app startup
-        await this.requestAppPermissions();
+        // Request location permission on app startup (native dialog)
+        await this.requestLocationPermission();
         
         // Load schedule data FIRST (needed for filtering completed journeys)
         await this.loadScheduledTrainsForHome();
@@ -61,8 +61,8 @@ class MobileApp {
         // MUST await to ensure trainData.active is populated before loadLiveUpdates()
         await this.loadLiveTrains();
         
-        // Request user location (after permission granted)
-        this.getUserLocation();
+        // Request user location ONLY if permission is already granted (no popup)
+        await this.getUserLocationIfPermitted();
         
         // Start live updates feed (now trainData.active is guaranteed to be populated)
         this.loadLiveUpdates();
@@ -74,8 +74,8 @@ class MobileApp {
         this.startLastUpdatedCountdown();
     }
 
-    async requestAppPermissions() {
-        console.log('📱 Requesting app permissions...');
+    async requestLocationPermission() {
+        console.log('📱 Requesting location permission...');
         
         // Request Location Permission (Capacitor)
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -86,9 +86,9 @@ class MobileApp {
                 const permissionStatus = await Geolocation.checkPermissions();
                 console.log('📍 Location permission status:', permissionStatus);
                 
-                // Request if not granted
-                if (permissionStatus.location !== 'granted') {
-                    const requestResult = await Geolocation.requestPermissions();
+                // Only request if not yet determined (first time)
+                if (permissionStatus.location === 'prompt' || permissionStatus.location === 'prompt-with-rationale' || permissionStatus.location !== 'granted') {
+                    const requestResult = await Geolocation.requestPermissions({ permissions: ['location'] });
                     console.log('📍 Location permission request result:', requestResult);
                     
                     if (requestResult.location === 'granted') {
@@ -96,44 +96,89 @@ class MobileApp {
                     } else {
                         console.log('❌ Location permission denied');
                     }
-                } else {
+                } else if (permissionStatus.location === 'granted') {
                     console.log('✅ Location permission already granted');
                 }
             } catch (error) {
                 console.error('❌ Error requesting location permission:', error);
             }
         }
+    }
+    
+    async requestNotificationPermission() {
+        console.log('📱 Requesting notification permission...');
         
-        // Request Notification Permission
-        if ('Notification' in window) {
+        // Use Capacitor LocalNotifications for native apps
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             try {
-                console.log(`🔔 Current notification permission: ${Notification.permission}`);
+                const { LocalNotifications } = window.Capacitor.Plugins;
                 
-                if (Notification.permission === 'default') {
-                    // Only request if not already decided
-                    const permission = await Notification.requestPermission();
-                    console.log(`🔔 Notification permission result: ${permission}`);
+                // Check current permission status
+                const permissionStatus = await LocalNotifications.checkPermissions();
+                console.log('🔔 Notification permission status:', permissionStatus.display);
+                
+                // Request if not granted
+                if (permissionStatus.display !== 'granted') {
+                    const requestResult = await LocalNotifications.requestPermissions();
+                    console.log('🔔 Notification permission request result:', requestResult.display);
                     
-                    if (permission === 'granted') {
+                    if (requestResult.display === 'granted') {
                         console.log('✅ Notification permission granted');
                         this.startNotificationMonitoring();
+                        return true;
                     } else {
                         console.log('❌ Notification permission denied');
+                        this.showToast('Notification permission denied');
+                        return false;
                     }
-                } else if (Notification.permission === 'granted') {
+                } else {
                     console.log('✅ Notification permission already granted');
                     this.startNotificationMonitoring();
-                } else {
-                    console.log('❌ Notification permission previously denied');
+                    return true;
                 }
             } catch (error) {
                 console.error('❌ Error requesting notification permission:', error);
+                this.showToast('Error requesting notification permission');
+                return false;
             }
         } else {
-            console.log('⚠️ Notifications not supported in this environment');
+            // Web browser - use Web Notifications API
+            if ('Notification' in window) {
+                try {
+                    console.log(`🔔 Current notification permission: ${Notification.permission}`);
+                    
+                    if (Notification.permission === 'default') {
+                        const permission = await Notification.requestPermission();
+                        console.log(`🔔 Notification permission result: ${permission}`);
+                        
+                        if (permission === 'granted') {
+                            console.log('✅ Notification permission granted');
+                            this.startNotificationMonitoring();
+                            return true;
+                        } else {
+                            console.log('❌ Notification permission denied');
+                            this.showToast('Notification permission denied');
+                            return false;
+                        }
+                    } else if (Notification.permission === 'granted') {
+                        console.log('✅ Notification permission already granted');
+                        this.startNotificationMonitoring();
+                        return true;
+                    } else {
+                        console.log('❌ Notification permission previously denied');
+                        this.showToast('Please enable notifications in Settings');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('❌ Error requesting notification permission:', error);
+                    return false;
+                }
+            } else {
+                console.log('⚠️ Notifications not supported');
+                this.showToast('Notifications not supported');
+                return false;
+            }
         }
-        
-        console.log('✅ Permission requests completed');
     }
 
     async setupCapacitorBackButton() {
@@ -2695,8 +2740,12 @@ class MobileApp {
         const status = speed > 0 ? 'Moving' : 'Stopped';
         const eta = train.NextStationETA || '--:--';
         
-        // Calculate delay
-        const delay = this.calculateDelayFromETA(train);
+        // Calculate delay using the same logic used across the site
+        // Try calculated delay first, fallback to API's LateBy field
+        let delay = this.calculateDelayFromETA(train);
+        if (delay === null || delay === undefined) {
+            delay = train.LateBy || 0;
+        }
         const delayText = this.formatDelayDisplay(delay);
         
         // Get last updated
@@ -5040,33 +5089,80 @@ class MobileApp {
         }
     }
 
-    // Geolocation and nearest station functionality
-    getUserLocation() {
-        if (!navigator.geolocation) {
-            console.log('Geolocation not supported');
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                this.userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                console.log('📍 User location obtained:', this.userLocation);
-                this.findNearestStation();
-            },
-            (error) => {
-                console.log('Location access denied or failed:', error.message);
-                // Try to use a fallback location (Karachi as default)
+    // NEW: Get user location ONLY if permission is already granted (no popup)
+    async getUserLocationIfPermitted() {
+        console.log('📍 Checking if can get user location...');
+        
+        // Use Capacitor Geolocation (native) instead of browser geolocation
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { Geolocation } = window.Capacitor.Plugins;
+                
+                // Check permission status first
+                const permissionStatus = await Geolocation.checkPermissions();
+                console.log('📍 Location permission status:', permissionStatus.location);
+                
+                // Only get location if permission is already granted
+                if (permissionStatus.location === 'granted') {
+                    const position = await Geolocation.getCurrentPosition({
+                        enableHighAccuracy: true,
+                        timeout: 10000
+                    });
+                    
+                    this.userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    console.log('✅ User location obtained (native):', this.userLocation);
+                    this.findNearestStation();
+                } else {
+                    console.log('⚠️ Location permission not granted, using fallback');
+                    this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
+                    this.findNearestStation();
+                }
+            } catch (error) {
+                console.log('❌ Error getting location:', error);
                 this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
                 this.findNearestStation();
-            },
-            {
-                timeout: 10000,
-                maximumAge: 300000 // 5 minutes
             }
-        );
+        } else {
+            // Web browser - use getUserLocation (can show web dialog)
+            this.getUserLocation();
+        }
+    }
+    
+    // Geolocation and nearest station functionality (for web only)
+    async getUserLocation() {
+        console.log('📍 Getting user location (web)...');
+        
+        // This is ONLY called for web browsers, not native apps
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    this.userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    console.log('✅ User location obtained (web):', this.userLocation);
+                    this.findNearestStation();
+                },
+                (error) => {
+                    console.log('❌ Web location failed:', error.message);
+                    this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
+                    console.log('📍 Using fallback location: Karachi');
+                    this.findNearestStation();
+                },
+                {
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutes
+                }
+            );
+        } else {
+            // No geolocation support
+            console.log('⚠️ Geolocation not supported');
+            this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
+            this.findNearestStation();
+        }
     }
 
     async findNearestStation() {
@@ -5762,7 +5858,10 @@ class MobileApp {
                 arrivalTime: stationInRoute.ArrivalTime,
                 departureTime: stationInRoute.DepartureTime,
                 speed: liveTrain.Speed || 0,
-                delay: this.calculateDelayFromETA(liveTrain) || 0,
+                delay: (() => {
+                    const calculatedDelay = this.calculateDelayFromETA(liveTrain);
+                    return calculatedDelay !== null ? calculatedDelay : (liveTrain.LateBy || 0);
+                })(),
                 trainDate: this.getTrainDate(liveTrain.LastUpdated, liveTrain.InnerKey, liveTrain.TrainNumber),
                 isNextStation: currentStationIndex === stationIndex
             };
@@ -6819,29 +6918,6 @@ class MobileApp {
 
     // ========== NOTIFICATION METHODS ==========
     
-    async requestNotificationPermission() {
-        if (!('Notification' in window)) {
-            console.log('📵 This browser does not support notifications');
-            return false;
-        }
-
-        if (Notification.permission === 'granted') {
-            console.log('✅ Notification permission already granted');
-            return true;
-        }
-
-        if (Notification.permission !== 'denied') {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                console.log('✅ Notification permission granted');
-                return true;
-            }
-        }
-
-        console.log('❌ Notification permission denied');
-        return false;
-    }
-
     loadNotificationsFromStorage() {
         try {
             const stored = localStorage.getItem('trainNotifications');
@@ -7073,16 +7149,25 @@ class MobileApp {
     showNotificationSettings(train, stations, preserveState = false) {
         console.log(`🔔 showNotificationSettings called (preserveState: ${preserveState})`);
         
-        // Request notification permission if not already granted (user gesture required)
-        if ('Notification' in window && Notification.permission === 'default') {
-            console.log('🔔 Notification permission not yet requested, will request on user interaction');
-            // Permission will be requested when user clicks "Add Notification" button
-        }
-        
-        // Start notification monitoring if permission is granted
-        if ('Notification' in window && Notification.permission === 'granted' && !this.notificationCheckInterval) {
-            this.startNotificationMonitoring();
-        }
+        // Start notification monitoring if permission is already granted
+        // For native apps, check Capacitor LocalNotifications
+        // For web, check web Notification API
+        const checkAndStartMonitoring = async () => {
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                try {
+                    const { LocalNotifications } = window.Capacitor.Plugins;
+                    const permissionStatus = await LocalNotifications.checkPermissions();
+                    if (permissionStatus.display === 'granted' && !this.notificationCheckInterval) {
+                        this.startNotificationMonitoring();
+                    }
+                } catch (error) {
+                    console.error('Error checking notification permission:', error);
+                }
+            } else if ('Notification' in window && Notification.permission === 'granted' && !this.notificationCheckInterval) {
+                this.startNotificationMonitoring();
+            }
+        };
+        checkAndStartMonitoring();
         
         // Check if notification settings already exist
         const existingSettings = document.querySelector('.notification-settings');
@@ -7268,24 +7353,15 @@ class MobileApp {
         if (addBtn) {
             addBtn.addEventListener('click', async () => {
                 if (selectedStation && selectedMinutes) {
-                    // Request notification permission if needed (user gesture - allowed here!)
-                    if ('Notification' in window && Notification.permission === 'default') {
-                        console.log('🔔 Requesting notification permission...');
-                        const permissionGranted = await this.requestNotificationPermission();
-                        if (!permissionGranted) {
-                            this.showToast('Please enable notifications to use this feature');
-                            return;
-                        }
-                        // Start monitoring if permission just granted
-                        if (!this.notificationCheckInterval) {
-                            this.startNotificationMonitoring();
-                        }
+                    // Request notification permission (handles both native and web)
+                    console.log('🔔 Checking notification permission...');
+                    const permissionGranted = await this.requestNotificationPermission();
+                    if (!permissionGranted) {
+                        return; // Permission request function already shows toast
                     }
                     
-                    if (!('Notification' in window) || Notification.permission !== 'granted') {
-                        this.showToast('Notification permission is required');
-                        return;
-                    }
+                    // Permission is granted, proceed
+                    console.log('✅ Notification permission granted, adding notification...');
                     
                     this.addNotification(
                         train.InnerKey || train.TrainId,

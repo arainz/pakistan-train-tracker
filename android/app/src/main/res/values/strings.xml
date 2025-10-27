@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Pakistan Train Tracker</string>
-    <string name="title_activity_main">Pakistan Train Tracker</string>
-    <string name="package_name">com.pakrailtracker.app</string>
-    <string name="custom_url_scheme">com.pakrailtracker.app</string>
+    <string name="app_name">Pak-Rail Live</string>
+    <string name="title_activity_main">Pak-Rail Live Train Tracking</string>
+    <string name="package_name">com.abdulnasir.pakrailwayslive</string>
+    <string name="custom_url_scheme">com.abdulnasir.pakrailwayslive</string>
 </resources>

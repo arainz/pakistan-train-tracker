@@ -26,4 +26,23 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+  
+  # Fix for Cordova header import issues with use_frameworks!
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      # Disable User Script Sandboxing for CocoaPods
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    end
+  end
+  
+  # Fix for sandbox file-read-data errors - disable for main project too
+  installer.aggregate_targets.each do |target|
+    target.xcconfigs.each do |config_name, config_file|
+      config_file.attributes['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      xcconfig_path = target.xcconfig_path(config_name)
+      config_file.save_as(xcconfig_path)
+    end
+  end
 end
