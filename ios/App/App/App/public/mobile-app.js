@@ -3328,6 +3328,35 @@ class MobileApp {
         }
     }
 
+    // Simplified wrapper for getting train date from train object
+    getTrainDateFromInnerKey(innerKeyOrTrainId) {
+        try {
+            // Get train data to extract train number
+            const train = this.trainData.active?.find(t => 
+                t.InnerKey === innerKeyOrTrainId || 
+                t.TrainId === innerKeyOrTrainId
+            );
+            
+            if (train) {
+                return this.getTrainDate(train.UpdatedOn, train.InnerKey || train.TrainId, train.TrainNumber);
+            }
+            
+            // Fallback to current date
+            return new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric'
+            });
+        } catch (e) {
+            console.error('Error in getTrainDateFromInnerKey:', e);
+            return new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric'
+            });
+        }
+    }
+
     showTrainDetailsError(message) {
         document.getElementById('trainDetailName').textContent = 'Error Loading Train';
         document.getElementById('stationRouteList').innerHTML = `<div class="loading">Error: ${message}</div>`;
@@ -5535,6 +5564,50 @@ class MobileApp {
         }
     }
 
+    // Get scheduled time for a specific station
+    getScheduledTimeForStation(train, stationName) {
+        try {
+            const trainNumber = train.TrainNumber || train.trainNumber;
+            if (!trainNumber || !stationName || !this.scheduleData || !Array.isArray(this.scheduleData)) {
+                return null;
+            }
+
+            // Find the scheduled train
+            let scheduledTrain = this.scheduleData.find(t => 
+                String(t.trainNumber) === String(trainNumber) ||
+                String(t.TrainNumber) === String(trainNumber)
+            );
+
+            if (!scheduledTrain && train.TrainId) {
+                scheduledTrain = this.scheduleData.find(t => 
+                    String(t.trainId) === String(train.TrainId)
+                );
+            }
+
+            if (!scheduledTrain || !scheduledTrain.stations || scheduledTrain.stations.length === 0) {
+                return null;
+            }
+
+            // Find matching station in schedule
+            const stationNameLower = stationName.toLowerCase();
+            const matchingStation = scheduledTrain.stations.find(station => 
+                station.StationName && (
+                    station.StationName.toLowerCase().includes(stationNameLower) ||
+                    stationNameLower.includes(station.StationName.toLowerCase())
+                )
+            );
+
+            if (matchingStation) {
+                return matchingStation.ArrivalTime || matchingStation.DepartureTime || null;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('❌ Error getting scheduled time for station:', error);
+            return null;
+        }
+    }
+
     // Get full station schedule info including day indicator
     getScheduledStationInfo(liveTrainData) {
         try {
@@ -6353,21 +6426,15 @@ class MobileApp {
                 console.log(`📊 Raw train data: ${data.data.length} trains`);
                 
                 // Apply the same filtering logic as other screens
-                let filteredTrains = data.data;
+                // Note: filterDuplicateTrains internally calls filterByRecentDates
+                let filteredTrains = this.filterDuplicateTrains(data.data);
+                console.log(`🔄 After duplicate filter (includes date filter): ${filteredTrains.length} trains`);
                 
-                // 1. Filter by recent dates (last 3 days)
-                filteredTrains = this.filterByRecentDates(filteredTrains, 3);
-                console.log(`📅 After date filter: ${filteredTrains.length} trains`);
-                
-                // 2. Filter duplicate trains (keep first 2 instances per train number + direction, latest 2 dates)
-                filteredTrains = this.filterDuplicateTrains(filteredTrains);
-                console.log(`🔄 After duplicate filter: ${filteredTrains.length} trains`);
-                
-                // 3. Filter completed journeys (reached destination, stopped, 30+ min old)
+                // Filter completed journeys (reached destination, stopped, 30+ min old)
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
                 console.log(`🏁 After completed journeys filter: ${filteredTrains.length} trains`);
                 
-                // 4. Filter unrealistic delays (24+ hours)
+                // Filter unrealistic delays (24+ hours)
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                 console.log(`⏰ After unrealistic delays filter: ${filteredTrains.length} trains`);
                 
@@ -6398,52 +6465,77 @@ class MobileApp {
             const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
             const trainName = train.TrainName || `Train ${trainNumber}`;
             const speed = train.Speed || 0;
-            const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
             const nextStation = train.NextStation || 'Unknown';
             const eta = train.NextStationETA || '--:--';
-            // Improved direction detection logic
-            const trainNameUp = String(trainName).toUpperCase();
-            const trainNumberUp = String(trainNumber).toUpperCase();
-            let direction = train.Direction || 'Unknown';
             
-            if (direction === 'Unknown') {
-                // Check both train name and train number for UP/DOWN indicators
-                if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
-                    direction = 'UP';
-                } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
-                           trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
-                    direction = 'DOWN';
-                } else {
-                    // Fallback to train number parity only if no text indicators
-                    const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
-                    if (!isNaN(numericPart)) {
-                        direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
-                    }
-                }
-            }
+            // Calculate delay
+            const delay = this.calculateDelayFromETA(train);
+            const delayMinutes = delay !== null ? delay : (train.LateBy || 0);
+            const delayClass = delayMinutes > 15 ? 'delayed' : (delayMinutes > 0 ? 'slightly-delayed' : 'on-time');
+            const headerClass = delayMinutes > 0 ? 'header-delayed' : 'header-ontime';
+            
+            // Movement status
+            const movementStatus = speed > 0 ? 'Moving' : 'Stopped';
+            const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
+            
+            // Train date
+            const trainDate = this.getTrainDate(train.UpdatedOn, train.InnerKey || train.TrainId, train.TrainNumber);
+            
+            // Updated time
+            const updatedTime = train.UpdatedOn ? this.formatTimeAMPM(train.UpdatedOn) : '--:--';
+            
+            // Scheduled time
+            const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
+            const scheduledTimeAMPM = scheduledTime ? this.formatTimeAMPM(scheduledTime) : '--:--';
+            
+            // Check if out of coverage
+            const isOutOfCoverage = this.isTrainOutOfCoverage(train);
             
             html += `
-                <div class="train-item" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
-                    <div class="train-item-row train-header-row">
-                        <div class="train-number-badge">${trainNumber}</div>
-                        <div class="train-name-text">${trainName}</div>
-                        <div class="train-direction-badge ${direction.toLowerCase()}">${direction}</div>
+                <div class="train-card" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
+                    <div class="train-card-header ${headerClass}">
+                        <div class="train-header-content">
+                            <div class="train-name">${trainName}</div>
+                            <div class="status-indicator">
+                                <span class="live-dot ${isOutOfCoverage ? 'out-of-coverage' : ''}"></span>
+                                ${isOutOfCoverage ? 'OFFLINE' : 'LIVE'}
+                            </div>
+                        </div>
                     </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Speed:</span>
-                        <span class="train-value">${speed} km/h</span>
+                    <div class="train-route">
+                        <div class="train-number">#${trainNumber}</div>
+                        <div class="train-route-arrow">→</div>
+                        <div class="next-station">${nextStation}</div>
                     </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Current Location:</span>
-                        <span class="train-value">${currentLocation}</span>
-                    </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Next Station:</span>
-                        <span class="train-value">${nextStation}</span>
-                    </div>
-                    <div class="train-item-row">
-                        <span class="train-label">ETA:</span>
-                        <span class="train-value train-eta-value">${eta}</span>
+                    <div class="train-info-grid">
+                        <div class="info-row">
+                            <span class="info-icon">📍</span>
+                            <span class="info-text">Next Station: ${nextStation}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📅</span>
+                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⏱️</span>
+                            <span class="info-text">Delay: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes) : 'On Time'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⏰</span>
+                            <span class="info-text">${eta}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⚡</span>
+                            <span class="info-text">Speed: ${speed} km/h</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📅</span>
+                            <span class="info-text">Train Date: ${trainDate}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🔄</span>
+                            <span class="info-text">Updated: ${updatedTime}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -6513,51 +6605,77 @@ class MobileApp {
             const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
             const trainName = train.TrainName || `Train ${trainNumber}`;
             const speed = train.Speed || 0;
-            const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
             const nextStation = train.NextStation || 'Unknown';
             const eta = train.NextStationETA || '--:--';
             
-            // Improved direction detection logic
-            const trainNameUp = String(trainName).toUpperCase();
-            const trainNumberUp = String(trainNumber).toUpperCase();
-            let direction = train.Direction || 'Unknown';
+            // Calculate delay
+            const delay = this.calculateDelayFromETA(train);
+            const delayMinutes = delay !== null ? delay : (train.LateBy || 0);
+            const delayClass = delayMinutes > 15 ? 'delayed' : (delayMinutes > 0 ? 'slightly-delayed' : 'on-time');
+            const headerClass = delayMinutes > 0 ? 'header-delayed' : 'header-ontime';
             
-            if (direction === 'Unknown') {
-                if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
-                    direction = 'UP';
-                } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
-                           trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
-                    direction = 'DOWN';
-                } else {
-                    const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
-                    if (!isNaN(numericPart)) {
-                        direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
-                    }
-                }
-            }
+            // Movement status
+            const movementStatus = speed > 0 ? 'Moving' : 'Stopped';
+            const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
+            
+            // Train date
+            const trainDate = this.getTrainDate(train.UpdatedOn, train.InnerKey || train.TrainId, train.TrainNumber);
+            
+            // Updated time
+            const updatedTime = train.UpdatedOn ? this.formatTimeAMPM(train.UpdatedOn) : '--:--';
+            
+            // Scheduled time
+            const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
+            const scheduledTimeAMPM = scheduledTime ? this.formatTimeAMPM(scheduledTime) : '--:--';
+            
+            // Check if out of coverage
+            const isOutOfCoverage = this.isTrainOutOfCoverage(train);
             
             html += `
-                <div class="train-item" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
-                    <div class="train-item-row train-header-row">
-                        <div class="train-number-badge">${trainNumber}</div>
-                        <div class="train-name-text">${trainName}</div>
-                        <div class="train-direction-badge ${direction.toLowerCase()}">${direction}</div>
+                <div class="train-card" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
+                    <div class="train-card-header ${headerClass}">
+                        <div class="train-header-content">
+                            <div class="train-name">${trainName}</div>
+                            <div class="status-indicator">
+                                <span class="live-dot ${isOutOfCoverage ? 'out-of-coverage' : ''}"></span>
+                                ${isOutOfCoverage ? 'OFFLINE' : 'LIVE'}
+                            </div>
+                        </div>
                     </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Speed:</span>
-                        <span class="train-value">${speed} km/h</span>
+                    <div class="train-route">
+                        <div class="train-number">#${trainNumber}</div>
+                        <div class="train-route-arrow">→</div>
+                        <div class="next-station">${nextStation}</div>
                     </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Current Location:</span>
-                        <span class="train-value">${currentLocation}</span>
-                    </div>
-                    <div class="train-item-row">
-                        <span class="train-label">Next Station:</span>
-                        <span class="train-value">${nextStation}</span>
-                    </div>
-                    <div class="train-item-row">
-                        <span class="train-label">ETA:</span>
-                        <span class="train-value train-eta-value">${eta}</span>
+                    <div class="train-info-grid">
+                        <div class="info-row">
+                            <span class="info-icon">📍</span>
+                            <span class="info-text">Next Station: ${nextStation}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📅</span>
+                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⏱️</span>
+                            <span class="info-text">Delay: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes) : 'On Time'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⏰</span>
+                            <span class="info-text">${eta}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⚡</span>
+                            <span class="info-text">Speed: ${speed} km/h</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📅</span>
+                            <span class="info-text">Train Date: ${trainDate}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🔄</span>
+                            <span class="info-text">Updated: ${updatedTime}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -6964,20 +7082,15 @@ class MobileApp {
                     console.log(`🔄 Map refresh - Raw data: ${data.data.length} trains`);
                     
                     // Apply the same filtering logic as loadMapTrains
+                    // Note: filterDuplicateTrains internally calls filterByRecentDates
+                    filteredTrains = this.filterDuplicateTrains(data.data);
+                    console.log(`🔄 Map refresh - After duplicate filter (includes date filter): ${filteredTrains.length} trains`);
                     
-                    // 1. Filter by recent dates (last 3 days)
-                    filteredTrains = this.filterByRecentDates(data.data, 3);
-                    console.log(`📅 Map refresh - After date filter: ${filteredTrains.length} trains`);
-                    
-                    // 2. Filter duplicate trains
-                    filteredTrains = this.filterDuplicateTrains(filteredTrains);
-                    console.log(`🔄 Map refresh - After duplicate filter: ${filteredTrains.length} trains`);
-                    
-                    // 3. Filter completed journeys
+                    // Filter completed journeys
                     filteredTrains = this.filterCompletedJourneys(filteredTrains);
                     console.log(`🏁 Map refresh - After completed journeys filter: ${filteredTrains.length} trains`);
                     
-                    // 4. Filter unrealistic delays
+                    // Filter unrealistic delays
                     filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                     console.log(`⏰ Map refresh - After unrealistic delays filter: ${filteredTrains.length} trains`);
                     

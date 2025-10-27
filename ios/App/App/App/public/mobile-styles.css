@@ -7742,3 +7742,43 @@ body.mobile-app.dark-mode .train-value {
 body.mobile-app.dark-mode .train-eta-value {
     color: #60a5fa;
 }
+
+/* ============================================
+   Fix: Notification Badge Positioning
+   ============================================ */
+
+.header-icon-btn {
+    position: relative; /* Required for absolute positioned badge */
+}
+
+.notification-btn {
+    position: relative; /* Ensure notification button is positioned correctly */
+}
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+    border: 2px solid white;
+    z-index: 10;
+}
+
+.notification-badge:not(:empty) {
+    display: flex; /* Show only when there's content */
+}
+
+body.mobile-app.dark-mode .notification-badge {
+    border-color: #0f172a;
+}
