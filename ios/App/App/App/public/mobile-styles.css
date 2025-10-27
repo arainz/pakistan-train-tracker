@@ -7365,3 +7365,239 @@ body.mobile-app.dark-mode .map-search-container .clear-search-btn:hover {
 body.mobile-app.dark-mode .train-list .no-results {
     color: #94a3b8;
 }
+
+/* ==================== NOTIFICATION CENTER MODAL ==================== */
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    z-index: 10;
+}
+
+.notification-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-modal.show {
+    opacity: 1;
+}
+
+.notification-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.notification-modal.show .notification-modal-content {
+    transform: scale(1);
+}
+
+.notification-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.notification-modal-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.btn-close-modal {
+    background: #f1f5f9;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-close-modal:active {
+    background: #e2e8f0;
+    transform: scale(0.95);
+}
+
+.notification-modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.notification-center-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notification-center-item:active {
+    background: #f8fafc;
+}
+
+.notification-center-item:last-child {
+    border-bottom: none;
+}
+
+.notification-center-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-center-train {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-center-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-center-station,
+.notification-center-time {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.btn-remove-notification-center {
+    background: rgba(239, 68, 68, 0.1);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.btn-remove-notification-center:active {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(0.9);
+}
+
+.notification-empty {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.notification-empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.notification-empty p {
+    font-size: 18px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.notification-empty small {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+/* Dark Mode */
+body.mobile-app.dark-mode .notification-modal-content {
+    background: #1e293b;
+}
+
+body.mobile-app.dark-mode .notification-modal-header {
+    border-bottom-color: #334155;
+}
+
+body.mobile-app.dark-mode .notification-modal-header h2 {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .btn-close-modal {
+    background: #334155;
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .btn-close-modal:active {
+    background: #475569;
+}
+
+body.mobile-app.dark-mode .notification-center-item {
+    border-bottom-color: #334155;
+}
+
+body.mobile-app.dark-mode .notification-center-item:active {
+    background: #0f172a;
+}
+
+body.mobile-app.dark-mode .notification-center-train {
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .notification-center-station,
+body.mobile-app.dark-mode .notification-center-time {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-empty p {
+    color: #94a3b8;
+}
+
+body.mobile-app.dark-mode .notification-empty small {
+    color: #64748b;
+}

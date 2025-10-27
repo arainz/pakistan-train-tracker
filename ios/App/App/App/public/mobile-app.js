@@ -69,6 +69,7 @@ class MobileApp {
         
         this.setupNavigation();
         this.setupHistoryNavigation();
+        this.setupNotificationCenter();
         this.initializeDarkMode();
         this.startAutoRefresh();
         this.startLastUpdatedCountdown();
@@ -6950,6 +6951,7 @@ class MobileApp {
 
         this.notifications.push(notification);
         this.saveNotificationsToStorage();
+        this.updateNotificationBadge();
         console.log(`🔔 Notification added: ${trainName} - ${stationName} (${minutesBefore} min before)`);
         
         return notification;
@@ -6958,6 +6960,7 @@ class MobileApp {
     removeNotification(notificationId) {
         this.notifications = this.notifications.filter(n => n.id !== notificationId);
         this.saveNotificationsToStorage();
+        this.updateNotificationBadge();
         console.log(`🔕 Notification removed: ${notificationId}`);
     }
 
@@ -6965,6 +6968,230 @@ class MobileApp {
         return this.notifications.filter(n => 
             n.trainId === trainId && !n.triggered
         );
+    }
+
+    getAllActiveNotifications() {
+        return this.notifications.filter(n => !n.triggered);
+    }
+
+    setupNotificationCenter() {
+        console.log('🔔 Setting up notification center');
+        
+        // Update badge initially
+        this.updateNotificationBadge();
+        
+        // Add click listener to all notification buttons (one in each screen header)
+        document.querySelectorAll('.notification-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.showNotificationCenter();
+            });
+        });
+        
+        // Setup listener for notification taps (native device notifications)
+        this.setupNotificationActionListener();
+    }
+
+    async setupNotificationActionListener() {
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { LocalNotifications } = window.Capacitor.Plugins;
+                
+                // Listen for notification taps
+                await LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+                    console.log('🔔 Notification tapped:', notification);
+                    
+                    // Get the train ID from notification data (this is InnerKey, not TrainNumber)
+                    const trainId = notification.notification?.extra?.trainId;
+                    const trainName = notification.notification?.extra?.trainName;
+                    
+                    if (trainId) {
+                        console.log(`📱 Opening train details for: ${trainName} (InnerKey: ${trainId})`);
+                        
+                        // trainId is actually InnerKey (e.g., 127109900 for specific train instance)
+                        // openTrainDetails will find the train by InnerKey from active trains
+                        this.openTrainDetails(trainId);
+                    } else {
+                        console.warn('⚠️ No trainId (InnerKey) found in notification data');
+                    }
+                });
+                
+                console.log('✅ Notification action listener set up');
+            } catch (error) {
+                console.error('❌ Error setting up notification listener:', error);
+            }
+        }
+    }
+
+    updateNotificationBadge() {
+        const activeCount = this.getAllActiveNotifications().length;
+        const badges = document.querySelectorAll('.notification-badge');
+        
+        badges.forEach(badge => {
+            if (activeCount > 0) {
+                badge.textContent = activeCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+        
+        console.log(`🔔 Notification badge updated: ${activeCount} active`);
+    }
+
+    showNotificationCenter() {
+        console.log('🔔 Opening notification center');
+        
+        const activeNotifications = this.getAllActiveNotifications();
+        
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'notification-modal';
+        modal.innerHTML = `
+            <div class="notification-modal-content">
+                <div class="notification-modal-header">
+                    <h2>🔔 Active Notifications</h2>
+                    <button class="btn-close-modal">✕</button>
+                </div>
+                <div class="notification-modal-body">
+                    ${activeNotifications.length > 0 ? `
+                        ${activeNotifications.map(notif => `
+                            <div class="notification-center-item" data-train-id="${notif.trainId}">
+                                <div class="notification-center-info">
+                                    <div class="notification-center-train">${notif.trainName}</div>
+                                    <div class="notification-center-details">
+                                        <span class="notification-center-station">📍 ${notif.stationName}</span>
+                                        <span class="notification-center-time">⏰ ${notif.minutesBefore} min before</span>
+                                    </div>
+                                </div>
+                                <button class="btn-remove-notification-center" data-id="${notif.id}">
+                                    🗑️
+                                </button>
+                            </div>
+                        `).join('')}
+                    ` : `
+                        <div class="notification-empty">
+                            <div class="notification-empty-icon">🔕</div>
+                            <p>No active notifications</p>
+                            <small>Add notifications from train details page</small>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add event listeners
+        modal.querySelector('.btn-close-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Open train details when clicking notification item
+        modal.querySelectorAll('.notification-center-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Don't trigger if clicking delete button
+                if (e.target.classList.contains('btn-remove-notification-center')) return;
+                
+                const trainId = item.dataset.trainId;
+                modal.remove();
+                this.openTrainDetails(trainId);
+            });
+        });
+        
+        // Remove notification buttons
+        modal.querySelectorAll('.btn-remove-notification-center').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent opening train details
+                const notificationId = btn.dataset.id;
+                this.removeNotification(notificationId);
+                this.updateNotificationBadge();
+                
+                // Refresh modal
+                modal.remove();
+                this.showNotificationCenter();
+                
+                this.showToast('Notification removed');
+            });
+        });
+        
+        // Animate in
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    async triggerNotification(notification, train, minutesUntilArrival) {
+        console.log(`🔔 Triggering notification: ${notification.trainName} arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`);
+        
+        const title = `${notification.trainName}`;
+        const body = `Arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`;
+        
+        // Generate a valid numeric ID (use timestamp modulo to keep it under integer limit)
+        const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
+        
+        // Use Capacitor LocalNotifications for native apps
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { LocalNotifications } = window.Capacitor.Plugins;
+                
+                console.log(`📱 Sending native notification with ID: ${numericId}`);
+                console.log(`📱 Title: ${title}`);
+                console.log(`📱 Body: ${body}`);
+                
+                await LocalNotifications.schedule({
+                    notifications: [{
+                        id: numericId,
+                        title: title,
+                        body: body,
+                        schedule: { at: new Date(Date.now() + 1000) }, // 1 second from now
+                        sound: 'default',
+                        extra: {
+                            trainId: notification.trainId,
+                            trainName: notification.trainName
+                        }
+                    }]
+                });
+                console.log('✅ Native notification scheduled successfully');
+            } catch (error) {
+                console.error('❌ Error scheduling native notification:', error);
+                console.error('❌ Error details:', JSON.stringify(error));
+            }
+        } else if ('Notification' in window && Notification.permission === 'granted') {
+            // Web notification
+            try {
+                new Notification(title, {
+                    body: body,
+                    icon: '/locomotive_1f682.png',
+                    badge: '/locomotive_1f682.png',
+                    tag: notification.id
+                });
+                console.log('✅ Web notification sent');
+            } catch (error) {
+                console.error('❌ Error sending web notification:', error);
+            }
+        } else {
+            console.warn('⚠️ No notification method available or permission not granted');
+        }
+        
+        // Mark as triggered
+        notification.triggered = true;
+        this.saveNotificationsToStorage();
+        
+        // Refresh the notification UI if we're on the train details page
+        if (this.selectedTrain && String(this.selectedTrain.InnerKey) === String(notification.trainId)) {
+            const trainData = this.trainData.active.find(t => String(t.InnerKey) === String(notification.trainId));
+            if (trainData) {
+                const schedData = await this.getTrainSchedule(trainData.TrainNumber);
+                if (schedData && schedData.schedule) {
+                    this.showNotificationSettings(trainData, schedData.schedule, true);
+                }
+            }
+        }
     }
 
     startNotificationMonitoring() {
@@ -7025,7 +7252,7 @@ class MobileApp {
 
                     // Trigger notification if within the window and not already triggered
                     if (!notification.triggered && minutesUntilArrival <= notification.minutesBefore && minutesUntilArrival >= notification.minutesBefore - 1) {
-                        this.triggerNotification(notification, train, minutesUntilArrival);
+                        await this.triggerNotification(notification, train, minutesUntilArrival);
                     }
                 }
             } else {
@@ -7065,37 +7292,6 @@ class MobileApp {
         console.log(`✅ Notification check complete. Removed: ${notificationsToRemove.length} passed stations`);
     }
 
-    triggerNotification(notification, train, minutesUntilArrival) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            const title = `🚂 ${notification.trainName}`;
-            const body = `Arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`;
-            
-            const notif = new Notification(title, {
-                body,
-                icon: '/locomotive_1f682.png',
-                badge: '/locomotive_1f682.png',
-                tag: notification.id,
-                requireInteraction: false,
-                silent: false
-            });
-
-            notif.onclick = () => {
-                window.focus();
-                this.openTrainDetails(notification.trainId);
-                notif.close();
-            };
-
-            // Mark as triggered
-            notification.triggered = true;
-            this.saveNotificationsToStorage();
-
-            console.log(`🔔 Notification triggered: ${notification.trainName} - ${notification.stationName}`);
-            
-            // Refresh notification UI after pushing notification
-            this.refreshNotificationUIAfterPush(train);
-        }
-    }
-    
     async refreshNotificationUIAfterPush(train) {
         console.log('🔄 Refreshing notification UI after push');
         
