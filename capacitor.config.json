@@ -1,9 +1,10 @@
 {
   "appId": "com.pakrail.tracker",
-  "appName": "Pakistan Train Tracker",
+  "appName": "Pak Train Live",
   "webDir": "public",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "hostname": "app"
   },
   "android": {
     "path": "android"

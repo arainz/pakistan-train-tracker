@@ -1,0 +1,87 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#065f46;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconTrain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <filter id="iconShadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="1024" height="1024" rx="180" fill="url(#iconBg)"/>
+  
+  <!-- Train Icon (Simplified) -->
+  <g transform="translate(162, 250)" filter="url(#iconShadow)">
+    <!-- Main Body -->
+    <rect x="0" y="100" width="700" height="300" rx="30" fill="url(#iconTrain)"/>
+    
+    <!-- Cabin Top -->
+    <path d="M 150 100 L 550 100 L 520 20 L 180 20 Z" fill="#047857"/>
+    
+    <!-- Windows -->
+    <rect x="200" y="40" width="80" height="60" rx="10" fill="#bef264"/>
+    <rect x="320" y="40" width="80" height="60" rx="10" fill="#bef264"/>
+    <rect x="440" y="40" width="80" height="60" rx="10" fill="#bef264"/>
+    
+    <!-- Side Windows -->
+    <rect x="80" y="160" width="100" height="80" rx="12" fill="#1e3a8a" opacity="0.9"/>
+    <rect x="220" y="160" width="100" height="80" rx="12" fill="#1e3a8a" opacity="0.9"/>
+    <rect x="360" y="160" width="100" height="80" rx="12" fill="#1e3a8a" opacity="0.9"/>
+    <rect x="500" y="160" width="100" height="80" rx="12" fill="#1e3a8a" opacity="0.9"/>
+    
+    <!-- Headlight -->
+    <circle cx="650" cy="250" r="35" fill="#fbbf24"/>
+    <circle cx="650" cy="250" r="25" fill="#fef3c7"/>
+    
+    <!-- Pakistan Flag -->
+    <rect x="60" y="300" width="90" height="60" rx="8" fill="#01411C"/>
+    <circle cx="125" cy="330" r="14" fill="white"/>
+    <path d="M 132 322 L 132 338 L 120 330 Z" fill="white"/>
+    
+    <!-- Wheels -->
+    <circle cx="150" cy="450" r="60" fill="#1f2937"/>
+    <circle cx="150" cy="450" r="40" fill="#374151"/>
+    <circle cx="150" cy="450" r="20" fill="#6b7280"/>
+    
+    <circle cx="350" cy="450" r="60" fill="#1f2937"/>
+    <circle cx="350" cy="450" r="40" fill="#374151"/>
+    <circle cx="350" cy="450" r="20" fill="#6b7280"/>
+    
+    <circle cx="550" cy="450" r="60" fill="#1f2937"/>
+    <circle cx="550" cy="450" r="40" fill="#374151"/>
+    <circle cx="550" cy="450" r="20" fill="#6b7280"/>
+    
+    <!-- Connecting Rod -->
+    <rect x="130" y="445" width="440" height="10" rx="5" fill="#9ca3af"/>
+  </g>
+  
+  <!-- Railway Track (Bottom) -->
+  <g transform="translate(50, 680)">
+    <rect x="0" y="0" width="924" height="20" rx="4" fill="#78716c" opacity="0.7"/>
+    <rect x="0" y="60" width="924" height="20" rx="4" fill="#78716c" opacity="0.7"/>
+    
+    <!-- Track Ties -->
+    <g opacity="0.6">
+      <rect x="100" y="5" width="50" height="70" rx="4" fill="#57534e"/>
+      <rect x="250" y="5" width="50" height="70" rx="4" fill="#57534e"/>
+      <rect x="400" y="5" width="50" height="70" rx="4" fill="#57534e"/>
+      <rect x="550" y="5" width="50" height="70" rx="4" fill="#57534e"/>
+      <rect x="700" y="5" width="50" height="70" rx="4" fill="#57534e"/>
+    </g>
+  </g>
+  
+  <!-- "LIVE" Badge -->
+  <g transform="translate(780, 80)">
+    <rect x="0" y="0" width="160" height="80" rx="40" fill="#ef4444"/>
+    <text x="80" y="55" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="white" text-anchor="middle">LIVE</text>
+  </g>
+</svg>
+

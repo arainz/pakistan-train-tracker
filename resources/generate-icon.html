@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate App Icon - 1024x1024</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .instructions {
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        #canvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+            border-radius: 20px;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        input[type="file"] {
+            padding: 10px;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h1>🚂 Generate App Icon (1024x1024)</h1>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Click "Choose File" and select your train engine image</li>
+            <li>Use sliders to adjust size and position</li>
+            <li>Click "Download Icon (1024x1024)" to save</li>
+        </ol>
+    </div>
+
+    <div class="controls">
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="loadDefaultImage()">🚂 Load engine.png</button>
+        <div class="slider-group">
+            <label>Size:</label>
+            <input type="range" id="sizeSlider" min="300" max="900" value="700">
+            <span id="sizeValue">700px</span>
+        </div>
+        <div class="slider-group">
+            <label>X:</label>
+            <input type="range" id="xSlider" min="0" max="1024" value="162">
+            <span id="xValue">162</span>
+        </div>
+        <div class="slider-group">
+            <label>Y:</label>
+            <input type="range" id="ySlider" min="0" max="1024" value="200">
+            <span id="yValue">200</span>
+        </div>
+        <button onclick="downloadIcon()">📥 Download Icon (1024x1024)</button>
+    </div>
+
+    <canvas id="canvas" width="1024" height="1024"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let trainImage = null;
+
+        const sizeSlider = document.getElementById('sizeSlider');
+        const xSlider = document.getElementById('xSlider');
+        const ySlider = document.getElementById('ySlider');
+        const sizeValue = document.getElementById('sizeValue');
+        const xValue = document.getElementById('xValue');
+        const yValue = document.getElementById('yValue');
+
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                trainImage = new Image();
+                trainImage.onload = function() {
+                    drawIcon();
+                };
+                trainImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        sizeSlider.addEventListener('input', function() {
+            sizeValue.textContent = this.value + 'px';
+            drawIcon();
+        });
+
+        xSlider.addEventListener('input', function() {
+            xValue.textContent = this.value;
+            drawIcon();
+        });
+
+        ySlider.addEventListener('input', function() {
+            yValue.textContent = this.value;
+            drawIcon();
+        });
+
+        function drawIcon() {
+            // Clear canvas
+            ctx.clearRect(0, 0, 1024, 1024);
+
+            // Create rounded rectangle
+            const radius = 180;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(1024 - radius, 0);
+            ctx.quadraticCurveTo(1024, 0, 1024, radius);
+            ctx.lineTo(1024, 1024 - radius);
+            ctx.quadraticCurveTo(1024, 1024, 1024 - radius, 1024);
+            ctx.lineTo(radius, 1024);
+            ctx.quadraticCurveTo(0, 1024, 0, 1024 - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.clip();
+
+            // Gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 1024, 1024);
+            gradient.addColorStop(0, '#1e3a8a');
+            gradient.addColorStop(0.5, '#065f46');
+            gradient.addColorStop(1, '#1e3a8a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // Draw train image if loaded
+            if (trainImage) {
+                const size = parseInt(sizeSlider.value);
+                const x = parseInt(xSlider.value);
+                const y = parseInt(ySlider.value);
+                
+                // Add shadow
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = 30;
+                ctx.shadowOffsetY = 15;
+                
+                ctx.drawImage(trainImage, x, y, size, size * (trainImage.height / trainImage.width));
+                
+                ctx.shadowColor = 'transparent';
+            }
+
+            // LIVE badge
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(880, 120, 70, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 40px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('LIVE', 880, 120);
+        }
+
+        function loadDefaultImage() {
+            trainImage = new Image();
+            trainImage.crossOrigin = 'anonymous';
+            trainImage.onload = function() {
+                console.log('Image loaded successfully');
+                drawIcon();
+            };
+            trainImage.onerror = function() {
+                alert('Could not load engine.png. Please use "Choose File" button to select the image manually.');
+            };
+            trainImage.src = 'engine.png';
+        }
+
+        function downloadIcon() {
+            try {
+                // Redraw to ensure fresh canvas
+                drawIcon();
+                
+                // Convert to blob for better compatibility
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = 'app-icon-1024x1024.png';
+                    link.href = url;
+                    link.click();
+                    
+                    // Cleanup
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                }, 'image/png');
+            } catch(e) {
+                console.error('Download error:', e);
+                alert('Download failed. Please try selecting the image using "Choose File" button.');
+            }
+        }
+
+        // Auto-load engine.png on page load
+        window.onload = function() {
+            loadDefaultImage();
+        };
+    </script>
+</body>
+</html>
+

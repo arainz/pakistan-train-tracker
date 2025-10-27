@@ -41,11 +41,12 @@ const API_CONFIG = {
             schedules: '/data/schedules.json',
             version: '/data/version.json'
         },
-        // Remote source (fallback and updates - you can change this URL later)
+        // Remote source (fallback and updates)
         remote: {
-            stations: 'https://trackyourtrains.com/data/StationsData.json?v=2025-06-06',
-            trains: 'https://trackyourtrains.com/data/Trains.json?v=2025-06-06',
-            schedules: 'https://trackyourtrains.com/data/TrainStations.json?v=2025-06-06'
+            stations: 'https://pakrail.rise.com.pk/data/stations.json',
+            trains: 'https://pakrail.rise.com.pk/data/trains.json',
+            schedules: 'https://pakrail.rise.com.pk/data/schedules.json',
+            version: 'https://pakrail.rise.com.pk/data/version.json'
         }
     },
 
@@ -118,7 +119,7 @@ const API_CONFIG = {
             const localVersionData = await this.fetchStaticData('version', false);
             const localVersion = localVersionData?.version || '0';
             
-            // Get remote version
+            // Get remote version (always check)
             const remoteVersionData = await this.fetchStaticData('version', true);
             const remoteVersion = remoteVersionData?.version || '0';
             

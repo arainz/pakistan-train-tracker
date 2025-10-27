@@ -2836,6 +2836,29 @@ body.mobile-app.dark-mode .train-info h3 {
     width: 100%;
 }
 
+/* Home screen sticky header - needs top padding for status bar */
+.mobile-app > .sticky-header:first-child {
+    padding-top: env(safe-area-inset-top);
+    padding-top: constant(safe-area-inset-top); /* iOS 11.0 fallback */
+}
+
+/* Screen sticky headers - add safe area padding and adjust content offset */
+.screen .sticky-header {
+    padding-top: env(safe-area-inset-top);
+    padding-top: constant(safe-area-inset-top); /* iOS 11.0 fallback */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+/* Screen content needs to start below the header + safe area */
+.screen {
+    padding-top: calc(70px + env(safe-area-inset-top));
+    padding-top: calc(70px + constant(safe-area-inset-top)); /* iOS 11.0 fallback */
+}
+
 .header-content-sticky {
     display: flex;
     align-items: center;

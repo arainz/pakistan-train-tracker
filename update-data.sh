@@ -29,11 +29,11 @@ if [ -f "public/data/schedules.json" ]; then
 fi
 
 # Download new data
-echo "${YELLOW}📥 Downloading latest data from trackyourtrains.com...${NC}"
+echo "${YELLOW}📥 Downloading latest data from pakrail.rise.com.pk...${NC}"
 echo ""
 
 echo "  Downloading stations..."
-curl -s "https://trackyourtrains.com/data/StationsData.json?v=$(date +%Y-%m-%d)" \
+curl -s "https://pakrail.rise.com.pk/data/stations.json" \
   -o public/data/stations.json
 
 if [ $? -eq 0 ]; then
@@ -45,7 +45,7 @@ else
 fi
 
 echo "  Downloading trains..."
-curl -s "https://trackyourtrains.com/data/Trains.json?v=$(date +%Y-%m-%d)" \
+curl -s "https://pakrail.rise.com.pk/data/trains.json" \
   -o public/data/trains.json
 
 if [ $? -eq 0 ]; then
@@ -57,7 +57,7 @@ else
 fi
 
 echo "  Downloading schedules..."
-curl -s "https://trackyourtrains.com/data/TrainStations.json?v=$(date +%Y-%m-%d)" \
+curl -s "https://pakrail.rise.com.pk/data/schedules.json" \
   -o public/data/schedules.json
 
 if [ $? -eq 0 ]; then
@@ -76,7 +76,7 @@ cat > public/data/version.json << EOF
 {
   "version": "$(date +%Y%m%d)",
   "lastUpdated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "source": "trackyourtrains.com"
+  "source": "pakrail.rise.com.pk"
 }
 EOF
 echo "${GREEN}✅ Version file updated${NC}"

@@ -1,0 +1,112 @@
+<svg width="2732" height="2732" viewBox="0 0 2732 2732" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#065f46;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="trainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="20" stdDeviation="40" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="2732" height="2732" fill="url(#bgGradient)"/>
+  
+  <!-- Pakistan Flag Colors Stripes (Subtle) -->
+  <rect x="0" y="1200" width="2732" height="332" fill="#01411C" opacity="0.15"/>
+  
+  <!-- Train Engine (Realistic Pakistani Style) -->
+  <g transform="translate(866, 900)" filter="url(#shadow)">
+    <!-- Main Body -->
+    <rect x="0" y="200" width="1000" height="400" rx="20" fill="url(#trainGradient)"/>
+    <rect x="20" y="220" width="960" height="360" rx="15" fill="#047857"/>
+    
+    <!-- Cabin Top -->
+    <path d="M 200 200 L 800 200 L 750 100 L 250 100 Z" fill="#065f46"/>
+    <rect x="280" y="120" width="440" height="70" rx="10" fill="#34d399" opacity="0.3"/>
+    
+    <!-- Windows -->
+    <rect x="280" y="140" width="100" height="60" rx="8" fill="#bef264" opacity="0.9"/>
+    <rect x="420" y="140" width="100" height="60" rx="8" fill="#bef264" opacity="0.9"/>
+    <rect x="560" y="140" width="100" height="60" rx="8" fill="#bef264" opacity="0.9"/>
+    <rect x="700" y="140" width="100" height="60" rx="8" fill="#bef264" opacity="0.9"/>
+    
+    <!-- Side Windows -->
+    <rect x="100" y="280" width="120" height="100" rx="10" fill="#1e3a8a" opacity="0.8"/>
+    <rect x="260" y="280" width="120" height="100" rx="10" fill="#1e3a8a" opacity="0.8"/>
+    <rect x="420" y="280" width="120" height="100" rx="10" fill="#1e3a8a" opacity="0.8"/>
+    <rect x="580" y="280" width="120" height="100" rx="10" fill="#1e3a8a" opacity="0.8"/>
+    <rect x="740" y="280" width="120" height="100" rx="10" fill="#1e3a8a" opacity="0.8"/>
+    
+    <!-- Headlight -->
+    <circle cx="950" cy="400" r="40" fill="#fbbf24"/>
+    <circle cx="950" cy="400" r="30" fill="#fef3c7"/>
+    
+    <!-- Pakistan Flag on Side -->
+    <rect x="100" y="450" width="100" height="70" rx="5" fill="#01411C"/>
+    <circle cx="180" cy="485" r="15" fill="white"/>
+    <path d="M 188 475 L 188 495 L 175 485 Z" fill="white"/>
+    
+    <!-- Front Bumper -->
+    <rect x="950" y="500" width="80" height="100" rx="10" fill="#047857"/>
+    <rect x="960" y="520" width="60" height="60" rx="8" fill="#065f46"/>
+    
+    <!-- Wheels -->
+    <circle cx="200" cy="650" r="70" fill="#1f2937"/>
+    <circle cx="200" cy="650" r="50" fill="#374151"/>
+    <circle cx="200" cy="650" r="25" fill="#4b5563"/>
+    
+    <circle cx="400" cy="650" r="70" fill="#1f2937"/>
+    <circle cx="400" cy="650" r="50" fill="#374151"/>
+    <circle cx="400" cy="650" r="25" fill="#4b5563"/>
+    
+    <circle cx="600" cy="650" r="70" fill="#1f2937"/>
+    <circle cx="600" cy="650" r="50" fill="#374151"/>
+    <circle cx="600" cy="650" r="25" fill="#4b5563"/>
+    
+    <circle cx="800" cy="650" r="70" fill="#1f2937"/>
+    <circle cx="800" cy="650" r="50" fill="#374151"/>
+    <circle cx="800" cy="650" r="25" fill="#4b5563"/>
+    
+    <!-- Connecting Rods -->
+    <rect x="180" y="645" width="440" height="10" rx="5" fill="#6b7280"/>
+    
+    <!-- Under Carriage -->
+    <rect x="50" y="600" width="900" height="40" rx="10" fill="#065f46"/>
+  </g>
+  
+  <!-- Railway Track -->
+  <g transform="translate(200, 1650)">
+    <rect x="0" y="0" width="2332" height="30" rx="5" fill="#78716c" opacity="0.6"/>
+    <rect x="0" y="100" width="2332" height="30" rx="5" fill="#78716c" opacity="0.6"/>
+    
+    <!-- Track Ties -->
+    <g opacity="0.5">
+      <rect x="100" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="400" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="700" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="1000" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="1300" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="1600" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="1900" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+      <rect x="2200" y="10" width="80" height="110" rx="5" fill="#57534e"/>
+    </g>
+  </g>
+  
+  <!-- App Name -->
+  <text x="1366" y="1900" font-family="Arial, sans-serif" font-size="140" font-weight="bold" fill="white" text-anchor="middle">Pak Train Live</text>
+  <text x="1366" y="2020" font-family="Arial, sans-serif" font-size="70" fill="#d1fae5" text-anchor="middle">Real-time Pakistan Railways</text>
+  
+  <!-- Decorative Elements -->
+  <circle cx="300" cy="300" r="10" fill="white" opacity="0.3"/>
+  <circle cx="2400" cy="400" r="15" fill="white" opacity="0.2"/>
+  <circle cx="400" cy="2400" r="12" fill="white" opacity="0.25"/>
+  <circle cx="2300" cy="2300" r="8" fill="white" opacity="0.3"/>
+</svg>
+

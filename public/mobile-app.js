@@ -40,6 +40,9 @@ class MobileApp {
     async init() {
         console.log('🚂 Mobile Train Tracker initialized');
         
+        // Setup Capacitor back button handler (iOS/Android)
+        this.setupCapacitorBackButton();
+        
         // Ensure body has correct classes
         document.body.classList.add('mobile-app');
         document.body.classList.remove('screen-active');
@@ -48,15 +51,8 @@ class MobileApp {
         // Make sure main content is visible
         this.showMainContent();
         
-        // Check notification permission (don't request - will be requested when user sets up a notification)
-        if ('Notification' in window) {
-            console.log(`🔔 Notification permission: ${Notification.permission}`);
-            
-            // Start notification monitoring (only if permission already granted)
-            if (Notification.permission === 'granted') {
-                this.startNotificationMonitoring();
-            }
-        }
+        // Request permissions on app startup
+        await this.requestAppPermissions();
         
         // Load schedule data FIRST (needed for filtering completed journeys)
         await this.loadScheduledTrainsForHome();
@@ -65,7 +61,7 @@ class MobileApp {
         // MUST await to ensure trainData.active is populated before loadLiveUpdates()
         await this.loadLiveTrains();
         
-        // Request user location
+        // Request user location (after permission granted)
         this.getUserLocation();
         
         // Start live updates feed (now trainData.active is guaranteed to be populated)
@@ -76,6 +72,109 @@ class MobileApp {
         this.initializeDarkMode();
         this.startAutoRefresh();
         this.startLastUpdatedCountdown();
+    }
+
+    async requestAppPermissions() {
+        console.log('📱 Requesting app permissions...');
+        
+        // Request Location Permission (Capacitor)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { Geolocation } = window.Capacitor.Plugins;
+                
+                // Check current permission status
+                const permissionStatus = await Geolocation.checkPermissions();
+                console.log('📍 Location permission status:', permissionStatus);
+                
+                // Request if not granted
+                if (permissionStatus.location !== 'granted') {
+                    const requestResult = await Geolocation.requestPermissions();
+                    console.log('📍 Location permission request result:', requestResult);
+                    
+                    if (requestResult.location === 'granted') {
+                        console.log('✅ Location permission granted');
+                    } else {
+                        console.log('❌ Location permission denied');
+                    }
+                } else {
+                    console.log('✅ Location permission already granted');
+                }
+            } catch (error) {
+                console.error('❌ Error requesting location permission:', error);
+            }
+        }
+        
+        // Request Notification Permission
+        if ('Notification' in window) {
+            try {
+                console.log(`🔔 Current notification permission: ${Notification.permission}`);
+                
+                if (Notification.permission === 'default') {
+                    // Only request if not already decided
+                    const permission = await Notification.requestPermission();
+                    console.log(`🔔 Notification permission result: ${permission}`);
+                    
+                    if (permission === 'granted') {
+                        console.log('✅ Notification permission granted');
+                        this.startNotificationMonitoring();
+                    } else {
+                        console.log('❌ Notification permission denied');
+                    }
+                } else if (Notification.permission === 'granted') {
+                    console.log('✅ Notification permission already granted');
+                    this.startNotificationMonitoring();
+                } else {
+                    console.log('❌ Notification permission previously denied');
+                }
+            } catch (error) {
+                console.error('❌ Error requesting notification permission:', error);
+            }
+        } else {
+            console.log('⚠️ Notifications not supported in this environment');
+        }
+        
+        console.log('✅ Permission requests completed');
+    }
+
+    async setupCapacitorBackButton() {
+        // Handle Capacitor/iOS back button
+        console.log('📱 Checking Capacitor availability...');
+        console.log('📱 window.Capacitor:', !!window.Capacitor);
+        console.log('📱 Capacitor.isNativePlatform:', window.Capacitor?.isNativePlatform);
+        console.log('📱 Capacitor.getPlatform:', window.Capacitor?.getPlatform?.());
+        
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            console.log('ℹ️ Not a Capacitor native app (web browser)');
+            return;
+        }
+        
+        // Access App plugin through Capacitor.Plugins
+        try {
+            const { App } = window.Capacitor.Plugins;
+            
+            if (!App) {
+                console.warn('⚠️ Capacitor App plugin not available');
+                console.log('ℹ️ iOS swipe-back will use popstate fallback');
+                return;
+            }
+            
+            console.log('✅ Capacitor App plugin found');
+            
+            App.addListener('backButton', (data) => {
+                console.log('🔙 ========================================');
+                console.log('🔙 CAPACITOR BACK BUTTON PRESSED');
+                console.log('🔙 ========================================');
+                console.log('🔙 Current screen:', this.currentScreen);
+                console.log('🔙 Can go back:', data.canGoBack);
+                
+                this.goBack();
+            });
+            
+            console.log('✅ Back button listener registered');
+        } catch (error) {
+            console.warn('⚠️ Error setting up Capacitor back button:', error.message);
+            console.log('ℹ️ iOS swipe-back will use popstate fallback');
+        }
     }
 
     setupNavigation() {
@@ -94,16 +193,27 @@ class MobileApp {
     setupHistoryNavigation() {
         // Set initial history state
         if (!history.state) {
+            console.log('📝 Setting initial history state: home');
             history.replaceState({ screen: 'home' }, '', '#home');
+        } else {
+            console.log('📝 Initial history state already exists:', history.state);
         }
+
+        console.log('👂 Setting up popstate listener for iOS swipe-back...');
 
         // Handle browser back/forward buttons AND iOS swipe-back gesture
         window.addEventListener('popstate', (event) => {
-            console.log('🔙 Browser/iOS back gesture detected', event.state);
-            console.log('📚 Current navigation stack before popstate:', this.navigationStack);
+            console.log('🔙 ========================================');
+            console.log('🔙 POPSTATE EVENT FIRED (iOS/Browser Back)');
+            console.log('🔙 ========================================');
+            console.log('🔙 Event state:', event.state);
+            console.log('🔙 Current screen:', this.currentScreen);
+            console.log('🔙 Navigation stack before:', JSON.stringify(this.navigationStack));
+            console.log('🔙 History length:', history.length);
             
             if (event.state && event.state.screen) {
                 const targetScreen = event.state.screen;
+                console.log('🔙 Target screen from history:', targetScreen);
                 
                 // Sync navigation stack with browser history
                 // Remove screens after the target screen from the stack
@@ -111,20 +221,23 @@ class MobileApp {
                 if (targetIndex !== -1) {
                     // Found the screen in stack - remove everything after it
                     this.navigationStack = this.navigationStack.slice(0, targetIndex + 1);
-                    console.log('📚 Synced navigation stack:', this.navigationStack);
-                } else {
+                    console.log('✅ Synced navigation stack:', JSON.stringify(this.navigationStack));
+            } else {
                     // Not in stack - add it (shouldn't normally happen)
                     this.navigationStack.push(targetScreen);
-                    console.log('📚 Added missing screen to stack:', this.navigationStack);
+                    console.log('⚠️ Screen not in stack, adding:', targetScreen);
                 }
                 
+                console.log('🔙 Calling navigateToScreen:', targetScreen);
                 this.navigateToScreen(targetScreen, false);
+                console.log('✅ Navigation completed');
             } else {
                 // No state - go to home and reset stack
+                console.log('⚠️ No state found, going to home');
                 this.navigationStack = ['home'];
-                console.log('📚 Reset navigation stack to home');
                 this.navigateToScreen('home', false);
             }
+            console.log('🔙 ========================================');
         });
 
         // Prevent default back button behavior on Android
@@ -192,7 +305,9 @@ class MobileApp {
         if (pushHistory && this.navigationStack[this.navigationStack.length - 1] !== screenId) {
             this.navigationStack.push(screenId);
             const url = screenId === 'home' ? '#home' : `#${screenId}`;
+            console.log('📌 Pushing to history:', { screenId, previousScreen, url, stackLength: this.navigationStack.length });
             history.pushState({ screen: screenId, previous: previousScreen }, '', url);
+            console.log('📌 History pushed. Total history length:', history.length);
             console.log('📚 Navigation stack:', this.navigationStack);
         } else if (!pushHistory) {
             // Don't add to stack if it's a back navigation
@@ -249,6 +364,10 @@ class MobileApp {
     showMainContent() {
         console.log('🏠 Showing main content/home screen');
         
+        // Save current scroll position before hiding screens
+        const currentScrollY = window.scrollY || window.pageYOffset;
+        console.log('📍 Current scroll position:', currentScrollY);
+        
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
@@ -260,6 +379,7 @@ class MobileApp {
         const mobileFooter = document.querySelector('.mobile-footer');
         const quickMenu = document.querySelector('.quick-menu');
         const floatingHeader = document.querySelector('.floating-header');
+        const stickyHeader = document.querySelector('.sticky-header');
         
         if (mainContent) {
             mainContent.style.display = 'block';
@@ -278,9 +398,23 @@ class MobileApp {
             floatingHeader.style.display = 'block';
             floatingHeader.style.visibility = 'visible';
         }
+        if (stickyHeader) {
+            stickyHeader.style.display = 'block';
+            stickyHeader.style.visibility = 'visible';
+            stickyHeader.style.opacity = '1';
+            stickyHeader.style.position = 'sticky';
+            stickyHeader.style.top = '0';
+            console.log('✅ Sticky header restored');
+        }
         
         document.body.classList.remove('screen-active');
         this.currentScreen = 'home';
+        
+        // Always scroll to top when returning to home
+        requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
+            console.log('📍 Scrolled to top (home screen)');
+        });
         
         // Debug: Check body classes
         console.log('🏠 Body classes after showing home:', document.body.className);
@@ -414,19 +548,15 @@ class MobileApp {
     }
 
     async loadLiveTrains() {
+        // Always use REST API (direct socket doesn't work - no CORS, version mismatch)
         try {
             const startTime = Date.now();
             const liveUrl = getAPIUrl('live');
-            console.log('🚂 [LIVE DATA] Loading live trains...');
+            console.log('🚂 [LIVE DATA] Loading live trains via REST API...');
             console.log('🚂 [LIVE DATA] Source URL:', liveUrl);
-            console.log('🚂 [LIVE DATA] Full URL:', liveUrl);
             
             const response = await fetch(liveUrl);
             console.log('🚂 [LIVE DATA] Response status:', response.status, response.statusText);
-            console.log('🚂 [LIVE DATA] Response headers:', {
-                'content-type': response.headers.get('content-type'),
-                'content-length': response.headers.get('content-length')
-            });
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -436,17 +566,12 @@ class MobileApp {
             const loadTime = Date.now() - startTime;
             console.log('✅ [LIVE DATA] SUCCESS - Live trains loaded');
             console.log('✅ [LIVE DATA] Load time:', loadTime, 'ms');
-            console.log('✅ [LIVE DATA] Response:', { success: data.success, dataLength: data.data?.length });
             console.log('✅ [LIVE DATA] Data size:', (JSON.stringify(data).length / 1024).toFixed(2), 'KB');
             
             if (data.success && data.data && data.data.length > 0) {
-                // Filter to keep only top 2 most recent instances per train number
+                // Filter to keep only recent instances per train
                 let filteredTrains = this.filterDuplicateTrains(data.data);
-                
-                // Further filter out trains that reached destination and stopped for 30+ minutes
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
-                
-                // Filter out trains with unrealistic delays (24+ hours)
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                 
                 this.trainData.active = filteredTrains;
@@ -455,14 +580,11 @@ class MobileApp {
                 this.updateActiveTrainsCount();
                 this.initializeLiveTrackingSearch();
             } else {
-                console.log('⚠️ No live train data available, showing sample data');
-                this.loadSampleData();
+                console.log('⚠️ No live train data available');
                 this.initializeLiveTrackingSearch();
             }
         } catch (error) {
             console.error('❌ Error loading live trains:', error);
-            console.log('🔄 Loading sample data as fallback');
-            this.loadSampleData();
             this.initializeLiveTrackingSearch();
         }
     }
@@ -2504,8 +2626,8 @@ class MobileApp {
             // Create or update locomotive popover
             this.updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex);
             
-            // Keep locomotive in viewport
-            this.scrollLocomotiveIntoView(locomotiveIcon);
+            // Ensure locomotive is visible in viewport (scroll to it if needed)
+            this.ensureLocomotiveVisible(locomotiveIcon);
         } else {
             console.warn('⚠️ Locomotive icon element not found');
         }
@@ -2526,45 +2648,30 @@ class MobileApp {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 
-    scrollLocomotiveIntoView(locomotiveIcon) {
+    ensureLocomotiveVisible(locomotiveIcon) {
         if (!locomotiveIcon) return;
+        
         const routeStations = document.querySelector('.route-stations');
         if (!routeStations) return;
         
-        // Wait for popover to render
-        setTimeout(() => {
-            const popover = locomotiveIcon.querySelector('.locomotive-popover');
-            
-            // Get actual popover width
-            let popoverWidth = 180;
-            if (popover && popover.offsetWidth > 0) {
-                popoverWidth = popover.offsetWidth;
-            }
-            
-            // Position locomotive at: popover width + 60px from left edge of SCREEN (not container)
-            // This ensures the popover is fully visible on the left side
-            const offset = popoverWidth-100;
-            const locomotiveLeft = locomotiveIcon.offsetLeft;
-            
-            // Target scroll position to keep locomotive + popover visible
-            const targetScrollLeft = locomotiveLeft - offset;
-            
-            // Only scroll if locomotive is not already visible in the correct position
-            const currentScroll = routeStations.scrollLeft;
-            const viewportWidth = routeStations.clientWidth;
-            const locomotiveViewportPos = locomotiveLeft - currentScroll;
-            
-            // If locomotive is outside the safe zone (offset to viewportWidth - offset), scroll
-            if (locomotiveViewportPos < offset || locomotiveViewportPos > viewportWidth - offset) {
-                routeStations.scrollTo({
-                    left: Math.max(0, targetScrollLeft),
-                    behavior: 'smooth'
-                });
-                console.log(`🚂 Scrolling: PopoverWidth=${popoverWidth}px, Offset=${offset}px, LocomotiveLeft=${locomotiveLeft}px, CurrentScroll=${currentScroll}px, TargetScroll=${Math.max(0, targetScrollLeft)}px`);
-            } else {
-                console.log(`🚂 No scroll needed: Locomotive already visible at position ${locomotiveViewportPos}px`);
-            }
-        }, 150);
+        // Get positions
+        const containerRect = routeStations.getBoundingClientRect();
+        const locomotiveRect = locomotiveIcon.getBoundingClientRect();
+        
+        // Calculate if locomotive is out of view
+        const isOutOfView = 
+            locomotiveRect.left < containerRect.left || 
+            locomotiveRect.right > containerRect.right;
+        
+        // Only scroll if locomotive is completely out of view
+        if (isOutOfView) {
+            locomotiveIcon.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center'  // Center the locomotive in the viewport
+            });
+            console.log('🚂 Scrolling locomotive into view');
+        }
     }
 
     updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex) {
@@ -3341,11 +3448,11 @@ class MobileApp {
             
             // Populate UI
             this.populateScheduledTrains(this.scheduleData);
-            
-            // If live trains are already loaded, refresh them with schedule data
-            if (this.trainData && this.trainData.active) {
-                this.populateLiveTrains();
-            }
+                
+                // If live trains are already loaded, refresh them with schedule data
+                if (this.trainData && this.trainData.active) {
+                    this.populateLiveTrains();
+                }
             
             // Check for updates in background (non-blocking)
             this.checkForScheduleUpdates();
@@ -3458,7 +3565,7 @@ class MobileApp {
         // Refresh every 10 seconds
         setInterval(async () => {
             if (this.currentScreen === 'home' || this.currentScreen === 'liveTracking') {
-                // Load schedule data first, then live trains (to ensure schedule data is available)
+                // Load schedule data first, then live trains
                 await this.loadScheduledTrainsForHome();
                 this.loadLiveTrains();
 
@@ -6597,81 +6704,92 @@ class MobileApp {
         if (this.currentScreen !== 'mapScreen') return;
 
         try {
-            const response = await fetch(getAPIUrl('live'));
-            const data = await response.json();
+            let filteredTrains;
             
-            if (data.success && data.data) {
-                console.log(`🔄 Map refresh - Raw data: ${data.data.length} trains`);
+            // If using socket, use already-filtered trainData.active
+            if (this.useDirectSocket && this.isSocketConnected) {
+                console.log('🔄 Map refresh - Using WebSocket data from trainData.active');
+                filteredTrains = this.trainData.active;
+            } else {
+                // Otherwise, fetch via REST API
+                const response = await fetch(getAPIUrl('live'));
+                const data = await response.json();
                 
-                // Apply the same filtering logic as loadMapTrains
-                let filteredTrains = data.data;
-                
-                // 1. Filter by recent dates (last 3 days)
-                filteredTrains = this.filterByRecentDates(filteredTrains, 3);
-                console.log(`📅 Map refresh - After date filter: ${filteredTrains.length} trains`);
-                
-                // 2. Filter duplicate trains
-                filteredTrains = this.filterDuplicateTrains(filteredTrains);
-                console.log(`🔄 Map refresh - After duplicate filter: ${filteredTrains.length} trains`);
-                
-                // 3. Filter completed journeys
-                filteredTrains = this.filterCompletedJourneys(filteredTrains);
-                console.log(`🏁 Map refresh - After completed journeys filter: ${filteredTrains.length} trains`);
-                
-                // 4. Filter unrealistic delays
-                filteredTrains = this.filterUnrealisticDelays(filteredTrains);
-                console.log(`⏰ Map refresh - After unrealistic delays filter: ${filteredTrains.length} trains`);
-                
-                this.trainData.active = filteredTrains;
-                
-                if (this.selectedTrain) {
-                    console.log(`🔍 Looking for selected train: ${this.selectedTrain.TrainName} (InnerKey: ${this.selectedTrain.InnerKey})`);
+                if (data.success && data.data) {
+                    console.log(`🔄 Map refresh - Raw data: ${data.data.length} trains`);
                     
-                    // First, try to find exact match by InnerKey
-                    let updatedTrain = filteredTrains.find(t => 
-                        t.InnerKey === this.selectedTrain.InnerKey
+                    // Apply the same filtering logic as loadMapTrains
+                    
+                    // 1. Filter by recent dates (last 3 days)
+                    filteredTrains = this.filterByRecentDates(data.data, 3);
+                    console.log(`📅 Map refresh - After date filter: ${filteredTrains.length} trains`);
+                    
+                    // 2. Filter duplicate trains
+                    filteredTrains = this.filterDuplicateTrains(filteredTrains);
+                    console.log(`🔄 Map refresh - After duplicate filter: ${filteredTrains.length} trains`);
+                    
+                    // 3. Filter completed journeys
+                    filteredTrains = this.filterCompletedJourneys(filteredTrains);
+                    console.log(`🏁 Map refresh - After completed journeys filter: ${filteredTrains.length} trains`);
+                    
+                    // 4. Filter unrealistic delays
+                    filteredTrains = this.filterUnrealisticDelays(filteredTrains);
+                    console.log(`⏰ Map refresh - After unrealistic delays filter: ${filteredTrains.length} trains`);
+                    
+                    this.trainData.active = filteredTrains;
+                } else {
+                    filteredTrains = [];
+                }
+            }
+            
+            // Now update map based on filtered data (common for both socket and REST)
+            if (this.selectedTrain) {
+                console.log(`🔍 Looking for selected train: ${this.selectedTrain.TrainName} (InnerKey: ${this.selectedTrain.InnerKey})`);
+                
+                // First, try to find exact match by InnerKey
+                let updatedTrain = filteredTrains.find(t => 
+                    t.InnerKey === this.selectedTrain.InnerKey
+                );
+                
+                // If not found by InnerKey, find most recent instance of same train number
+                if (!updatedTrain) {
+                    console.log(`⚠️ Exact InnerKey not found, looking for most recent instance of train #${this.selectedTrain.TrainNumber}`);
+                    const sameTrainInstances = filteredTrains.filter(t => 
+                        t.TrainNumber === this.selectedTrain.TrainNumber
                     );
                     
-                    // If not found by InnerKey, find most recent instance of same train number
-                    if (!updatedTrain) {
-                        console.log(`⚠️ Exact InnerKey not found, looking for most recent instance of train #${this.selectedTrain.TrainNumber}`);
-                        const sameTrainInstances = filteredTrains.filter(t => 
-                            t.TrainNumber === this.selectedTrain.TrainNumber
-                        );
-                        
-                        if (sameTrainInstances.length > 0) {
-                            // Sort by date and take most recent
-                            sameTrainInstances.sort((a, b) => {
-                                const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
-                                const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
-                                if (dateA && dateB) {
-                                    return dateB.sortKey.localeCompare(dateA.sortKey);
-                                }
-                                return 0;
-                            });
-                            updatedTrain = sameTrainInstances[0];
-                            console.log(`✅ Found most recent instance: InnerKey ${updatedTrain.InnerKey}`);
-                        }
+                    if (sameTrainInstances.length > 0) {
+                        // Sort by date and take most recent
+                        sameTrainInstances.sort((a, b) => {
+                            const dateA = this.extractDateFromInnerKey(a.InnerKey, a.TrainNumber);
+                            const dateB = this.extractDateFromInnerKey(b.InnerKey, b.TrainNumber);
+                            if (dateA && dateB) {
+                                return dateB.sortKey.localeCompare(dateA.sortKey);
+                            }
+                            return 0;
+                        });
+                        updatedTrain = sameTrainInstances[0];
+                        console.log(`✅ Found most recent instance: InnerKey ${updatedTrain.InnerKey}`);
                     }
-                    
-                    if (updatedTrain) {
-                        console.log(`✅ Updating selected train: ${updatedTrain.TrainName} (InnerKey: ${updatedTrain.InnerKey})`);
-                        this.selectedTrain = updatedTrain;
-                        this.updateMapWithSelectedTrain(updatedTrain);
-                        this.updateTrainInfoPanel();
-                    } else {
-                        console.log('⚠️ Selected train completely filtered out (no instances found)');
-                        console.log('🔄 Clearing train selection and showing all trains');
-                        // Train was filtered out completely - clear selection and show all trains
-                        this.selectedTrain = null;
-                        this.closeTrainInfo();
-                        this.showTrainSelectionPanel();
-                        this.updateMapWithTrains(filteredTrains);
-                    }
+                }
+                
+                if (updatedTrain) {
+                    console.log(`✅ Updating selected train: ${updatedTrain.TrainName} (InnerKey: ${updatedTrain.InnerKey})`);
+                    this.selectedTrain = updatedTrain;
+                    this.updateMapWithSelectedTrain(updatedTrain);
+                    this.updateTrainInfoPanel();
                 } else {
-                    // Update all trains on map
+                    console.log('⚠️ Selected train completely filtered out (no instances found)');
+                    console.log('🔄 Clearing train selection and showing all trains');
+                    // Train was filtered out completely - clear selection and show all trains
+                    this.selectedTrain = null;
+                    this.closeTrainInfo();
+                    this.showTrainSelectionPanel();
                     this.updateMapWithTrains(filteredTrains);
                 }
+            } else {
+                // Update all trains on map
+                this.updateMapWithTrains(filteredTrains);
             }
         } catch (error) {
             console.error('❌ Error refreshing map data:', error);

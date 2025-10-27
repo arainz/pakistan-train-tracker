@@ -18,6 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.5",
@@ -34,7 +35,6 @@
     "node-cron": "^4.2.1",
     "socket.io-client": "^2.5.0"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/arainz/pakistan-train-tracker.git"
