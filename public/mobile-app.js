@@ -97,12 +97,32 @@ class MobileApp {
             history.replaceState({ screen: 'home' }, '', '#home');
         }
 
-        // Handle browser back/forward buttons
+        // Handle browser back/forward buttons AND iOS swipe-back gesture
         window.addEventListener('popstate', (event) => {
-            console.log('🔙 Browser back button pressed', event.state);
+            console.log('🔙 Browser/iOS back gesture detected', event.state);
+            console.log('📚 Current navigation stack before popstate:', this.navigationStack);
+            
             if (event.state && event.state.screen) {
-                this.navigateToScreen(event.state.screen, false);
+                const targetScreen = event.state.screen;
+                
+                // Sync navigation stack with browser history
+                // Remove screens after the target screen from the stack
+                const targetIndex = this.navigationStack.indexOf(targetScreen);
+                if (targetIndex !== -1) {
+                    // Found the screen in stack - remove everything after it
+                    this.navigationStack = this.navigationStack.slice(0, targetIndex + 1);
+                    console.log('📚 Synced navigation stack:', this.navigationStack);
+                } else {
+                    // Not in stack - add it (shouldn't normally happen)
+                    this.navigationStack.push(targetScreen);
+                    console.log('📚 Added missing screen to stack:', this.navigationStack);
+                }
+                
+                this.navigateToScreen(targetScreen, false);
             } else {
+                // No state - go to home and reset stack
+                this.navigationStack = ['home'];
+                console.log('📚 Reset navigation stack to home');
                 this.navigateToScreen('home', false);
             }
         });
