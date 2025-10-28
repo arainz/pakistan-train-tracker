@@ -1332,14 +1332,15 @@ class MobileApp {
                 if (schedData.success && schedData.data?.schedule) {
                     this.populateRouteStations(schedData.data.schedule, train);
                     
-                    // Show notification settings (only if not already exists)
+                    // Create notification settings for the new train (only on initial load)
                     const existingNotificationSection = document.querySelector('.notification-settings');
-                    if (!existingNotificationSection) {
-                        console.log('🔔 Creating notification section (first time)');
-                        this.showNotificationSettings(train, schedData.data.schedule, false);
-                    } else {
-                        console.log('✅ Notification section already exists - preserving it');
+                    if (existingNotificationSection) {
+                        // Remove old section from different train
+                        existingNotificationSection.remove();
                     }
+                    
+                    console.log('🔔 Creating notification section for train:', train.TrainName);
+                    this.showNotificationSettings(train, schedData.data.schedule, false);
                 }
             }
 
@@ -1365,9 +1366,12 @@ class MobileApp {
 
         // Refresh everything every 10 seconds (metrics, popover, progress bar, locomotive)
         this.detailRefreshInterval = setInterval(async () => {
+            console.log(`⏱️ 10-SECOND INTERVAL FIRED - currentScreen: ${this.currentScreen}, currentTrainData exists: ${!!this.currentTrainData}`);
             if (this.currentScreen === 'liveTrainDetail' && this.currentTrainData) {
                 console.log('⏱️ 10-SECOND UPDATE: Refreshing all train data (metrics, popover, locomotive position)');
                 await this.refreshTrainDetails();
+            } else {
+                console.log(`⚠️ Skipping refresh - screen is ${this.currentScreen} or no train data`);
             }
         }, 10000);
         
@@ -1542,11 +1546,18 @@ class MobileApp {
                     if (schedData.success && schedData.data?.schedule) {
                         this.currentRouteStations = schedData.data.schedule;
                         
-                        // Update vertical route stations
-                        this.populateVerticalRouteStations(schedData.data.schedule, updatedTrain);
+                        // Update horizontal progress bar with stations and locomotive (preserves notification section)
+                        this.populateRouteStations(schedData.data.schedule, updatedTrain);
                         
                         // Update progress bar and locomotive position with latest data
                         this.updateProgressBarWithRouteData();
+                        
+                        // Update notification list only - notification section is in separate container, never recreated
+                        const existingNotificationSection = document.querySelector('.notification-settings');
+                        if (existingNotificationSection) {
+                            console.log('🔔 Auto-refresh: Only updating notification count/list, NOT recreating section');
+                            this.updateActiveNotificationsList(updatedTrain);
+                        }
                         
                         console.log('✅ Train details refreshed successfully (metrics, route, progress bar, locomotive)');
                     }
@@ -2233,12 +2244,7 @@ class MobileApp {
         alert(`Station Information:\n\nNext Station: ${train.NextStation || 'Unknown'}\nETA: ${eta}\nTrain Status: ${status}`);
     }
     
-    refreshTrainDetails() {
-        if (this.currentTrainData) {
-            console.log('🔄 Refreshing train details...');
-            this.loadTrainDetails(this.currentTrainData.InnerKey || this.currentTrainData.TrainId);
-        }
-    }
+    // NOTE: refreshTrainDetails() function is defined at line ~1522 - this old duplicate has been removed
 
     populateVerticalRouteStations(stations, train) {
         // This function populates the vertical route stations list below
@@ -7195,7 +7201,7 @@ class MobileApp {
         }
     }
 
-    addNotification(trainId, trainName, stationName, stationId, minutesBefore) {
+    async addNotification(trainId, trainName, stationName, stationId, minutesBefore) {
         const notification = {
             id: Date.now().toString(),
             trainId,
@@ -7212,14 +7218,20 @@ class MobileApp {
         this.updateNotificationBadge();
         console.log(`🔔 Notification added: ${trainName} - ${stationName} (${minutesBefore} min before)`);
         
+        // Schedule the notification immediately for native apps
+        await this.scheduleNativeNotification(notification);
+        
         return notification;
     }
 
-    removeNotification(notificationId) {
+    async removeNotification(notificationId, skipUIRefresh = false) {
+        // Cancel the scheduled native notification
+        await this.cancelNativeNotification(notificationId);
+        
         this.notifications = this.notifications.filter(n => n.id !== notificationId);
         this.saveNotificationsToStorage();
         this.updateNotificationBadge();
-        console.log(`🔕 Notification removed: ${notificationId}`);
+        console.log(`🔕 Notification removed: ${notificationId} (skipUIRefresh: ${skipUIRefresh})`);
     }
 
     getActiveNotifications(trainId) {
@@ -7365,10 +7377,10 @@ class MobileApp {
         
         // Remove notification buttons
         modal.querySelectorAll('.btn-remove-notification-center').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // Prevent opening train details
                 const notificationId = btn.dataset.id;
-                this.removeNotification(notificationId);
+                await this.removeNotification(notificationId);
                 this.updateNotificationBadge();
                 
                 // Refresh modal
@@ -7436,9 +7448,9 @@ class MobileApp {
             console.warn('⚠️ No notification method available or permission not granted');
         }
         
-        // Mark as triggered
-        notification.triggered = true;
-        this.saveNotificationsToStorage();
+        // Remove the notification after triggering
+        console.log(`🗑️ Removing triggered notification: ${notification.id}`);
+        await this.removeNotification(notification.id);
         
         // Refresh the notification UI if we're on the train details page
         if (this.selectedTrain && String(this.selectedTrain.InnerKey) === String(notification.trainId)) {
@@ -7449,6 +7461,117 @@ class MobileApp {
                     this.showNotificationSettings(trainData, schedData.schedule, true);
                 }
             }
+        }
+    }
+
+    async scheduleNativeNotification(notification) {
+        // Only schedule for native apps
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            console.log('ℹ️ Not a native app, skipping native notification scheduling');
+            return;
+        }
+
+        try {
+            const { LocalNotifications } = window.Capacitor.Plugins;
+            
+            // Find the train to get the ETA
+            const train = this.trainData?.active?.find(t => 
+                String(t.InnerKey) === String(notification.trainId) ||
+                String(t.TrainId) === String(notification.trainId)
+            );
+
+            if (!train) {
+                console.warn('⚠️ Train not found, cannot schedule notification');
+                return;
+            }
+
+            // Check if this station is the next station
+            const isNextStation = train.NextStation && (
+                notification.stationName.toLowerCase().includes(train.NextStation.toLowerCase()) ||
+                train.NextStation.toLowerCase().includes(notification.stationName.toLowerCase())
+            );
+
+            if (!isNextStation || !train.NextStationETA || train.NextStationETA === '--:--') {
+                console.log('ℹ️ Station is not next or no ETA available, will schedule when train approaches');
+                return;
+            }
+
+            // Parse the ETA
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            
+            if (etaMinutes === null) {
+                console.warn('⚠️ Could not parse ETA, cannot schedule notification');
+                return;
+            }
+
+            // Calculate minutes until arrival
+            let minutesUntilArrival = etaMinutes - currentMinutes;
+            if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day wrap
+
+            // Calculate when to trigger (minutes before ETA)
+            const triggerInMinutes = minutesUntilArrival - notification.minutesBefore;
+            
+            if (triggerInMinutes <= 0) {
+                console.log('⚠️ Notification time has passed or is too soon, skipping schedule');
+                return;
+            }
+
+            // Calculate the actual trigger time
+            const triggerTime = new Date(now.getTime() + triggerInMinutes * 60 * 1000);
+            
+            console.log(`📅 Scheduling notification for ${triggerTime.toLocaleString()}`);
+            console.log(`   Train: ${notification.trainName}`);
+            console.log(`   Station: ${notification.stationName}`);
+            console.log(`   ETA: ${train.NextStationETA}`);
+            console.log(`   Trigger in: ${triggerInMinutes} minutes`);
+
+            // Generate a valid numeric ID
+            const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
+
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: numericId,
+                    title: notification.trainName,
+                    body: `Arriving at ${notification.stationName} in ${notification.minutesBefore} minutes`,
+                    schedule: { at: triggerTime },
+                    sound: 'default',
+                    extra: {
+                        trainId: notification.trainId,
+                        trainName: notification.trainName,
+                        notificationId: notification.id
+                    }
+                }]
+            });
+            
+            // Save the trigger time for ETA change detection
+            notification.lastScheduledTriggerMinutes = triggerInMinutes;
+            
+            console.log('✅ Native notification scheduled successfully');
+        } catch (error) {
+            console.error('❌ Error scheduling native notification:', error);
+            console.error('❌ Error details:', JSON.stringify(error));
+        }
+    }
+
+    async cancelNativeNotification(notificationId) {
+        // Only cancel for native apps
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            return;
+        }
+
+        try {
+            const { LocalNotifications } = window.Capacitor.Plugins;
+            const numericId = Math.abs(parseInt(notificationId) || Date.now()) % 2147483647;
+            
+            await LocalNotifications.cancel({
+                notifications: [{ id: numericId }]
+            });
+            
+            console.log(`✅ Cancelled native notification: ${numericId}`);
+        } catch (error) {
+            console.error('❌ Error cancelling native notification:', error);
         }
     }
 
@@ -7508,9 +7631,37 @@ class MobileApp {
                         continue;
                     }
 
-                    // Trigger notification if within the window and not already triggered
+                    // Reschedule the notification if not already scheduled (for native apps in background)
+                    if (!notification.triggered && !notification.scheduled) {
+                        console.log(`📅 Rescheduling notification for next station: ${notification.stationName}`);
+                        await this.scheduleNativeNotification(notification);
+                        notification.scheduled = true;
+                        this.saveNotificationsToStorage();
+                    }
+
+                    // Trigger notification if within the window and not already triggered (for web or foreground)
                     if (!notification.triggered && minutesUntilArrival <= notification.minutesBefore && minutesUntilArrival >= notification.minutesBefore - 1) {
+                        // Double-check ETA is still valid before triggering
+                        console.log(`✅ ETA verified: ${train.NextStationETA}, proceeding with notification`);
                         await this.triggerNotification(notification, train, minutesUntilArrival);
+                    } else if (!notification.triggered && notification.scheduled) {
+                        // If scheduled but ETA changed significantly, reschedule
+                        const triggerInMinutes = minutesUntilArrival - notification.minutesBefore;
+                        
+                        // Only reschedule if the trigger time changed by more than 5 minutes
+                        if (Math.abs(triggerInMinutes - (notification.lastScheduledTriggerMinutes || triggerInMinutes)) > 5) {
+                            console.log(`🔄 ETA updated significantly, rescheduling notification`);
+                            console.log(`   Old trigger in: ${notification.lastScheduledTriggerMinutes || 'unknown'} min`);
+                            console.log(`   New trigger in: ${triggerInMinutes} min`);
+                            
+                            // Cancel old notification and reschedule
+                            await this.cancelNativeNotification(notification.id);
+                            notification.scheduled = false;
+                            notification.lastScheduledTriggerMinutes = triggerInMinutes;
+                            await this.scheduleNativeNotification(notification);
+                            notification.scheduled = true;
+                            this.saveNotificationsToStorage();
+                        }
                     }
                 }
             } else {
@@ -7541,12 +7692,20 @@ class MobileApp {
         }
 
         // Remove notifications for stations that have been passed
-        notificationsToRemove.forEach(id => {
-            this.removeNotification(id);
-        });
+        // Skip UI refresh during auto-check to preserve accordion state
+        for (const id of notificationsToRemove) {
+            await this.removeNotification(id, true); // true = skip UI refresh
+        }
         
-        // Note: UI refresh now happens only after notification is pushed (in triggerNotification)
-        // This prevents unnecessary UI updates during regular 10-second data refresh cycles
+        // Update the notification list in the UI without recreating the section
+        if (notificationsToRemove.length > 0 && this.currentTrainData) {
+            const existingNotificationSection = document.querySelector('.notification-settings');
+            if (existingNotificationSection) {
+                console.log(`🔔 Updating notification list after removing ${notificationsToRemove.length} passed station(s)`);
+                this.updateActiveNotificationsList(this.currentTrainData);
+            }
+        }
+        
         console.log(`✅ Notification check complete. Removed: ${notificationsToRemove.length} passed stations`);
     }
 
@@ -7576,6 +7735,10 @@ class MobileApp {
         // Only update the active notifications list without recreating the entire section
         const existingNotifications = this.getActiveNotifications(train.InnerKey || train.TrainId);
         const notificationHeader = document.querySelector('.notification-header-content');
+        const accordion = document.querySelector('.notification-settings.accordion');
+        const wasOpen = accordion?.classList.contains('open');
+        
+        console.log(`🔔 [updateActiveNotificationsList] Accordion was ${wasOpen ? 'OPEN' : 'CLOSED'} before update`);
         
         if (notificationHeader) {
             // Update header summary
@@ -7590,18 +7753,32 @@ class MobileApp {
                 headerSummary = `<span class="notification-subtitle">Tap to set up notifications</span>`;
             }
             
-            // Update only the subtitle/count part
+            // Update only the subtitle/count part using textContent instead of outerHTML
             const existingSubtitle = notificationHeader.querySelector('.notification-subtitle, .notification-count');
             if (existingSubtitle) {
-                existingSubtitle.outerHTML = headerSummary;
+                // Extract text from HTML (remove span tags)
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = headerSummary;
+                existingSubtitle.textContent = tempDiv.textContent;
+                
+                // Update class if needed
+                if (existingNotifications.length > 0) {
+                    existingSubtitle.className = 'notification-count';
+                } else {
+                    existingSubtitle.className = 'notification-subtitle';
+                }
             }
         }
         
+        const accordionAfter = document.querySelector('.notification-settings.accordion');
+        const isOpenAfter = accordionAfter?.classList.contains('open');
+        console.log(`🔔 [updateActiveNotificationsList] Accordion is ${isOpenAfter ? 'OPEN' : 'CLOSED'} after update`);
         console.log('✅ Active notifications list updated without recreating accordion');
     }
 
     showNotificationSettings(train, stations, preserveState = false) {
-        console.log(`🔔 showNotificationSettings called (preserveState: ${preserveState})`);
+        console.log(`🔔 [showNotificationSettings] Called with preserveState=${preserveState}, train=${train?.TrainName}`);
+        console.trace('🔔 Call stack:'); // This will show us where it's being called from
         
         // Start notification monitoring if permission is already granted
         // For native apps, check Capacitor LocalNotifications
@@ -7743,16 +7920,12 @@ class MobileApp {
             </div>
         `;
 
-        // Insert inside train-status-card, after status-indicator
-        const statusIndicator = document.querySelector('.train-status-card .status-indicator');
-        if (statusIndicator) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
+        // Insert into dedicated notification container (never recreated)
+        const notificationContainer = document.getElementById('notificationSectionContainer');
+        if (notificationContainer) {
+            notificationContainer.innerHTML = html;
             
-            // Insert after the status-indicator
-            statusIndicator.parentNode.insertBefore(tempDiv.firstElementChild, statusIndicator.nextSibling);
-            
-            // Add event listeners
+            // Add event listeners (only once per creation)
             this.setupNotificationEventListeners(train, stations);
             this.setupAccordionToggle();
         }
@@ -7763,7 +7936,12 @@ class MobileApp {
         const accordion = document.querySelector('.notification-settings.accordion');
         
         if (header && accordion) {
-            header.addEventListener('click', () => {
+            // Remove any existing listeners by cloning and replacing the element
+            const newHeader = header.cloneNode(true);
+            header.parentNode.replaceChild(newHeader, header);
+            
+            // Add single click listener to toggle accordion
+            newHeader.addEventListener('click', () => {
                 accordion.classList.toggle('open');
             });
         }
@@ -7848,9 +8026,9 @@ class MobileApp {
 
         // Remove notification buttons
         document.querySelectorAll('.btn-remove-notification').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const notificationId = btn.dataset.id;
-                this.removeNotification(notificationId);
+                await this.removeNotification(notificationId);
                 
                 // Refresh the notification settings UI
                 const notificationSettings = document.querySelector('.notification-settings');
