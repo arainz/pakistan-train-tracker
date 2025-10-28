@@ -14,6 +14,7 @@ class MobileApp {
         this.trainDetailClockInterval = null;
         this.currentRouteStations = null;
         this.lastUpdatedTime = null;
+        this.liveDataLastFetchTime = null; // Track when live data was last fetched from API
         this.navigationStack = ['home']; // Track navigation history
         this.homeLastUpdatedTime = null;
         this.liveTrackingLastUpdatedTime = null;
@@ -617,6 +618,7 @@ class MobileApp {
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                 
                 this.trainData.active = filteredTrains;
+                this.liveDataLastFetchTime = new Date(); // Update timestamp when live data is successfully fetched
                 console.log('✅ Live trains loaded and filtered:', filteredTrains.length, 'trains (from', data.data.length, 'total)');
                 this.populateLiveTrains();
                 this.updateActiveTrainsCount();
@@ -798,8 +800,8 @@ class MobileApp {
             // 3. Last updated more than 30 minutes ago
             
             const speed = train.Speed || train.SpeedKmph || 0;
-            const lastUpdated = new Date(train.LastUpdated || train.__last_updated || train.last_updated || now);
-            const minutesSinceUpdate = (now - lastUpdated) / 1000 / 60;
+            const lastUpdatedTime = train.LastUpdated || train.__last_updated || train.last_updated;
+            const minutesSinceUpdate = this.getMinutesSince(lastUpdatedTime) || 0;
             
             // Check if train has reached destination
             const hasReachedDestination = this.hasTrainReachedDestination(train);
@@ -1452,12 +1454,9 @@ class MobileApp {
         let hasReachedNextStation = false;
         if (train.NextStationETA && train.NextStationETA !== '--:--') {
             const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
-        const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
-            if (etaMinutes !== null) {
-                let minutesUntilArrival = etaMinutes - currentMinutes;
-                if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
+            if (minutesUntilArrival !== null) {
                 
                 if (minutesUntilArrival <= 2) {
                     hasReachedNextStation = true;
@@ -1949,13 +1948,9 @@ class MobileApp {
         let hasReachedNextStation = false;
         if (train.NextStationETA && train.NextStationETA !== '--:--') {
             const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
-            if (etaMinutes !== null) {
-                let minutesUntilArrival = etaMinutes - currentMinutes;
-                if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
-                
+            if (minutesUntilArrival !== null) {
                 if (minutesUntilArrival <= 2) {
                     hasReachedNextStation = true;
                     console.log(`✅ Train has reached next station (${minutesUntilArrival} min until ETA)`);
@@ -2095,16 +2090,10 @@ class MobileApp {
                 
                 if (eta && eta !== '--:--' && this.currentTrainData) {
                     const etaMinutes = this.parseTimeToMinutes(eta);
-                    const now = new Date();
-                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
                     
-                    if (etaMinutes !== null) {
-                        let minutesUntilArrival = etaMinutes - currentMinutes;
-                        if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
-                        
-                        if (minutesUntilArrival <= 2) {
-                            hasReachedStation = true;
-                        }
+                    if (minutesUntilArrival !== null && minutesUntilArrival <= 2) {
+                        hasReachedStation = true;
                     }
                 }
             }
@@ -2226,10 +2215,12 @@ class MobileApp {
             return;
         }
         
-        const delay = train.LateBy || 0;
+        // Use calculated delay from ETA for accuracy
+        const calculatedDelay = this.calculateDelayFromETA(train);
+        const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
         const delayStatus = delay === 0 ? 'On Time' : delay > 0 ? 'Delayed' : 'Early';
         const delayText = this.formatDelayDisplay(delay);
-        const lastUpdated = train.LastUpdated ? new Date(train.LastUpdated).toLocaleString() : 'Unknown';
+        const lastUpdated = this.formatLastUpdated(train.LastUpdated);
         alert(`Delay Information:\n\nStatus: ${delayStatus}\nDelay: ${delayText}\nLast Updated: ${lastUpdated}`);
     }
     
@@ -2375,7 +2366,7 @@ class MobileApp {
                 ? this.formatTimeAMPM(scheduledArrival) : scheduledArrival;
 
             // Don't format expectedArrival if it's already formatted (contains AM/PM) from adjustTimeForDelay
-            const formattedExpectedArrival = (expectedArrival !== '--:--' && expectedArrival !== 'N/A' && expectedArrival !== 'Arriving' && !expectedArrival.includes('AM') && !expectedArrival.includes('PM'))
+            const formattedExpectedArrival = (expectedArrival !== '--:--' && expectedArrival !== 'N/A' && expectedArrival !== 'Arriving' && !this.isTimeFormatted(expectedArrival))
                 ? this.formatTimeAMPM(expectedArrival) : expectedArrival;
 
             // Build timing info HTML based on status
@@ -2601,8 +2592,7 @@ class MobileApp {
                 if (scheduledTime && scheduledTime !== '--:--' && segmentDistance > 0) {
                     try {
                         // Get current time
-                        const now = new Date();
-                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                        const currentMinutes = this.getCurrentTimeInMinutes();
 
                         // Parse ETA
                         const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
@@ -2790,7 +2780,11 @@ class MobileApp {
         // Get train info
         const speed = train.Speed || 0;
         const status = speed > 0 ? 'Moving' : 'Stopped';
-        const eta = train.NextStationETA || '--:--';
+        
+        // Format ETA using the same logic as train cards (AM/PM format)
+        const etaTime = train.NextStationETA && train.NextStationETA !== '--:--'
+            ? this.formatTimeAMPM(train.NextStationETA)
+            : '--:--';
         
         // Calculate delay using the same logic used across the site
         // Try calculated delay first, fallback to API's LateBy field
@@ -2809,7 +2803,7 @@ class MobileApp {
         // Build rows
         const rows = [
             { label: 'Next', value: nextStationName },
-            { label: 'ETA', value: eta },
+            { label: 'ETA', value: etaTime },
             { label: 'Speed', value: `${speed} km/h` },
             { label: 'Status', value: status },
             { label: 'Delay', value: delayText },
@@ -3103,6 +3097,39 @@ class MobileApp {
         }
     }
 
+    // Get current time in minutes since midnight
+    getCurrentTimeInMinutes() {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+    }
+
+    // Calculate minutes until arrival with day boundary handling
+    calculateMinutesUntilArrival(etaMinutes, currentMinutes = null) {
+        if (etaMinutes === null) return null;
+        
+        const current = currentMinutes !== null ? currentMinutes : this.getCurrentTimeInMinutes();
+        let minutesUntil = etaMinutes - current;
+        
+        // Handle day wrap (e.g., current: 23:30, ETA: 00:30)
+        if (minutesUntil < 0) minutesUntil += 1440; // 1440 minutes = 24 hours
+        
+        return minutesUntil;
+    }
+
+    // Check if time string is already formatted with AM/PM
+    isTimeFormatted(timeStr) {
+        if (!timeStr) return false;
+        return /AM|PM|am|pm/i.test(timeStr);
+    }
+
+    // Calculate minutes elapsed since a timestamp
+    getMinutesSince(timestamp) {
+        if (!timestamp) return null;
+        const now = new Date();
+        const past = new Date(timestamp);
+        return (now - past) / 1000 / 60;
+    }
+
     // Helper function to adjust scheduled time for delays (same logic as webapp)
     adjustTimeForDelay(timeStr, delayMinutes) {
         if (!timeStr || timeStr === '--:--') return '--:--';
@@ -3114,7 +3141,7 @@ class MobileApp {
             let hours, minutes;
 
             // Check if time contains AM/PM (12-hour format)
-            if (timeStr.includes('AM') || timeStr.includes('PM') || timeStr.includes('am') || timeStr.includes('pm')) {
+            if (this.isTimeFormatted(timeStr)) {
                 // Convert 12-hour to 24-hour first
                 const time12 = timeStr.trim();
                 const isPM = time12.toLowerCase().includes('pm');
@@ -4143,13 +4170,18 @@ class MobileApp {
     updateLastRefreshTime() {
         const lastUpdateEl = document.getElementById('appLastUpdate');
         if (lastUpdateEl) {
-            const now = new Date();
-            lastUpdateEl.textContent = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: true 
-            });
+            if (this.liveDataLastFetchTime) {
+                // Show the actual time when live data was last fetched from API
+                lastUpdateEl.textContent = this.liveDataLastFetchTime.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: true 
+                });
+            } else {
+                // Fallback if no data has been fetched yet
+                lastUpdateEl.textContent = 'Loading...';
+            }
         }
     }
 
@@ -4962,7 +4994,7 @@ class MobileApp {
                         </div>
                         <div class="update-details">${updateTime === 'Unknown' || updateTime === 'No recent update' ? routeInfo : actionText}</div>
                         <div class="update-meta">
-                            <div class="update-time">${updateTime === 'Unknown' || updateTime === 'No recent update' ? `Last updated: ${train.LastUpdated ? new Date(train.LastUpdated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}) : 'N/A'}` : updateTime}</div>
+                            <div class="update-time">${updateTime === 'Unknown' || updateTime === 'No recent update' ? `Last updated: ${this.formatLastUpdated(train.LastUpdated)}` : updateTime}</div>
                             <div class="update-eta">${eta}</div>
                         </div>
                         ${delay > 0 ? `<div class="update-delay">${statusMessage}</div>` : ''}
@@ -5809,7 +5841,9 @@ class MobileApp {
         
         let html = '';
         recentTrains.forEach(train => {
-            const delay = train.LateBy || 0;
+            // Use calculated delay from ETA for accuracy
+            const calculatedDelay = this.calculateDelayFromETA(train);
+            const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
             const statusClass = delay <= 5 ? 'on-time' : 'delayed';
             const statusText = delay <= 5 ? 'On Time' : this.formatDelayDisplay(delay);
             
@@ -6793,23 +6827,26 @@ class MobileApp {
         // Add popup
         const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
         const nextStation = train.NextStation || 'Unknown';
-        const eta = train.NextStationETA || '--:--';
+        
+        // Calculate delay using utility function (like rest of app)
+        const calculatedDelay = this.calculateDelayFromETA(train);
+        const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
+        const delayText = delay !== 0 ? this.formatDelayDisplay(delay) : 'On Time';
+        
+        // Format ETA using utility function (like rest of app)
+        const etaTime = train.NextStationETA && train.NextStationETA !== '--:--'
+            ? this.formatTimeAMPM(train.NextStationETA)
+            : '--:--';
         
         // Check if train has reached the station (within 2 minutes of ETA)
         let hasReachedStation = false;
-        if (eta && eta !== '--:--') {
-            const etaMinutes = this.parseTimeToMinutes(eta);
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        if (train.NextStationETA && train.NextStationETA !== '--:--') {
+            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
-            if (etaMinutes !== null) {
-                let minutesUntilArrival = etaMinutes - currentMinutes;
-                if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day boundary
-                
-                // Train has reached if within 2 minutes or passed
-                if (minutesUntilArrival <= 2) {
-                    hasReachedStation = true;
-                }
+            // Train has reached if within 2 minutes or passed
+            if (minutesUntilArrival !== null && minutesUntilArrival <= 2) {
+                hasReachedStation = true;
             }
         }
         
@@ -6846,10 +6883,11 @@ class MobileApp {
                 <p style="margin: 5px 0; font-weight: bold; color: #059669;">Train #${trainNumber}</p>
                 <p style="margin: 5px 0;">Speed: ${speed} km/h</p>
                 <p style="margin: 5px 0;">Status: ${status}</p>
+                <p style="margin: 5px 0; color: ${delay > 15 ? '#EF4444' : delay > 5 ? '#F59E0B' : '#10B981'}; font-weight: ${delay > 0 ? 'bold' : 'normal'};">Delay: ${delayText}</p>
                 <p style="margin: 5px 0;">Direction: ${direction}</p>
                 ${currentLabel}
                 <p style="margin: 5px 0;">Next: ${nextStation}</p>
-                <p style="margin: 5px 0;">ETA: ${eta}</p>
+                <p style="margin: 5px 0;">ETA: ${etaTime}</p>
                 ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">View Details</button>` : ''}
             </div>
         `;
@@ -6990,17 +7028,11 @@ class MobileApp {
         let hasReachedStation = false;
         if (eta && eta !== '--:--') {
             const etaMinutes = this.parseTimeToMinutes(eta);
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
-            if (etaMinutes !== null) {
-                let minutesUntilArrival = etaMinutes - currentMinutes;
-                if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day boundary
-                
-                // Train has reached if within 2 minutes or passed
-                if (minutesUntilArrival <= 2) {
-                    hasReachedStation = true;
-                }
+            // Train has reached if within 2 minutes or passed
+            if (minutesUntilArrival !== null && minutesUntilArrival <= 2) {
+                hasReachedStation = true;
             }
         }
         
@@ -7401,37 +7433,36 @@ class MobileApp {
         const title = `${notification.trainName}`;
         const body = `Arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`;
         
-        // Generate a valid numeric ID (use timestamp modulo to keep it under integer limit)
-        const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
-        
-        // Use Capacitor LocalNotifications for native apps
+        // For native apps, we use scheduled notifications (background delivery)
+        // Do NOT send immediate notifications to avoid duplicates
+        // The scheduled notification will fire automatically at the right time
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            try {
-                const { LocalNotifications } = window.Capacitor.Plugins;
-                
-                console.log(`📱 Sending native notification with ID: ${numericId}`);
-                console.log(`📱 Title: ${title}`);
-                console.log(`📱 Body: ${body}`);
-                
-                await LocalNotifications.schedule({
-                    notifications: [{
-                        id: numericId,
-                        title: title,
-                        body: body,
-                        schedule: { at: new Date(Date.now() + 1000) }, // 1 second from now
-                        sound: 'default',
-                        extra: {
-                            trainId: notification.trainId,
-                            trainName: notification.trainName
-                        }
-                    }]
-                });
-                console.log('✅ Native notification scheduled successfully');
-            } catch (error) {
-                console.error('❌ Error scheduling native notification:', error);
-                console.error('❌ Error details:', JSON.stringify(error));
+            console.log('ℹ️ Native app - notification already scheduled in background, skipping immediate trigger');
+            console.log('ℹ️ The scheduled notification will fire automatically when train approaches');
+            
+            // Just mark as triggered and remove from active list
+            notification.triggered = true;
+            this.saveNotificationsToStorage();
+            
+            // Remove the notification after marking as triggered
+            console.log(`🗑️ Removing triggered notification from list: ${notification.id}`);
+            await this.removeNotification(notification.id);
+            
+            // Refresh the notification UI if we're on the train details page
+            if (this.selectedTrain && String(this.selectedTrain.InnerKey) === String(notification.trainId)) {
+                const trainData = this.trainData.active.find(t => String(t.InnerKey) === String(notification.trainId));
+                if (trainData) {
+                    const schedData = await this.getTrainSchedule(trainData.TrainNumber);
+                    if (schedData && schedData.schedule) {
+                        this.showNotificationSettings(trainData, schedData.schedule, true);
+                    }
+                }
             }
-        } else if ('Notification' in window && Notification.permission === 'granted') {
+            return;
+        }
+        
+        // For web browsers, send immediate web notification
+        if ('Notification' in window && Notification.permission === 'granted') {
             // Web notification
             try {
                 new Notification(title, {
@@ -7497,8 +7528,6 @@ class MobileApp {
             }
 
             // Parse the ETA
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
             const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
             
             if (etaMinutes === null) {
@@ -7507,8 +7536,12 @@ class MobileApp {
             }
 
             // Calculate minutes until arrival
-            let minutesUntilArrival = etaMinutes - currentMinutes;
-            if (minutesUntilArrival < 0) minutesUntilArrival += 1440; // Handle day wrap
+            const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
+            
+            if (minutesUntilArrival === null) {
+                console.warn('⚠️ Could not calculate minutes until arrival');
+                return;
+            }
 
             // Calculate when to trigger (minutes before ETA)
             const triggerInMinutes = minutesUntilArrival - notification.minutesBefore;
@@ -7519,6 +7552,7 @@ class MobileApp {
             }
 
             // Calculate the actual trigger time
+            const now = new Date();
             const triggerTime = new Date(now.getTime() + triggerInMinutes * 60 * 1000);
             
             console.log(`📅 Scheduling notification for ${triggerTime.toLocaleString()}`);
@@ -7529,6 +7563,16 @@ class MobileApp {
 
             // Generate a valid numeric ID
             const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
+
+            // Cancel any existing notification with this ID first to prevent duplicates
+            try {
+                await LocalNotifications.cancel({
+                    notifications: [{ id: numericId }]
+                });
+                console.log(`🗑️ Cancelled existing notification ID ${numericId} before rescheduling`);
+            } catch (e) {
+                // Ignore errors if notification doesn't exist
+            }
 
             await LocalNotifications.schedule({
                 notifications: [{
@@ -7593,8 +7637,7 @@ class MobileApp {
             return;
         }
 
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = this.getCurrentTimeInMinutes();
         const notificationsToRemove = [];
 
         for (const notification of this.notifications) {
