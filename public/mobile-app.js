@@ -1452,8 +1452,9 @@ class MobileApp {
         
         // Check if train has reached the next station (within 2 minutes of ETA)
         let hasReachedNextStation = false;
-        if (train.NextStationETA && train.NextStationETA !== '--:--') {
-            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+        const etaCheck1 = this.getTrainETA(train);
+        if (etaCheck1) {
+            const etaMinutes = this.parseTimeToMinutes(etaCheck1);
             const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
             if (minutesUntilArrival !== null) {
@@ -1946,8 +1947,9 @@ class MobileApp {
         
         // Check if train has reached the next station (within 2 minutes of ETA)
         let hasReachedNextStation = false;
-        if (train.NextStationETA && train.NextStationETA !== '--:--') {
-            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+        const etaCheck2 = this.getTrainETA(train);
+        if (etaCheck2) {
+            const etaMinutes = this.parseTimeToMinutes(etaCheck2);
             const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
             if (minutesUntilArrival !== null) {
@@ -2230,7 +2232,7 @@ class MobileApp {
             return;
         }
         
-        const eta = train.NextStationETA || 'Unknown';
+        const eta = this.formatTimeAMPM(this.getTrainETA(train) || '--:--');
         const status = train.Status === 'A' ? 'Active' : train.Status === 'D' ? 'Departed' : 'En Route';
         alert(`Station Information:\n\nNext Station: ${train.NextStation || 'Unknown'}\nETA: ${eta}\nTrain Status: ${status}`);
     }
@@ -2336,14 +2338,17 @@ class MobileApp {
                             stationDelay = 'On Time';
                             delayClass = 'current';
                         }
-                    } else if (train.NextStationETA && train.NextStationETA !== '--:--') {
-                        expectedArrival = train.NextStationETA;
-                        stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay) : 'Arriving';
-                        delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
                     } else {
-                        expectedArrival = 'Arriving';
-                        stationDelay = 'Current';
-                        delayClass = 'current';
+                        const etaFromFunc = this.getTrainETA(train);
+                        if (etaFromFunc) {
+                            expectedArrival = etaFromFunc;
+                            stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay) : 'Arriving';
+                            delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
+                        } else {
+                            expectedArrival = 'Arriving';
+                            stationDelay = 'Current';
+                            delayClass = 'current';
+                        }
                     }
                 } else {
                     // Future stations
@@ -2578,8 +2583,8 @@ class MobileApp {
             }
             
             // Fallback to time-based calculation if coordinates not available
-            if (!useCoordinatePosition && currentStationIndex < stations.length - 1 && 
-                train.NextStationETA && train.NextStationETA !== '--:--') {
+            const etaCheck3 = this.getTrainETA(train);
+            if (!useCoordinatePosition && currentStationIndex < stations.length - 1 && etaCheck3) {
                 const nextStation = stations[currentStationIndex + 1];
                 const nextDistance = nextStation?.DistanceFromOrigin || 0;
                 
@@ -2595,7 +2600,7 @@ class MobileApp {
                         const currentMinutes = this.getCurrentTimeInMinutes();
 
                         // Parse ETA
-                        const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+                        const etaMinutes = this.parseTimeToMinutes(this.getTrainETA(train));
 
                         // Get departure time from current station
                         const departureTime = currentStation?.DepartureTime || currentStation?.ArrivalTime;
@@ -2782,8 +2787,9 @@ class MobileApp {
         const status = speed > 0 ? 'Moving' : 'Stopped';
         
         // Format ETA using the same logic as train cards (AM/PM format)
-        const etaTime = train.NextStationETA && train.NextStationETA !== '--:--'
-            ? this.formatTimeAMPM(train.NextStationETA)
+        const etaFromFunc = this.getTrainETA(train);
+        const etaTime = etaFromFunc
+            ? this.formatTimeAMPM(this.getTrainETA(train) || '--:--')
             : '--:--';
         
         // Calculate delay using the same logic used across the site
@@ -2845,11 +2851,11 @@ class MobileApp {
                 currentStationNameEl.textContent = currentStation.StationName || train.NextStation || 'Current';
             }
             if (currentTimeEl) {
-                // Use NextStationETA from API for most accurate real-time data
+                // Use centralized getTrainETA function
                 let etaTime;
-                if (train.NextStationETA && train.NextStationETA !== '--:--') {
-                    // Prioritize API ETA as it's real-time
-                    etaTime = this.formatTimeAMPM(train.NextStationETA);
+                const etaFromFunc = this.getTrainETA(train);
+                if (etaFromFunc) {
+                    etaTime = this.formatTimeAMPM(etaFromFunc);
                 } else {
                     // Fallback: Calculate from scheduled time + delay
                     const delay = train.LateBy || 0;
@@ -2926,10 +2932,172 @@ class MobileApp {
         }
     }
 
+    // Centralized function to get the correct ETA for a train (returns raw time in HH:MM format)
+    // This function handles both API ETA and calculated fallback ETA based on speed/distance
+    getTrainETA(train) {
+        if (!train) return null;
+        
+        // Check if API ETA is unrealistic (> 5 hours) and train is moving
+        const speed = train.Speed || train.SpeedKmph || 0;
+        let apiETA = train.NextStationETA;
+        let useCalculatedETA = false;
+        let calculatedETATime = null;
+        
+        if (apiETA && apiETA !== '--:--' && speed > 0) {
+            // Parse API ETA to minutes
+            const apiETAMinutes = this.parseTimeToMinutes(apiETA);
+            const currentMinutes = this.getCurrentTimeInMinutes();
+            
+            if (apiETAMinutes !== null && currentMinutes !== null) {
+                // Calculate minutes until arrival
+                let minutesUntilArrival = apiETAMinutes - currentMinutes;
+                const rawMinutesUntilArrival = minutesUntilArrival; // Keep original for past check
+                
+                // Handle day wrap only if it's reasonably close to midnight (within 6 hours)
+                if (minutesUntilArrival < 0 && minutesUntilArrival > -360) {
+                    minutesUntilArrival += 1440;
+                }
+                
+                // If ETA is more than 5 hours away (300 minutes) OR clearly in the past (< -10), use fallback
+                if (minutesUntilArrival > 300 || rawMinutesUntilArrival < -10) {
+                    // Check if train is stopped or speed is decreasing
+                    let shouldWaitForSpeedRecovery = false;
+                    
+                    if (train._cachedSpeed !== undefined && speed < 50) {
+                        // Train has slowed down below 50 km/h
+                        if (speed === 0) {
+                            // Train is completely stopped
+                            shouldWaitForSpeedRecovery = true;
+                            console.log(`🛑 Train stopped (0 km/h), using cached ETA until speed recovers`);
+                        } else if (speed < train._cachedSpeed) {
+                            // Speed is decreasing
+                            const speedDrop = train._cachedSpeed - speed;
+                            const speedDropPercent = (speedDrop / train._cachedSpeed) * 100;
+                            
+                            if (speedDropPercent > 20) {
+                                // Speed dropped by more than 20%
+                                shouldWaitForSpeedRecovery = true;
+                                console.log(`📉 Speed decreasing (${train._cachedSpeed} → ${speed} km/h, ${speedDropPercent.toFixed(0)}% drop), using cached ETA`);
+                            }
+                        }
+                    }
+                    
+                    // Check if we have a valid cached calculated ETA
+                    let hasCachedETA = false;
+                    
+                    if (train._cachedCalculatedETA && 
+                        train._cachedNextStation === train.NextStation &&
+                        train._cachedTimestamp) {
+                        
+                        // For stopped/slowing trains, relax the position/speed check
+                        const positionUnchanged = train._cachedLat === train.Latitude && 
+                                                 train._cachedLng === train.Longitude;
+                        
+                        const shouldUseCache = shouldWaitForSpeedRecovery || 
+                                              (train._cachedSpeed === speed && positionUnchanged);
+                        
+                        if (shouldUseCache) {
+                            // Check if cache is less than 1 hour old (3600000 ms)
+                            const cacheAge = Date.now() - train._cachedTimestamp;
+                            const cacheExpired = cacheAge > 3600000; // 1 hour in milliseconds
+                            
+                            if (!cacheExpired) {
+                                // Verify cached ETA is still in the future (not expired)
+                                const cachedETAMinutes = this.parseTimeToMinutes(train._cachedCalculatedETA);
+                                if (cachedETAMinutes !== null) {
+                                    const minutesUntilCachedETA = cachedETAMinutes - currentMinutes;
+                                    const adjustedMinutes = minutesUntilCachedETA < 0 && minutesUntilCachedETA > -360 
+                                        ? minutesUntilCachedETA + 1440 
+                                        : minutesUntilCachedETA;
+                                    
+                                    // Cache is valid only if ETA is still in the future (> 5 minutes)
+                                    if (adjustedMinutes > 5) {
+                                        hasCachedETA = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (hasCachedETA) {
+                        // Reuse cached ETA if data hasn't changed and ETA is still valid
+                        calculatedETATime = train._cachedCalculatedETA;
+                        console.log(`♻️ Reusing cached ETA for ${train.TrainName || 'Train'} #${train.TrainNumber}: ${calculatedETATime}`);
+                    } else {
+                        // Calculate ETA using coordinates and speed
+                        calculatedETATime = this.calculateETAFromCoordinates(train);
+                        
+                        // Cache the calculated ETA and train data for next refresh
+                        if (calculatedETATime) {
+                            train._cachedCalculatedETA = calculatedETATime;
+                            train._cachedSpeed = speed;
+                            train._cachedLat = train.Latitude;
+                            train._cachedLng = train.Longitude;
+                            train._cachedNextStation = train.NextStation;
+                            train._cachedTimestamp = Date.now(); // Store cache creation time
+                        }
+                    }
+                    
+                    if (calculatedETATime) {
+                        // Get scheduled time for comparison
+                        const scheduledTime = this.getScheduledTimeForNextStation(train);
+                        const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A' 
+                            ? this.parseTimeToMinutes(scheduledTime.replace('📅 ', ''))
+                            : null;
+                        
+                        if (scheduledMinutes !== null) {
+                            // Compare both ETAs against scheduled time
+                            const apiDiff = Math.abs(apiETAMinutes - scheduledMinutes);
+                            const calculatedDiff = Math.abs(this.parseTimeToMinutes(calculatedETATime) - scheduledMinutes);
+                            
+                            // Use whichever is closer to scheduled time
+                            if (calculatedDiff < apiDiff) {
+                                useCalculatedETA = true;
+                                apiETA = calculatedETATime;
+                            }
+                        } else {
+                            // No scheduled time, use calculated ETA as it's more realistic
+                            useCalculatedETA = true;
+                            apiETA = calculatedETATime;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Clear cache if we're using API ETA (train data has improved)
+        if (!useCalculatedETA && train._cachedCalculatedETA) {
+            delete train._cachedCalculatedETA;
+            delete train._cachedSpeed;
+            delete train._cachedLat;
+            delete train._cachedLng;
+            delete train._cachedNextStation;
+            delete train._cachedTimestamp;
+        }
+        
+        // Store whether we used calculated ETA for delay calculation consistency
+        if (useCalculatedETA) {
+            train._usingCalculatedETA = true;
+            train._calculatedETATime = calculatedETATime;
+        } else {
+            train._usingCalculatedETA = false;
+        }
+        
+        // Return the raw ETA time (either API or calculated)
+        if (apiETA && apiETA !== '--:--') {
+            return apiETA;
+        }
+        
+        return null;
+    }
+
     calculateTrainETA(train) {
-        // Prioritize NextStationETA from API as it's the most accurate real-time data
-        if (train.NextStationETA && train.NextStationETA !== '--:--') {
-            return `ETA ${this.formatTimeAMPM(train.NextStationETA)}`;
+        // Use the centralized getTrainETA function
+        const etaTime = this.getTrainETA(train);
+        
+        // Return formatted ETA
+        if (etaTime) {
+            return `ETA ${this.formatTimeAMPM(etaTime)}`;
         }
 
         // Fallback: Calculate from scheduled time + delay if API ETA not available
@@ -2975,12 +3143,181 @@ class MobileApp {
         }
     }
     
+    // Calculate ETA using route distance and train speed
+    calculateETAFromCoordinates(train) {
+        try {
+            const speed = train.Speed || train.SpeedKmph || 0;
+            
+            if (speed === 0 || !train.NextStation) {
+                return null;
+            }
+            
+            // Try to get route distance from schedule data (most accurate)
+            let distanceToNextStation = null;
+            
+            if (this.scheduleData && this.scheduleData.length > 0) {
+                const trainNumber = train.TrainNumber || train.trainNumber;
+                const scheduledTrain = this.scheduleData.find(schedTrain =>
+                    String(schedTrain.trainNumber) === String(trainNumber) ||
+                    String(schedTrain.TrainNumber) === String(trainNumber)
+                );
+                
+                if (scheduledTrain && scheduledTrain.stations) {
+                    // Find current position in route
+                    const currentStationIndex = scheduledTrain.stations.findIndex(station =>
+                        station.StationName === train.CurrentStation ||
+                        station.StationName.includes(train.CurrentStation) ||
+                        (train.CurrentStation && train.CurrentStation.includes(station.StationName))
+                    );
+                    
+                    const nextStationIndex = scheduledTrain.stations.findIndex(station =>
+                        station.StationName === train.NextStation ||
+                        station.StationName.includes(train.NextStation) ||
+                        train.NextStation.includes(station.StationName)
+                    );
+                    
+                    if (nextStationIndex !== -1) {
+                        const nextStationData = scheduledTrain.stations[nextStationIndex];
+                        
+                        if (currentStationIndex !== -1 && currentStationIndex < nextStationIndex) {
+                            // Get segment distance (current to next station)
+                            const currentStationData = scheduledTrain.stations[currentStationIndex];
+                            const currentStationDistance = currentStationData.DistanceFromOrigin || 0;
+                            const nextStationDistance = nextStationData.DistanceFromOrigin || 0;
+                            const segmentDistance = nextStationDistance - currentStationDistance;
+                            
+                            // Calculate how far the train is from the current station using GPS
+                            const trainLat = train.Latitude || train.latitude;
+                            const trainLng = train.Longitude || train.longitude;
+                            
+                            if (trainLat && trainLng && this.stationsMetadata && currentStationData) {
+                                // Find current station coordinates
+                                const currentStationMeta = this.stationsMetadata.find(s =>
+                                    s.StationName === currentStationData.StationName ||
+                                    s.StationName.includes(currentStationData.StationName) ||
+                                    currentStationData.StationName.includes(s.StationName)
+                                );
+                                
+                                if (currentStationMeta && currentStationMeta.Latitude && currentStationMeta.Longitude) {
+                                    // Calculate straight-line distance from current station to train position
+                                    const straightLineDistance = this.calculateHaversineDistance(
+                                        currentStationMeta.Latitude, currentStationMeta.Longitude,
+                                        trainLat, trainLng
+                                    );
+                                    
+                                    // Calculate what percentage of the segment has been traveled
+                                    // This is more accurate than applying a fixed multiplier
+                                    const progressRatio = straightLineDistance / segmentDistance;
+                                    
+                                    // If ratio seems reasonable (< 1.0), use proportional calculation
+                                    if (progressRatio <= 1.0) {
+                                        // Assume train has traveled this proportion of the segment
+                                        const traveledDistance = segmentDistance * progressRatio;
+                                        distanceToNextStation = Math.max(segmentDistance - traveledDistance, 1);
+                                    } else {
+                                        // Ratio > 1 means straight-line > segment (unusual geometry)
+                                        // Apply conservative multiplier to straight-line distance
+                                        const traveledDistance = straightLineDistance * 1.2;
+                                        distanceToNextStation = Math.max(segmentDistance - traveledDistance, 1);
+                                    }
+                                    
+                                    console.log(`📍 Train position: ${straightLineDistance.toFixed(2)}km (straight) from ${currentStationData.StationName}, ${distanceToNextStation.toFixed(2)}km remaining to ${train.NextStation}`);
+                                } else {
+                                    // Fallback: use full segment distance
+                                    distanceToNextStation = segmentDistance;
+                                }
+                            } else {
+                                // No GPS data, use full segment distance
+                                distanceToNextStation = segmentDistance;
+                            }
+                        } else {
+                            // Use full distance to next station as fallback
+                            distanceToNextStation = nextStationData.DistanceFromOrigin || null;
+                        }
+                    }
+                }
+            }
+            
+            // Fallback: Use Haversine if route distance not available
+            if (!distanceToNextStation || distanceToNextStation <= 0) {
+                const trainLat = train.Latitude || train.latitude;
+                const trainLng = train.Longitude || train.longitude;
+                
+                if (!trainLat || !trainLng || !this.stationsMetadata) {
+                    return null;
+                }
+                
+                const nextStation = this.stationsMetadata.find(station => 
+                    station.StationName === train.NextStation ||
+                    station.StationName.includes(train.NextStation) ||
+                    train.NextStation.includes(station.StationName)
+                );
+                
+                if (!nextStation || !nextStation.Latitude || !nextStation.Longitude) {
+                    return null;
+                }
+                
+                // Calculate straight-line distance (multiply by 1.3 to account for track routing)
+                const straightLineDistance = this.calculateHaversineDistance(
+                    trainLat, trainLng,
+                    nextStation.Latitude, nextStation.Longitude
+                );
+                distanceToNextStation = straightLineDistance * 1.3;
+            }
+            
+            // Calculate time in hours, then convert to minutes
+            const timeInHours = distanceToNextStation / speed;
+            const timeInMinutes = Math.round(timeInHours * 60);
+            
+            // Calculate ETA by adding travel time to CURRENT time
+            const now = new Date();
+            const etaDate = new Date(now.getTime() + (timeInMinutes * 60 * 1000));
+            const etaHours = etaDate.getHours();
+            const etaMinutes = etaDate.getMinutes();
+            
+            // Format as HH:MM
+            const etaTime = `${String(etaHours).padStart(2, '0')}:${String(etaMinutes).padStart(2, '0')}`;
+            
+            const trainName = train.TrainName || train.trainName || `Train ${train.TrainNumber}`;
+            console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km | Speed: ${speed}km/h | ETA: ${etaTime}`);
+            
+            return etaTime;
+            
+        } catch (error) {
+            return null;
+        }
+    }
+    
+    // Haversine formula to calculate distance between two coordinates
+    calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth's radius in kilometers
+        const dLat = this.toRadians(lat2 - lat1);
+        const dLon = this.toRadians(lon2 - lon1);
+        
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+        
+        return distance;
+    }
+    
+    // Convert degrees to radians
+    toRadians(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+    
     // Calculate delay by comparing NextStationETA with scheduled time
     calculateDelayFromETA(train) {
         try {
-            // Calculate delay from NextStationETA - Scheduled Time (Original formula)
+            // Use centralized getTrainETA function
+            const etaToUse = this.getTrainETA(train);
+            
+            // Calculate delay from ETA - Scheduled Time (Original formula)
             // This is more accurate than API's LateBy field
-            if (!train.NextStationETA || train.NextStationETA === '--:--' || !train.NextStation) {
+            if (!etaToUse || etaToUse === '--:--' || !train.NextStation) {
                 return null;
             }
 
@@ -2991,7 +3328,7 @@ class MobileApp {
             }
 
             // Parse both times to minutes
-            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            const etaMinutes = this.parseTimeToMinutes(etaToUse);
             const scheduledMinutes = this.parseTimeToMinutes(stationInfo.arrivalTime);
 
             if (etaMinutes === null || scheduledMinutes === null) {
@@ -3041,13 +3378,13 @@ class MobileApp {
                     // Raw delay: 60 - 1380 = -1320 (looks very behind)
                     // Correct delay: ETA crossed to next day, so add 24 hours
                     delayMinutes += 1440;
-                    console.log(`🌙 Detected ETA crossed midnight: Scheduled ${stationInfo.arrivalTime} (evening), ETA ${train.NextStationETA} (early morning)`);
+                    console.log(`🌙 Detected ETA crossed midnight: Scheduled ${stationInfo.arrivalTime} (evening), ETA ${etaToUse} (early morning)`);
                 } else if (!etaIsEarlyMorning && delayMinutes > 720) {
                     // Case: Scheduled at 02:00, ETA at 23:00 (previous day still)
                     // Raw delay: 1380 - 120 = 1260 (looks very ahead)
                     // Correct delay: Scheduled time crossed to next day, so subtract 24 hours
                     delayMinutes -= 1440;
-                    console.log(`🌅 Detected scheduled time is next day: Scheduled ${stationInfo.arrivalTime} (early morning), ETA ${train.NextStationETA} (evening)`);
+                    console.log(`🌅 Detected scheduled time is next day: Scheduled ${stationInfo.arrivalTime} (early morning), ETA ${etaToUse} (evening)`);
                 } else if (delayMinutes > 720) {
                     // General case: More than 12 hours ahead
                 delayMinutes -= 1440; // Subtract 24 hours
@@ -3057,7 +3394,7 @@ class MobileApp {
                 }
             }
 
-            console.log(`📊 Delay calculation: Station: ${stationInfo.stationName}, Day: ${dayCount}, Scheduled: ${stationInfo.arrivalTime}, ETA: ${train.NextStationETA}, Delay: ${delayMinutes}m`);
+            console.log(`📊 Delay calculation: Station: ${stationInfo.stationName}, Day: ${dayCount}, Scheduled: ${stationInfo.arrivalTime}, ETA: ${etaToUse}, Delay: ${delayMinutes}m`);
             return Math.round(delayMinutes);
 
         } catch (error) {
@@ -6082,9 +6419,10 @@ class MobileApp {
             // Calculate ETA for this specific station
             let stationETA = stationInRoute.ArrivalTime || stationInRoute.DepartureTime || '--:--';
             
-            // If this is the next station, use live ETA
+            // If this is the next station, use live ETA from centralized function
             if (currentStationIndex === stationIndex) {
-                stationETA = liveTrain.NextStationETA || stationETA;
+                const liveETA = this.getTrainETA(liveTrain);
+                stationETA = liveETA || stationETA;
             }
             
             const trainInfo = {
@@ -6506,7 +6844,7 @@ class MobileApp {
             const trainName = train.TrainName || `Train ${trainNumber}`;
             const speed = train.Speed || 0;
             const nextStation = train.NextStation || 'Unknown';
-            const eta = train.NextStationETA || '--:--';
+            const eta = this.getTrainETA(train) || '--:--';
             
             // Calculate delay
             const delay = this.calculateDelayFromETA(train);
@@ -6646,7 +6984,7 @@ class MobileApp {
             const trainName = train.TrainName || `Train ${trainNumber}`;
             const speed = train.Speed || 0;
             const nextStation = train.NextStation || 'Unknown';
-            const eta = train.NextStationETA || '--:--';
+            const eta = this.getTrainETA(train) || '--:--';
             
             // Calculate delay
             const delay = this.calculateDelayFromETA(train);
@@ -6834,14 +7172,16 @@ class MobileApp {
         const delayText = delay !== 0 ? this.formatDelayDisplay(delay) : 'On Time';
         
         // Format ETA using utility function (like rest of app)
-        const etaTime = train.NextStationETA && train.NextStationETA !== '--:--'
-            ? this.formatTimeAMPM(train.NextStationETA)
+        const etaFromFunc = this.getTrainETA(train);
+        const etaTime = etaFromFunc
+            ? this.formatTimeAMPM(this.getTrainETA(train) || '--:--')
             : '--:--';
         
         // Check if train has reached the station (within 2 minutes of ETA)
         let hasReachedStation = false;
-        if (train.NextStationETA && train.NextStationETA !== '--:--') {
-            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+        const etaForCheck = this.getTrainETA(train);
+        if (etaForCheck) {
+            const etaMinutes = this.parseTimeToMinutes(etaForCheck);
             const minutesUntilArrival = this.calculateMinutesUntilArrival(etaMinutes);
             
             // Train has reached if within 2 minutes or passed
@@ -7022,7 +7362,7 @@ class MobileApp {
         const status = speed > 0 ? 'Moving' : 'Stopped';
         const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
         const nextStation = train.NextStation || 'Unknown';
-        const eta = train.NextStationETA || '--:--';
+        const eta = this.getTrainETA(train) || '--:--';
         
         // Check if train has reached the station (within 2 minutes of ETA)
         let hasReachedStation = false;
@@ -7522,13 +7862,14 @@ class MobileApp {
                 train.NextStation.toLowerCase().includes(notification.stationName.toLowerCase())
             );
 
-            if (!isNextStation || !train.NextStationETA || train.NextStationETA === '--:--') {
+            const etaFromFunction = this.getTrainETA(train);
+            if (!isNextStation || !etaFromFunction) {
                 console.log('ℹ️ Station is not next or no ETA available, will schedule when train approaches');
                 return;
             }
 
             // Parse the ETA
-            const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+            const etaMinutes = this.parseTimeToMinutes(this.getTrainETA(train));
             
             if (etaMinutes === null) {
                 console.warn('⚠️ Could not parse ETA, cannot schedule notification');
@@ -7558,7 +7899,7 @@ class MobileApp {
             console.log(`📅 Scheduling notification for ${triggerTime.toLocaleString()}`);
             console.log(`   Train: ${notification.trainName}`);
             console.log(`   Station: ${notification.stationName}`);
-            console.log(`   ETA: ${train.NextStationETA}`);
+            console.log(`   ETA: ${etaFromFunction}`);
             console.log(`   Trigger in: ${triggerInMinutes} minutes`);
 
             // Generate a valid numeric ID
@@ -7655,16 +7996,17 @@ class MobileApp {
                 train.NextStation.toLowerCase().includes(notification.stationName.toLowerCase())
             );
 
-            if (isNextStation && train.NextStationETA && train.NextStationETA !== '--:--') {
+            const etaFromFunc2 = this.getTrainETA(train);
+            if (isNextStation && etaFromFunc2) {
                 // Use the actual ETA (with delay)
-                const etaMinutes = this.parseTimeToMinutes(train.NextStationETA);
+                const etaMinutes = this.parseTimeToMinutes(etaFromFunc2);
                 
                 if (etaMinutes !== null) {
                     let minutesUntilArrival = etaMinutes - currentMinutes;
                     const rawMinutesUntilArrival = minutesUntilArrival; // Keep original for passed check
                     if (minutesUntilArrival < 0) minutesUntilArrival += 1440;
 
-                    console.log(`🔔 Checking: ${notification.stationName}, ETA: ${train.NextStationETA}, Minutes until arrival: ${minutesUntilArrival} min, Trigger at: ${notification.minutesBefore} min`);
+                    console.log(`🔔 Checking: ${notification.stationName}, ETA: ${etaFromFunc2}, Minutes until arrival: ${minutesUntilArrival} min, Trigger at: ${notification.minutesBefore} min`);
 
                     // Check if ETA has already passed (train likely arrived or is arriving)
                     // If raw minutes is negative and more than 2 hours in the past, the ETA has passed
@@ -7685,7 +8027,7 @@ class MobileApp {
                     // Trigger notification if within the window and not already triggered (for web or foreground)
                     if (!notification.triggered && minutesUntilArrival <= notification.minutesBefore && minutesUntilArrival >= notification.minutesBefore - 1) {
                         // Double-check ETA is still valid before triggering
-                        console.log(`✅ ETA verified: ${train.NextStationETA}, proceeding with notification`);
+                        console.log(`✅ ETA verified: ${etaFromFunc2}, proceeding with notification`);
                         await this.triggerNotification(notification, train, minutesUntilArrival);
                     } else if (!notification.triggered && notification.scheduled) {
                         // If scheduled but ETA changed significantly, reschedule
