@@ -49,6 +49,7 @@ body.mobile-app {
     position: relative;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overscroll-behavior-y: none;
 }
 
 body.mobile-app::-webkit-scrollbar {
@@ -2190,6 +2191,8 @@ body.mobile-app.dark-mode .eta-value {
     border-radius: 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(16px);
+    overscroll-behavior: none;
+    touch-action: pan-y;
 }
 
 .search-box {
@@ -4364,6 +4367,8 @@ body.mobile-app.dark-mode .logo-icon {
     margin: 15px 20px 20px 20px;
     border-radius: 16px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overscroll-behavior: none;
+    touch-action: pan-y;
 }
 
 .search-container {
@@ -4402,6 +4407,8 @@ body.mobile-app.dark-mode .logo-icon {
     background: transparent;
     color: #2d3748;
     font-weight: 500;
+    overscroll-behavior: none;
+    touch-action: manipulation;
 }
 
 .search-input::placeholder {
@@ -5020,6 +5027,8 @@ input:checked + .toggle-slider:before {
     overflow-y: auto;
     pointer-events: auto;
     padding-bottom: 100px;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .screen.active {
