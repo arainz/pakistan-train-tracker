@@ -725,8 +725,6 @@ class MobileApp {
             return 0;
         });
         
-        console.log(`📊 Filtered result: ${filteredTrains.length} trains from ${trains.length} total (removed ${trains.length - filteredTrains.length} duplicates)`);
-        console.log(`📋 Kept InnerKeys (sorted by train# then date):`, filteredTrains.map(t => `${t.TrainNumber}:${t.InnerKey}`).join(', '));
         return filteredTrains;
     }
 
@@ -1518,8 +1516,6 @@ class MobileApp {
         console.log(`   Calling updateProgressBar() with stationIndex=${currentStationIndex}`);
         
         this.updateProgressBar(stations, currentStationIndex, train);
-        
-        console.log(`✅ [updateProgressBarWithRouteData] Completed - progress bar should now be updated`);
     }
 
     async refreshTrainDetails() {
@@ -1555,11 +1551,8 @@ class MobileApp {
                         // Update notification list only - notification section is in separate container, never recreated
                         const existingNotificationSection = document.querySelector('.notification-settings');
                         if (existingNotificationSection) {
-                            console.log('🔔 Auto-refresh: Only updating notification count/list, NOT recreating section');
                             this.updateActiveNotificationsList(updatedTrain);
                         }
-                        
-                        console.log('✅ Train details refreshed successfully (metrics, route, progress bar, locomotive)');
                     }
                 }
             } else {
@@ -1843,7 +1836,6 @@ class MobileApp {
 
         // Calculate distances if not provided in station data
         if (!stations[0]?.DistanceFromOrigin && stations.length > 0 && stations[0]?.Latitude && stations[0]?.Longitude) {
-            console.log('📏 Calculating distances from coordinates...');
             let cumulativeDistance = 0;
             stations[0].DistanceFromOrigin = 0;
             
@@ -2953,9 +2945,14 @@ class MobileApp {
                 let minutesUntilArrival = apiETAMinutes - currentMinutes;
                 const rawMinutesUntilArrival = minutesUntilArrival; // Keep original for past check
                 
-                // Handle day wrap only if it's reasonably close to midnight (within 6 hours)
-                if (minutesUntilArrival < 0 && minutesUntilArrival > -360) {
+                // Handle day wrap: if ETA is early morning (< 6AM) and current time is late evening (> 6PM), it's next day
+                if (apiETAMinutes < 360 && currentMinutes > 1080 && minutesUntilArrival < 0) {
                     minutesUntilArrival += 1440;
+                    console.log(`🌙 Midnight crossing detected: ETA ${apiETA} is tomorrow (adjusted from ${rawMinutesUntilArrival} to ${minutesUntilArrival} minutes)`);
+                } else if (minutesUntilArrival < 0 && minutesUntilArrival > -360) {
+                    // Also handle near-midnight cases (within 6 hours on same side)
+                    minutesUntilArrival += 1440;
+                    console.log(`🌙 Near-midnight adjustment: ETA ${apiETA} treated as tomorrow (${minutesUntilArrival} minutes away)`);
                 }
                 
                 // If ETA is more than 5 hours away (300 minutes) OR clearly in the past (< -10), use fallback
@@ -3039,26 +3036,44 @@ class MobileApp {
                     }
                     
                     if (calculatedETATime) {
-                        // Get scheduled time for comparison
-                        const scheduledTime = this.getScheduledTimeForNextStation(train);
-                        const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A' 
-                            ? this.parseTimeToMinutes(scheduledTime.replace('📅 ', ''))
-                            : null;
-                        
-                        if (scheduledMinutes !== null) {
-                            // Compare both ETAs against scheduled time
-                            const apiDiff = Math.abs(apiETAMinutes - scheduledMinutes);
-                            const calculatedDiff = Math.abs(this.parseTimeToMinutes(calculatedETATime) - scheduledMinutes);
+                        // If API ETA is clearly in the past (more than 10 minutes ago), check calculated ETA
+                        if (rawMinutesUntilArrival < -10) {
+                            // Check if calculated ETA is also in the past
+                            const calculatedETAMinutes = this.parseTimeToMinutes(calculatedETATime);
+                            const calculatedMinutesUntilArrival = calculatedETAMinutes - currentMinutes;
                             
-                            // Use whichever is closer to scheduled time
-                            if (calculatedDiff < apiDiff) {
+                            if (calculatedMinutesUntilArrival <= -10) {
+                                // Both ETAs are in the past - train is arriving early or already arrived
+                                // Use API ETA as it's likely more accurate from the source
+                                console.log(`ℹ️ Both API ETA (${rawMinutesUntilArrival} min ago) and Calculated ETA (${calculatedMinutesUntilArrival} min ago) are in the past - train arriving early, using API ETA`);
+                            } else {
+                                // API is in past but calculated is in future - API is wrong
+                                useCalculatedETA = true;
+                                apiETA = calculatedETATime;
+                                console.log(`⚠️ API ETA is in the past (${rawMinutesUntilArrival} min ago) but calculated ETA is in future, forcing calculated ETA`);
+                            }
+                        } else {
+                            // Get scheduled time for comparison
+                            const scheduledTime = this.getScheduledTimeForNextStation(train);
+                            const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A' 
+                                ? this.parseTimeToMinutes(scheduledTime.replace('📅 ', ''))
+                                : null;
+                            
+                            if (scheduledMinutes !== null) {
+                                // Compare both ETAs against scheduled time
+                                const apiDiff = Math.abs(apiETAMinutes - scheduledMinutes);
+                                const calculatedDiff = Math.abs(this.parseTimeToMinutes(calculatedETATime) - scheduledMinutes);
+                                
+                                // Use whichever is closer to scheduled time
+                                if (calculatedDiff < apiDiff) {
+                                    useCalculatedETA = true;
+                                    apiETA = calculatedETATime;
+                                }
+                            } else {
+                                // No scheduled time, use calculated ETA as it's more realistic
                                 useCalculatedETA = true;
                                 apiETA = calculatedETATime;
                             }
-                        } else {
-                            // No scheduled time, use calculated ETA as it's more realistic
-                            useCalculatedETA = true;
-                            apiETA = calculatedETATime;
                         }
                     }
                 }
@@ -3079,8 +3094,12 @@ class MobileApp {
         if (useCalculatedETA) {
             train._usingCalculatedETA = true;
             train._calculatedETATime = calculatedETATime;
+            console.log(`🔄 Using FALLBACK ETA for ${train.TrainName || 'Train'} #${train.TrainNumber}: ${apiETA} (API ETA: ${train.NextStationETA} was unrealistic)`);
         } else {
             train._usingCalculatedETA = false;
+            if (apiETA && apiETA !== '--:--') {
+                console.log(`✅ Using API ETA for ${train.TrainName || 'Train'} #${train.TrainNumber}: ${apiETA}`);
+            }
         }
         
         // Return the raw ETA time (either API or calculated)
@@ -3394,7 +3413,6 @@ class MobileApp {
                 }
             }
 
-            console.log(`📊 Delay calculation: Station: ${stationInfo.stationName}, Day: ${dayCount}, Scheduled: ${stationInfo.arrivalTime}, ETA: ${etaToUse}, Delay: ${delayMinutes}m`);
             return Math.round(delayMinutes);
 
         } catch (error) {
@@ -3642,7 +3660,6 @@ class MobileApp {
             const day = parseInt(ddmm.slice(0, 2));
             const month = parseInt(ddmm.slice(2, 4));
             
-            console.log(`📅 InnerKey ${innerKey}: Train#${trainNumber} + DDMM="${ddmm}" → ${day}/${month}`);
             
             // Validate day and month
             if (day < 1 || day > 31 || month < 1 || month > 12) {
@@ -8123,8 +8140,6 @@ class MobileApp {
         const accordion = document.querySelector('.notification-settings.accordion');
         const wasOpen = accordion?.classList.contains('open');
         
-        console.log(`🔔 [updateActiveNotificationsList] Accordion was ${wasOpen ? 'OPEN' : 'CLOSED'} before update`);
-        
         if (notificationHeader) {
             // Update header summary
             let headerSummary = '';
@@ -8155,10 +8170,8 @@ class MobileApp {
             }
         }
         
-        const accordionAfter = document.querySelector('.notification-settings.accordion');
-        const isOpenAfter = accordionAfter?.classList.contains('open');
-        console.log(`🔔 [updateActiveNotificationsList] Accordion is ${isOpenAfter ? 'OPEN' : 'CLOSED'} after update`);
-        console.log('✅ Active notifications list updated without recreating accordion');
+
+
     }
 
     showNotificationSettings(train, stations, preserveState = false) {
