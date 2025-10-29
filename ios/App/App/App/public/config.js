@@ -1,17 +1,75 @@
 // API Configuration
 const API_CONFIG = {
+    // Primary and fallback servers
+    servers: {
+        primary: 'https://pakistan-train-tracker-174840179894.us-central1.run.app', // Google Cloud Run
+        fallback: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (free tier)
+    },
+    
+    // Current active server (will switch on failure)
+    _currentServer: null,
+    _serverStatus: {
+        primary: true,  // Assume primary is available initially
+        fallback: true
+    },
+    
     // Auto-detect if running in Capacitor mobile app
     getBaseURL() {
         // Check if running in Capacitor (mobile app) or if local server doesn't have API endpoints
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            // Mobile app - use Google Cloud Run production server
-            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
+            // Mobile app - use primary server (with automatic fallback)
+            return this._currentServer || this.servers.primary;
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Development environment - use production server for API calls
-            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
+            // Development environment - use primary server (with automatic fallback)
+            return this._currentServer || this.servers.primary;
         } else {
             // Production web browser - use relative URLs (current domain)
             return '';
+        }
+    },
+    
+    // Switch to fallback server
+    switchToFallback() {
+        console.warn('⚠️ Primary server unavailable, switching to fallback...');
+        this._currentServer = this.servers.fallback;
+        this._serverStatus.primary = false;
+        console.log(`✅ Now using fallback server: ${this.servers.fallback}`);
+    },
+    
+    // Switch back to primary server
+    switchToPrimary() {
+        console.log('✅ Primary server is back online, switching to primary...');
+        this._currentServer = this.servers.primary;
+        this._serverStatus.primary = true;
+        console.log(`✅ Now using primary server: ${this.servers.primary}`);
+    },
+    
+    // Check server health
+    async checkServerHealth(serverUrl) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(`${serverUrl}/api/live`, {
+                signal: controller.signal,
+                method: 'HEAD' // Fast health check
+            });
+            
+            clearTimeout(timeoutId);
+            return response.ok;
+        } catch (error) {
+            console.warn(`Server health check failed for ${serverUrl}:`, error.message);
+            return false;
+        }
+    },
+    
+    // Periodically check if primary server is back online (if using fallback)
+    async monitorPrimaryServer() {
+        if (!this._serverStatus.primary && this._currentServer === this.servers.fallback) {
+            const isPrimaryHealthy = await this.checkServerHealth(this.servers.primary);
+            if (isPrimaryHealthy) {
+                this.switchToPrimary();
+            }
         }
     },
 
@@ -154,6 +212,68 @@ function getSocketURL() {
     return API_CONFIG.getSocketURL();
 }
 
+// Enhanced fetch with automatic fallback
+async function fetchWithFallback(url, options = {}) {
+    try {
+        // Add timeout to fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response;
+        
+    } catch (error) {
+        console.error(`❌ Request failed to ${url}:`, error.message);
+        
+        // If currently using primary server, try switching to fallback
+        if (API_CONFIG._currentServer === API_CONFIG.servers.primary || 
+            API_CONFIG._currentServer === null) {
+            
+            console.log('🔄 Attempting fallback server...');
+            API_CONFIG.switchToFallback();
+            
+            // Retry with fallback server
+            const fallbackUrl = url.replace(API_CONFIG.servers.primary, API_CONFIG.servers.fallback);
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const fallbackResponse = await fetch(fallbackUrl, {
+                    ...options,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!fallbackResponse.ok) {
+                    throw new Error(`HTTP ${fallbackResponse.status}: ${fallbackResponse.statusText}`);
+                }
+                
+                console.log('✅ Fallback server responded successfully');
+                return fallbackResponse;
+                
+            } catch (fallbackError) {
+                console.error('❌ Fallback server also failed:', fallbackError.message);
+                throw new Error('Both primary and fallback servers are unavailable');
+            }
+        } else {
+            // Already using fallback, can't retry
+            throw error;
+        }
+    }
+}
+
 // Log detailed configuration on load
 console.log('═══════════════════════════════════════════════════════════');
 console.log('🔧 [CONFIG] API Configuration Loaded');
@@ -163,7 +283,9 @@ console.log('🌐 [CONFIG] Hostname:', window.location.hostname);
 console.log('🌍 [CONFIG] Origin:', window.location.origin);
 console.log('📍 [CONFIG] Full URL:', window.location.href);
 console.log('');
-console.log('🔗 [CONFIG] API Base URL:', API_CONFIG.getBaseURL());
+console.log('🔗 [CONFIG] Primary Server:', API_CONFIG.servers.primary);
+console.log('🔗 [CONFIG] Fallback Server:', API_CONFIG.servers.fallback);
+console.log('🔗 [CONFIG] Active Server:', API_CONFIG.getBaseURL());
 console.log('🔌 [CONFIG] Socket URL:', API_CONFIG.getSocketURL());
 console.log('');
 console.log('📂 [CONFIG] Local Data Paths:');
@@ -177,4 +299,12 @@ console.log('   Trains:', API_CONFIG.staticData.remote.trains);
 console.log('   Schedules:', API_CONFIG.staticData.remote.schedules);
 console.log('');
 console.log('💡 [CONFIG] Data Loading Strategy: HYBRID (Local First, Remote Fallback)');
+console.log('🔄 [CONFIG] Server Redundancy: PRIMARY → FALLBACK (Automatic Switching)');
 console.log('═══════════════════════════════════════════════════════════');
+
+// Monitor primary server health every 5 minutes (if using fallback)
+if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    setInterval(() => {
+        API_CONFIG.monitorPrimaryServer();
+    }, 5 * 60 * 1000); // 5 minutes
+}
