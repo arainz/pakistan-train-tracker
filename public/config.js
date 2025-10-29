@@ -2,9 +2,9 @@
 const API_CONFIG = {
     // Primary and fallback servers
     servers: {
-        primary: 'http://138.2.91.18:3000', // Oracle Cloud (FREE, Always Free Tier)
-        fallback: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (FREE, always-on)
-        backup: 'https://pakistan-train-tracker-174840179894.us-central1.run.app', // Google Cloud Run (paid backup)
+        primary: 'https://pakistan-train-tracker-174840179894.us-central1.run.app', // Google Cloud Run (FREE trial - 180 days)
+        fallback: 'http://138.2.91.18:3000', // Oracle Cloud (FREE, Always Free Tier)
+        backup: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (FREE, always-on)
     },
     
     // Current active server (will switch on failure)
