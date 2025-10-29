@@ -598,7 +598,7 @@ class MobileApp {
             console.log('🚂 [LIVE DATA] Loading live trains via REST API...');
             console.log('🚂 [LIVE DATA] Source URL:', liveUrl);
             
-            const response = await fetch(liveUrl);
+            const response = await fetchWithFallback(liveUrl);
             console.log('🚂 [LIVE DATA] Response status:', response.status, response.statusText);
             
             if (!response.ok) {
