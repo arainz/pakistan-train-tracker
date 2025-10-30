@@ -5350,7 +5350,7 @@ class MobileApp {
         const appScrollContainer = document.querySelector('div.mobile-app');
         const mainContent = document.querySelector('.main-content');
         
-        if (!scrollContainer || !mainContent) {
+        if (!appScrollContainer || !mainContent) {
             console.warn('⚠️ Scroll container or main content not found, skipping pull-to-refresh');
             return;
         }
@@ -5541,32 +5541,26 @@ class MobileApp {
             switch (this.currentScreen) {
                 case 'home':
                     await this.refreshHomeScreenData();
-                    this.showToast('✅ Home refreshed');
                     break;
                 
                 case 'liveTracking':
                     await this.loadLiveTrains();
-                    this.showToast('✅ Live trains refreshed');
                     break;
                 
                 case 'scheduleScreen':
                     await this.refreshScheduleLiveData();
-                    this.showToast('✅ Schedule refreshed');
                     break;
                 
                 case 'liveTrainDetail':
                     await this.refreshTrainDetails();
-                    this.showToast('✅ Train details refreshed');
                     break;
                 
                 case 'stationScreen':
                     await this.loadStations();
-                    this.showToast('✅ Stations refreshed');
                     break;
                 
                 case 'mapScreen':
                     await this.refreshMapData();
-                    this.showToast('✅ Map refreshed');
                     break;
                 
                 case 'favoritesScreen':
@@ -5576,23 +5570,19 @@ class MobileApp {
                         if (this.loadFavorites) await this.loadFavorites();
                         this.favoritesLastUpdatedTime = new Date();
                     } catch (e) { console.warn('favorites refresh:', e?.message); }
-                    this.showToast('✅ Favorites refreshed');
                     break;
                 
                 case 'profileScreen':
                     try { if (this.loadProfile) await this.loadProfile(); } catch (e) { console.warn('profile refresh:', e?.message); }
-                    this.showToast('✅ Profile refreshed');
                     break;
                 
                 case 'trainSearchScreen':
                     // No network fetch needed; reinitialize search UI
                     if (this.initializeSearch) this.initializeSearch();
-                    this.showToast('✅ Search ready');
                     break;
                 
                 default:
                     console.log('📱 No specific refresh action for this screen');
-                    this.showToast('✅ Refreshed');
             }
         } catch (error) {
             console.error('❌ Error during pull-to-refresh:', error);
