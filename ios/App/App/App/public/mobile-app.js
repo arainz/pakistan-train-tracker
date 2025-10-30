@@ -1498,7 +1498,10 @@ class MobileApp {
                 const schedData = await schedResponse.json();
 
                 if (schedData.success && schedData.data?.schedule) {
-                    this.populateRouteStations(schedData.data.schedule, train);
+                    // Merge stations with schedule data to preserve Distance field
+                    const mergedStations = this.mergeStationsWithScheduleData(schedData.data.schedule, train.TrainNumber);
+                    
+                    this.populateRouteStations(mergedStations, train);
                     
                     // Create notification settings for the new train (only on initial load)
                     const existingNotificationSection = document.querySelector('.notification-settings');
@@ -1508,7 +1511,7 @@ class MobileApp {
                     }
                     
                     console.log('🔔 Creating notification section for train:', train.TrainName);
-                    this.showNotificationSettings(train, schedData.data.schedule, false);
+                    this.showNotificationSettings(train, mergedStations, false);
                 }
             }
 
@@ -1708,10 +1711,12 @@ class MobileApp {
                     const schedResponse = await fetch(getAPIPath(`/api/train/${updatedTrain.TrainNumber}`));
                     const schedData = await schedResponse.json();
                     if (schedData.success && schedData.data?.schedule) {
-                        this.currentRouteStations = schedData.data.schedule;
+                        // Merge stations with schedule data to preserve Distance field
+                        const mergedStations = this.mergeStationsWithScheduleData(schedData.data.schedule, updatedTrain.TrainNumber);
+                        this.currentRouteStations = mergedStations;
                         
                         // Update horizontal progress bar with stations and locomotive (preserves notification section)
-                        this.populateRouteStations(schedData.data.schedule, updatedTrain);
+                        this.populateRouteStations(mergedStations, updatedTrain);
                         
                         // Update progress bar and locomotive position with latest data
                         this.updateProgressBarWithRouteData();
@@ -2000,21 +2005,54 @@ class MobileApp {
         console.log(`🚀🚀🚀 [${new Date().toLocaleTimeString()}] populateRouteStations called with ${stations.length} stations`);
         console.log(`🚀 First station:`, stations[0]);
 
-        // Calculate distances if not provided in station data
-        if (!stations[0]?.DistanceFromOrigin && stations.length > 0 && stations[0]?.Latitude && stations[0]?.Longitude) {
-            let cumulativeDistance = 0;
-            stations[0].DistanceFromOrigin = 0;
-            
-            for (let i = 1; i < stations.length; i++) {
-                if (stations[i].Latitude && stations[i].Longitude && 
-                    stations[i-1].Latitude && stations[i-1].Longitude) {
-                    const segmentDistance = this.calculateDistance(
-                        stations[i-1].Latitude, stations[i-1].Longitude,
-                        stations[i].Latitude, stations[i].Longitude
-                    );
-                    cumulativeDistance += segmentDistance;
-                    stations[i].DistanceFromOrigin = cumulativeDistance;
-                    console.log(`📏 Station ${i} (${stations[i].StationName}): ${cumulativeDistance.toFixed(2)} km from origin`);
+        // Calculate DistanceFromOrigin from stored Distance field (first priority), or from coordinates (fallback)
+        if (stations.length > 0) {
+            // First, try to use stored Distance field from schedules.json
+            if (stations[0].Distance !== undefined && stations[0].Distance !== null) {
+                console.log(`📏 [Distance Source] Using STORED Distance values from schedules.json (first priority)`);
+                // Build DistanceFromOrigin from stored Distance field (cumulative)
+                let cumulativeDistance = stations[0].Distance || 0;
+                stations[0].DistanceFromOrigin = cumulativeDistance;
+                console.log(`📏 Station 0 (${stations[0].StationName}): Distance=${stations[0].Distance} km → DistanceFromOrigin=${cumulativeDistance} km [FROM STORED DISTANCE]`);
+                
+                for (let i = 1; i < stations.length; i++) {
+                    if (stations[i].Distance !== undefined && stations[i].Distance !== null) {
+                        // Use stored Distance from schedules.json
+                        cumulativeDistance = stations[i].Distance;
+                        stations[i].DistanceFromOrigin = cumulativeDistance;
+                        console.log(`📏 Station ${i} (${stations[i].StationName}): Distance=${stations[i].Distance} km → DistanceFromOrigin=${cumulativeDistance} km [FROM STORED DISTANCE]`);
+                    } else {
+                        // Fallback: Calculate from coordinates if stored Distance not available
+                        if (stations[i].Latitude && stations[i].Longitude && 
+                            stations[i-1].Latitude && stations[i-1].Longitude) {
+                            const segmentDistance = this.calculateDistance(
+                                stations[i-1].Latitude, stations[i-1].Longitude,
+                                stations[i].Latitude, stations[i].Longitude
+                            );
+                            cumulativeDistance += segmentDistance;
+                            stations[i].DistanceFromOrigin = cumulativeDistance;
+                            console.log(`📏 Station ${i} (${stations[i].StationName}): Missing Distance → Calculated segment=${segmentDistance.toFixed(2)} km → DistanceFromOrigin=${cumulativeDistance.toFixed(2)} km [FROM COORDINATES]`);
+                        }
+                    }
+                }
+            } else if (stations[0].Latitude && stations[0].Longitude) {
+                // Fallback: Calculate all distances from coordinates if no stored Distance available
+                console.log(`📏 [Distance Source] No stored Distance available - Using COORDINATE-BASED calculation (fallback)`);
+                let cumulativeDistance = 0;
+                stations[0].DistanceFromOrigin = 0;
+                console.log(`📏 Station 0 (${stations[0].StationName}): DistanceFromOrigin=${cumulativeDistance} km [FROM COORDINATES - FALLBACK]`);
+                
+                for (let i = 1; i < stations.length; i++) {
+                    if (stations[i].Latitude && stations[i].Longitude && 
+                        stations[i-1].Latitude && stations[i-1].Longitude) {
+                        const segmentDistance = this.calculateDistance(
+                            stations[i-1].Latitude, stations[i-1].Longitude,
+                            stations[i].Latitude, stations[i].Longitude
+                        );
+                        cumulativeDistance += segmentDistance;
+                        stations[i].DistanceFromOrigin = cumulativeDistance;
+                        console.log(`📏 Station ${i} (${stations[i].StationName}): Calculated segment=${segmentDistance.toFixed(2)} km → DistanceFromOrigin=${cumulativeDistance.toFixed(2)} km [FROM COORDINATES - FALLBACK]`);
+                    }
                 }
             }
         }
@@ -2047,8 +2085,15 @@ class MobileApp {
         }
 
         // Calculate total route distance
-        const totalDistance = stations[stations.length - 1]?.DistanceFromOrigin || 0;
-        console.log(`📏 Total route distance: ${totalDistance} km`);
+        // First priority: Use stored Distance field from schedules.json
+        const lastStation = stations[stations.length - 1];
+        const totalDistance = (lastStation?.Distance !== undefined && lastStation?.Distance !== null)
+            ? lastStation.Distance
+            : (lastStation?.DistanceFromOrigin || 0);
+        const distanceSource = (lastStation?.Distance !== undefined && lastStation?.Distance !== null)
+            ? 'STORED Distance'
+            : 'calculated DistanceFromOrigin';
+        console.log(`📏 Total route distance: ${totalDistance} km [FROM ${distanceSource}]`);
 
         // Calculate minimum width needed for proper spacing
         // Use a scale factor to ensure stations have adequate space
@@ -2401,6 +2446,11 @@ class MobileApp {
         const container = document.getElementById('stationRouteList');
         if (!container || stations.length === 0) return;
 
+        // Count how many stations have stored Distance vs calculated
+        const stationsWithStoredDistance = stations.filter(s => s.Distance !== undefined && s.Distance !== null).length;
+        const stationsWithCalculatedDistance = stations.filter(s => s.DistanceFromOrigin !== undefined && s.DistanceFromOrigin !== null && (s.Distance === undefined || s.Distance === null)).length;
+        console.log(`📏 [Vertical Route Stations] Populating ${stations.length} stations - ${stationsWithStoredDistance} with STORED Distance, ${stationsWithCalculatedDistance} with calculated DistanceFromOrigin`);
+
         let html = '';
         const currentStationName = train.NextStation || train.Location || '';
         let currentStationIndex = stations.findIndex(s =>
@@ -2599,9 +2649,24 @@ class MobileApp {
             if (station.Platform) {
                 additionalInfoParts.push(`<span class="platform-info">🚉 Platform ${station.Platform}</span>`);
             }
-            if (station.DistanceFromOrigin) {
-                const distance = parseFloat(station.DistanceFromOrigin).toFixed(2);
-                additionalInfoParts.push(`<span class="distance-info">📍 ${distance} km</span>`);
+            
+            // First priority: Use stored Distance field from schedules.json, fallback to DistanceFromOrigin
+            let distanceToDisplay = null;
+            let distanceSource = '';
+            if (station.Distance !== undefined && station.Distance !== null) {
+                distanceToDisplay = parseFloat(station.Distance).toFixed(2);
+                distanceSource = 'STORED Distance';
+            } else if (station.DistanceFromOrigin !== undefined && station.DistanceFromOrigin !== null) {
+                distanceToDisplay = parseFloat(station.DistanceFromOrigin).toFixed(2);
+                distanceSource = 'DistanceFromOrigin (calculated)';
+            }
+            
+            if (distanceToDisplay) {
+                additionalInfoParts.push(`<span class="distance-info">📍 ${distanceToDisplay} km</span>`);
+                // Log the source (only for first few stations to avoid spam)
+                if (index < 5 || index === stations.length - 1) {
+                    console.log(`📏 [Vertical Route Stations] Station ${index} (${stationName}): Distance=${distanceToDisplay} km [FROM ${distanceSource}]`);
+                }
             }
             const additionalInfoHTML = additionalInfoParts.length > 0
                 ? `<div class="additional-info">${additionalInfoParts.join('')}</div>`
@@ -2670,11 +2735,89 @@ class MobileApp {
         return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
     }
 
+    // Merge stations from API with full schedule data to preserve Distance field
+    mergeStationsWithScheduleData(stations, trainNumber) {
+        if (!stations || stations.length === 0) return stations;
+        if (!this.scheduleData || this.scheduleData.length === 0) return stations;
+
+        // Find the train in schedule data
+        const trainId = trainNumber || stations[0]?.TrainNumber || stations[0]?.TrainId;
+        const scheduledTrain = this.scheduleData.find(t =>
+            String(t.trainId) === String(trainId) ||
+            String(t.trainNumber) === String(trainId) ||
+            String(t.TrainId) === String(trainId)
+        );
+
+        if (!scheduledTrain || !scheduledTrain.stations) {
+            console.log(`⚠️ [mergeStationsWithScheduleData] Schedule data not found for train ${trainId}`);
+            return stations;
+        }
+
+        // Create a map of stations by StationId and StationName from schedule data
+        const scheduleStationMapById = new Map();
+        const scheduleStationMapByName = new Map();
+        scheduledTrain.stations.forEach(schedStation => {
+            if (schedStation.StationId) {
+                scheduleStationMapById.set(String(schedStation.StationId), schedStation);
+            }
+            if (schedStation.StationName) {
+                scheduleStationMapByName.set(schedStation.StationName.toLowerCase().trim(), schedStation);
+            }
+        });
+
+        // Merge stations with schedule data to preserve Distance field
+        const mergedStations = stations.map(apiStation => {
+            // Try matching by StationId first (most reliable)
+            let schedStation = null;
+            if (apiStation.StationId) {
+                schedStation = scheduleStationMapById.get(String(apiStation.StationId));
+            }
+            
+            // If not found by StationId, try matching by StationName (case-insensitive)
+            if (!schedStation && apiStation.StationName) {
+                schedStation = scheduleStationMapByName.get(apiStation.StationName.toLowerCase().trim());
+            }
+            
+            // If station found in schedule and has Distance field, merge it
+            if (schedStation && (schedStation.Distance !== undefined && schedStation.Distance !== null)) {
+                return { ...apiStation, Distance: schedStation.Distance };
+            }
+            
+            return apiStation;
+        });
+
+        const mergedCount = mergedStations.filter(s => s.Distance !== undefined && s.Distance !== null).length;
+        console.log(`📏 [mergeStationsWithScheduleData] Merged ${mergedCount}/${stations.length} stations with Distance field from schedules.json`);
+        
+        return mergedStations;
+    }
+
     updateProgressBar(stations, currentStationIndex, train) {
         if (!stations || stations.length === 0 || !train) return;
 
+        // Debug: Check if stations have Distance field
+        const stationsWithDistance = stations.filter(s => s.Distance !== undefined && s.Distance !== null).length;
+        console.log(`📏 [updateProgressBar] Stations with Distance field: ${stationsWithDistance}/${stations.length}`);
+        if (stationsWithDistance === 0 && stations.length > 0) {
+            console.log(`⚠️ [updateProgressBar] No stations have Distance field! First station keys:`, Object.keys(stations[0]));
+            console.log(`⚠️ [updateProgressBar] First station sample:`, {
+                StationName: stations[0].StationName,
+                StationId: stations[0].StationId,
+                Distance: stations[0].Distance,
+                DistanceFromOrigin: stations[0].DistanceFromOrigin
+            });
+        }
+
         // Get total route distance
-        const totalDistance = stations[stations.length - 1]?.DistanceFromOrigin || 0;
+        // First priority: Use stored Distance field from schedules.json
+        const lastStation = stations[stations.length - 1];
+        const totalDistance = (lastStation?.Distance !== undefined && lastStation?.Distance !== null)
+            ? lastStation.Distance
+            : (lastStation?.DistanceFromOrigin || 0);
+        const totalDistanceSource = (lastStation?.Distance !== undefined && lastStation?.Distance !== null)
+            ? 'STORED Distance'
+            : 'calculated DistanceFromOrigin';
+        console.log(`📏 [Progress Distance Source] Total Route Distance: ${totalDistance} km [FROM ${totalDistanceSource}]`);
 
         // Calculate progress percentage
         let progressPercentage = 0;
@@ -2682,7 +2825,14 @@ class MobileApp {
 
         if (currentStationIndex >= 0 && stations.length > 1 && totalDistance > 0) {
             const currentStation = stations[currentStationIndex];
-            const currentDistance = currentStation?.DistanceFromOrigin || 0;
+            // First priority: Use stored Distance field from schedules.json
+            const currentDistance = (currentStation?.Distance !== undefined && currentStation?.Distance !== null) 
+                ? currentStation.Distance 
+                : (currentStation?.DistanceFromOrigin || 0);
+            const currentDistanceSource = (currentStation?.Distance !== undefined && currentStation?.Distance !== null)
+                ? 'STORED Distance'
+                : 'DistanceFromOrigin (fallback)';
+            console.log(`📏 [Progress Distance Source] Current Station (${currentStation.StationName}): ${currentDistance} km [FROM ${currentDistanceSource}]`);
 
             // Base progress at current station (based on distance, not index)
             const baseProgress = (currentDistance / totalDistance) * 100;
@@ -2720,10 +2870,20 @@ class MobileApp {
                         const progressAlongSegment = Math.min(distToCurrent / segmentLength, 1.0);
                         
                         // Get distance segment from station data
-                        const nextDistance = nextStation?.DistanceFromOrigin || 0;
-                const segmentDistance = nextDistance - currentDistance;
+                        // First priority: Use stored Distance field from schedules.json
+                        const nextDistance = (nextStation?.Distance !== undefined && nextStation?.Distance !== null)
+                            ? nextStation.Distance
+                            : (nextStation?.DistanceFromOrigin || 0);
+                        const nextDistanceSource = (nextStation?.Distance !== undefined && nextStation?.Distance !== null)
+                            ? 'STORED Distance'
+                            : 'DistanceFromOrigin (fallback)';
+                        const segmentDistance = nextDistance - currentDistance;
+                        console.log(`📏 [Progress Distance Source] Next Station (${nextStation.StationName}): ${nextDistance} km [FROM ${nextDistanceSource}]`);
+                        console.log(`📏 [Progress Distance Source] Segment Distance: ${segmentDistance} km (${nextDistance} - ${currentDistance})`);
 
                         // Calculate actual distance covered in this segment
+                        // Note: segmentDistance comes from STORED Distance (if available) or DistanceFromOrigin
+                        // progressAlongSegment is based on GPS coordinate positioning
                         const distanceCovered = segmentDistance * progressAlongSegment;
                         calculatedDistance = currentDistance + distanceCovered; // Track calculated distance
                         
@@ -2731,7 +2891,8 @@ class MobileApp {
                         progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
                         
                         useCoordinatePosition = true;
-                        console.log(`🌍 Coordinate-based Progress: TrainPos=(${train.Latitude.toFixed(4)},${train.Longitude.toFixed(4)}), DistToCurrent=${distToCurrent.toFixed(2)}km, DistToNext=${distToNext.toFixed(2)}km, SegmentLen=${segmentLength.toFixed(2)}km, Progress=${(progressAlongSegment*100).toFixed(1)}% => Bar:${progressPercentage.toFixed(1)}%`);
+                        console.log(`🌍 Coordinate-based Progress: TrainPos=(${train.Latitude.toFixed(4)},${train.Longitude.toFixed(4)}), DistToCurrent=${distToCurrent.toFixed(2)}km, DistToNext=${distToNext.toFixed(2)}km, SegmentLen=${segmentLength.toFixed(2)}km (straight-line), Progress=${(progressAlongSegment*100).toFixed(1)}% => Bar:${progressPercentage.toFixed(1)}%`);
+                        console.log(`🌍 [Progress Calculation] Using GPS position for precision. Segment distance (${segmentDistance} km [FROM ${nextDistanceSource}]) × Progress (${(progressAlongSegment*100).toFixed(1)}%) = ${distanceCovered.toFixed(2)} km covered`);
                     } else {
                         console.log(`⚠️ Segment length is 0, cannot use coordinate-based positioning`);
                     }
@@ -2746,10 +2907,18 @@ class MobileApp {
             const etaCheck3 = this.getTrainETA(train);
             if (!useCoordinatePosition && currentStationIndex < stations.length - 1 && etaCheck3) {
                 const nextStation = stations[currentStationIndex + 1];
-                const nextDistance = nextStation?.DistanceFromOrigin || 0;
+                // First priority: Use stored Distance field from schedules.json
+                const nextDistance = (nextStation?.Distance !== undefined && nextStation?.Distance !== null)
+                    ? nextStation.Distance
+                    : (nextStation?.DistanceFromOrigin || 0);
+                const nextDistanceSource = (nextStation?.Distance !== undefined && nextStation?.Distance !== null)
+                    ? 'STORED Distance'
+                    : 'DistanceFromOrigin (fallback)';
                 
                 // Distance segment between current and next station
                 const segmentDistance = nextDistance - currentDistance;
+                console.log(`📏 [Progress Distance Source - Time-based] Next Station (${nextStation.StationName}): ${nextDistance} km [FROM ${nextDistanceSource}]`);
+                console.log(`📏 [Progress Distance Source - Time-based] Segment Distance: ${segmentDistance} km (${nextDistance} - ${currentDistance})`);
                 
                 // Get scheduled time for next station
                 const scheduledTime = nextStation?.ArrivalTime || nextStation?.DepartureTime;
@@ -2787,7 +2956,7 @@ class MobileApp {
                             // Add the partial distance to current distance and convert to percentage
                             progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
                             
-                            console.log(`⏱️ Time-based Progress: CurrentDist=${currentDistance}km, SegmentDist=${segmentDistance}km, Covered=${distanceCovered.toFixed(1)}km, Total=${totalDistance}km => ${progressPercentage.toFixed(1)}%`);
+                            console.log(`⏱️ Time-based Progress: CurrentDist=${currentDistance}km [FROM ${currentDistanceSource}], SegmentDist=${segmentDistance}km [FROM ${nextDistanceSource}], Covered=${distanceCovered.toFixed(1)}km, Total=${totalDistance}km [FROM ${totalDistanceSource}] => ${progressPercentage.toFixed(1)}%`);
                         } else {
                             progressPercentage = baseProgress;
                         }
@@ -2846,7 +3015,12 @@ class MobileApp {
         const trainStatus = train && train.Status ? train.Status : 'Unknown';
         // Use calculated distance (includes partial progress) if available, otherwise fall back to station distance
         const displayDistance = calculatedDistance > 0 ? calculatedDistance : (stations[currentStationIndex]?.DistanceFromOrigin || 0);
-        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${displayDistance.toFixed(2)}/${totalDistance} km)`);
+        const displayDistanceSource = calculatedDistance > 0 
+            ? 'calculated (with GPS position)' 
+            : ((stations[currentStationIndex]?.Distance !== undefined && stations[currentStationIndex]?.Distance !== null)
+                ? 'STORED Distance'
+                : 'DistanceFromOrigin (fallback)');
+        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${displayDistance.toFixed(2)}/${totalDistance} km [FROM ${displayDistanceSource}/${totalDistanceSource}])`);
     }
 
     getCurrentTime() {
@@ -2862,70 +3036,34 @@ class MobileApp {
         const routeStations = document.querySelector('.route-stations');
         if (!routeStations) return;
         
-        // Get the popover (if exists)
-        const popover = locomotiveIcon.querySelector('.locomotive-popover');
-        
-        // Get positions
-        const containerRect = routeStations.getBoundingClientRect();
+        // Get positions relative to viewport
+        const scrollContainerRect = routeStations.getBoundingClientRect();
         const locomotiveRect = locomotiveIcon.getBoundingClientRect();
         
-        const edgePadding = 50; // Add 50px padding from edges for better visibility
+        // Calculate viewport center (horizontal) within the scroll container
+        const viewportCenter = scrollContainerRect.width / 2;
         
-        if (popover) {
-            const popoverRect = popover.getBoundingClientRect();
-            
-            // More precise cutoff detection - check if SIGNIFICANTLY cut off
-            const leftCutoff = Math.max(0, (containerRect.left + edgePadding) - popoverRect.left);
-            const rightCutoff = Math.max(0, popoverRect.right - (containerRect.right - edgePadding));
-            
-            // Check if locomotive itself is cut off
-            const locomotiveLeftCutoff = Math.max(0, (containerRect.left + edgePadding) - locomotiveRect.left);
-            const locomotiveRightCutoff = Math.max(0, locomotiveRect.right - (containerRect.right - edgePadding));
-            
-            console.log(`🔍 Visibility: Popover[${popoverRect.left.toFixed(0)}-${popoverRect.right.toFixed(0)}] Container[${containerRect.left.toFixed(0)}-${containerRect.right.toFixed(0)}] LeftCut=${leftCutoff.toFixed(0)}px RightCut=${rightCutoff.toFixed(0)}px LocoLeftCut=${locomotiveLeftCutoff.toFixed(0)}px LocoRightCut=${locomotiveRightCutoff.toFixed(0)}px`);
-            
-            // Only scroll if MORE than 5px is cut off (to prevent tiny adjustments while fixing visible cropping)
-            const significantCutoff = 5;
-            
-            // Determine the maximum cutoff from all checks
-            const maxLeftCutoff = Math.max(leftCutoff, locomotiveLeftCutoff);
-            const maxRightCutoff = Math.max(rightCutoff, locomotiveRightCutoff);
-            
-            if (maxLeftCutoff > significantCutoff) {
-                // Significantly cut off on left
-                console.log(`🚂 Scrolling LEFT (max cutoff: ${maxLeftCutoff.toFixed(0)}px)`);
-                
-                // Manually scroll the container instead of using scrollIntoView
-                const scrollAmount = maxLeftCutoff + edgePadding;
-                routeStations.scrollLeft = Math.max(0, routeStations.scrollLeft - scrollAmount);
-                
-            } else if (maxRightCutoff > significantCutoff) {
-                // Significantly cut off on right
-                console.log(`🚂 Scrolling RIGHT (max cutoff: ${maxRightCutoff.toFixed(0)}px)`);
-                
-                // Manually scroll the container instead of using scrollIntoView
-                const scrollAmount = maxRightCutoff + edgePadding;
-                routeStations.scrollLeft = routeStations.scrollLeft + scrollAmount;
-                
-            } else {
-                console.log(`✅ Locomotive and popover fully visible (LeftCut=${maxLeftCutoff.toFixed(0)}px, RightCut=${maxRightCutoff.toFixed(0)}px <= ${significantCutoff}px tolerance), no scroll needed`);
-            }
-        } else {
-            // No popover, just check locomotive
-            const leftCutoff = Math.max(0, (containerRect.left + edgePadding) - locomotiveRect.left);
-            const rightCutoff = Math.max(0, locomotiveRect.right - (containerRect.right - edgePadding));
-            
-            const significantCutoff = 5;
-            
-            if (leftCutoff > significantCutoff || rightCutoff > significantCutoff) {
-                console.log('🚂 Scrolling locomotive to center');
-                locomotiveIcon.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }
+        // Calculate locomotive center relative to the scroll container's viewport
+        const locomotiveCenterInViewport = locomotiveRect.left - scrollContainerRect.left + (locomotiveRect.width / 2);
+        
+        // Calculate offset needed to center locomotive
+        const offsetFromCenter = locomotiveCenterInViewport - viewportCenter;
+        
+        // Calculate target scroll position (add offset to current scroll)
+        const currentScrollLeft = routeStations.scrollLeft;
+        const targetScrollLeft = currentScrollLeft + offsetFromCenter;
+        
+        // Clamp scroll position to valid range
+        const maxScroll = routeStations.scrollWidth - routeStations.clientWidth;
+        const clampedScrollLeft = Math.max(0, Math.min(targetScrollLeft, maxScroll));
+        
+        // Smooth scroll to center the locomotive
+        routeStations.scrollTo({
+            left: clampedScrollLeft,
+            behavior: 'smooth'
+        });
+        
+        console.log(`🎯 Centering locomotive: viewportCenter=${viewportCenter.toFixed(0)}px, locoCenterInViewport=${locomotiveCenterInViewport.toFixed(0)}px, offset=${offsetFromCenter.toFixed(0)}px, currentScroll=${currentScrollLeft.toFixed(0)}px, targetScroll=${clampedScrollLeft.toFixed(0)}px, maxScroll=${maxScroll.toFixed(0)}px`);
     }
 
     updateLocomotivePopover(locomotiveIcon, train, stations, currentStationIndex) {
@@ -3370,9 +3508,34 @@ class MobileApp {
                         if (currentStationIndex !== -1 && currentStationIndex < nextStationIndex) {
                             // Get segment distance (current to next station)
                             const currentStationData = scheduledTrain.stations[currentStationIndex];
-                            const currentStationDistance = currentStationData.DistanceFromOrigin || 0;
-                            const nextStationDistance = nextStationData.DistanceFromOrigin || 0;
+                            
+                            // First priority: Use stored Distance field from schedules.json
+                            // Calculate cumulative DistanceFromOrigin if not already set
+                            let currentStationDistance = 0;
+                            let nextStationDistance = 0;
+                            let currentDistanceSource = '';
+                            let nextDistanceSource = '';
+                            
+                            if (currentStationData.Distance !== undefined && currentStationData.Distance !== null) {
+                                currentStationDistance = currentStationData.Distance;
+                                currentDistanceSource = 'STORED Distance';
+                            } else {
+                                currentStationDistance = currentStationData.DistanceFromOrigin || 0;
+                                currentDistanceSource = 'DistanceFromOrigin (fallback)';
+                            }
+                            
+                            if (nextStationData.Distance !== undefined && nextStationData.Distance !== null) {
+                                nextStationDistance = nextStationData.Distance;
+                                nextDistanceSource = 'STORED Distance';
+                            } else {
+                                nextStationDistance = nextStationData.DistanceFromOrigin || 0;
+                                nextDistanceSource = 'DistanceFromOrigin (fallback)';
+                            }
+                            
                             const segmentDistance = nextStationDistance - currentStationDistance;
+                            console.log(`📏 [ETA Distance Source] Current: ${currentStationData.StationName} = ${currentStationDistance} km [FROM ${currentDistanceSource}]`);
+                            console.log(`📏 [ETA Distance Source] Next: ${nextStationData.StationName} = ${nextStationDistance} km [FROM ${nextDistanceSource}]`);
+                            console.log(`📏 [ETA Distance Source] Segment Distance: ${segmentDistance} km (${nextStationDistance} - ${currentStationDistance})`);
                             
                             // Calculate how far the train is from the current station using GPS
                             const trainLat = train.Latitude || train.latitude;
@@ -3409,24 +3572,29 @@ class MobileApp {
                                         distanceToNextStation = Math.max(segmentDistance - traveledDistance, 1);
                                     }
                                     
-                                    console.log(`📍 Train position: ${straightLineDistance.toFixed(2)}km (straight) from ${currentStationData.StationName}, ${distanceToNextStation.toFixed(2)}km remaining to ${train.NextStation}`);
+                                    console.log(`📍 [ETA Distance Source] Train position calculated from GPS: ${straightLineDistance.toFixed(2)}km (straight-line) from ${currentStationData.StationName}, ${distanceToNextStation.toFixed(2)}km remaining to ${train.NextStation} [USING GPS + STORED SEGMENT DISTANCE]`);
                                 } else {
                                     // Fallback: use full segment distance
                                     distanceToNextStation = segmentDistance;
+                                    console.log(`📍 [ETA Distance Source] Using full segment distance: ${segmentDistance.toFixed(2)} km [FROM STORED DISTANCE] (station metadata not found)`);
                                 }
                             } else {
                                 // No GPS data, use full segment distance
                                 distanceToNextStation = segmentDistance;
+                                console.log(`📍 [ETA Distance Source] Using full segment distance: ${segmentDistance.toFixed(2)} km [FROM STORED DISTANCE] (no GPS data available)`);
                             }
                         } else {
-                            // Use full distance to next station as fallback
-                            distanceToNextStation = nextStationData.DistanceFromOrigin || null;
+                            // Cannot determine segment distance (current station not found or invalid)
+                            // Fall through to Haversine calculation below using train GPS coordinates
+                            // This ensures we calculate actual distance from train position to next station
+                            distanceToNextStation = null;
                         }
                     }
                 }
             }
             
             // Fallback: Use Haversine if route distance not available
+            let distanceSourceForETA = '';
             if (!distanceToNextStation || distanceToNextStation <= 0) {
                 const trainLat = train.Latitude || train.latitude;
                 const trainLng = train.Longitude || train.longitude;
@@ -3451,6 +3619,10 @@ class MobileApp {
                     nextStation.Latitude, nextStation.Longitude
                 );
                 distanceToNextStation = straightLineDistance * 1.3;
+                distanceSourceForETA = 'COORDINATES (Haversine * 1.3 - final fallback)';
+                console.log(`📏 [ETA Distance Source] Using Haversine calculation: Straight-line=${straightLineDistance.toFixed(2)} km × 1.3 = ${distanceToNextStation.toFixed(2)} km [FROM COORDINATES - FINAL FALLBACK]`);
+            } else {
+                distanceSourceForETA = 'STORED Distance from schedules.json';
             }
             
             // Calculate time in hours, then convert to minutes
@@ -3467,7 +3639,7 @@ class MobileApp {
             const etaTime = `${String(etaHours).padStart(2, '0')}:${String(etaMinutes).padStart(2, '0')}`;
             
             const trainName = train.TrainName || train.trainName || `Train ${train.TrainNumber}`;
-            console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km | Speed: ${speed}km/h | ETA: ${etaTime}`);
+            console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km [FROM ${distanceSourceForETA}] | Speed: ${speed}km/h | ETA: ${etaTime}`);
             
             return etaTime;
             
