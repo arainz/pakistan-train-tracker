@@ -2,8 +2,9 @@
 const API_CONFIG = {
     // Primary and fallback servers
     servers: {
-        primary: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (FREE, always-on)
-        fallback: 'https://pakistan-train-tracker-174840179894.us-central1.run.app', // Google Cloud Run (paid backup)
+        primary: 'https://pakistan-train-tracker-174840179894.us-central1.run.app', // Google Cloud Run (FREE trial - 180 days)
+        fallback: 'http://138.2.91.18:3000', // Oracle Cloud (FREE, Always Free Tier)
+        backup: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (FREE, always-on)
     },
     
     // Current active server (will switch on failure)
@@ -90,7 +91,7 @@ const API_CONFIG = {
         }
     },
 
-    // Static data configuration (Hybrid approach)
+    // Static data configuration (Hybrid approach - local first, remote fallback)
     staticData: {
         // Local bundled files (primary - fast, offline)
         local: {
@@ -99,7 +100,7 @@ const API_CONFIG = {
             schedules: '/data/schedules.json',
             version: '/data/version.json'
         },
-        // Remote source (fallback and updates)
+        // Remote source (fallback for web, updates)
         remote: {
             stations: 'https://pakrail.rise.com.pk/data/stations.json',
             trains: 'https://pakrail.rise.com.pk/data/trains.json',
@@ -111,33 +112,54 @@ const API_CONFIG = {
     // Helper to fetch static data with hybrid approach
     async fetchStaticData(type, forceRemote = false) {
         const startTime = Date.now();
+        const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
+        
         console.log(`📦 [DATA SOURCE] Loading ${type} data...`);
         console.log(`📦 [DATA SOURCE] Force remote: ${forceRemote}`);
+        console.log(`📦 [DATA SOURCE] Platform: ${isMobileApp ? 'MOBILE APP' : 'WEB BROWSER'}`);
+        console.log(`📦 [DATA SOURCE] Origin: ${window.location.origin}`);
         
-        // If not forcing remote, try local first
+        // ALWAYS try local first (unless explicitly forcing remote)
+        // For mobile app, NEVER fallback to remote to ensure bundled data is used
         if (!forceRemote) {
             try {
                 const localPath = this.staticData.local[type];
-                console.log(`📂 [DATA SOURCE] Attempting local: ${localPath}`);
-                console.log(`📂 [DATA SOURCE] Full URL: ${window.location.origin}${localPath}`);
+                // Add cache-busting parameter to prevent iOS WebView caching
+                const cacheBuster = `?v=${Date.now()}`;
+                const urlWithCacheBuster = `${localPath}${cacheBuster}`;
                 
-                const response = await fetch(localPath);
+                console.log(`📂 [DATA SOURCE] Attempting local: ${localPath}`);
+                console.log(`📂 [DATA SOURCE] Full URL: ${window.location.origin}${urlWithCacheBuster}`);
+                
+                const response = await fetch(urlWithCacheBuster, {
+                    cache: 'no-store',  // Prevent caching
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
                 console.log(`📂 [DATA SOURCE] Local response status: ${response.status} ${response.statusText}`);
                 
                 if (response.ok) {
                     const data = await response.json();
                     const loadTime = Date.now() - startTime;
                     const dataSize = JSON.stringify(data).length;
+                    const records = Array.isArray(data) ? data.length : (data.Response?.length || 'N/A');
+                    
                     console.log(`✅ [DATA SOURCE] SUCCESS - Loaded ${type} from LOCAL files`);
                     console.log(`✅ [DATA SOURCE] Source: ${window.location.origin}${localPath}`);
                     console.log(`✅ [DATA SOURCE] Load time: ${loadTime}ms`);
                     console.log(`✅ [DATA SOURCE] Data size: ${(dataSize / 1024).toFixed(2)} KB`);
-                    console.log(`✅ [DATA SOURCE] Records: ${Array.isArray(data) ? data.length : (data.Response?.length || 'N/A')}`);
+                    console.log(`✅ [DATA SOURCE] Records: ${records}`);
+                    
                     return data;
+                } else {
+                    console.warn(`⚠️ [DATA SOURCE] Local ${type} returned ${response.status}`);
                 }
             } catch (error) {
-                console.warn(`⚠️ [DATA SOURCE] Local ${type} not available:`, error.message);
-                console.warn(`⚠️ [DATA SOURCE] Error details:`, error);
+                console.warn(`⚠️ [DATA SOURCE] Local ${type} failed:`, error.message);
+                console.warn(`⚠️ [DATA SOURCE] Will try remote fallback...`);
             }
         }
         
@@ -157,11 +179,13 @@ const API_CONFIG = {
             const data = await response.json();
             const loadTime = Date.now() - startTime;
             const dataSize = JSON.stringify(data).length;
+            const records = Array.isArray(data) ? data.length : (data.Response?.length || 'N/A');
+            
             console.log(`✅ [DATA SOURCE] SUCCESS - Loaded ${type} from REMOTE source`);
             console.log(`✅ [DATA SOURCE] Source: ${remotePath}`);
             console.log(`✅ [DATA SOURCE] Load time: ${loadTime}ms`);
             console.log(`✅ [DATA SOURCE] Data size: ${(dataSize / 1024).toFixed(2)} KB`);
-            console.log(`✅ [DATA SOURCE] Records: ${Array.isArray(data) ? data.length : (data.Response?.length || 'N/A')}`);
+            console.log(`✅ [DATA SOURCE] Records: ${records}`);
             return data;
         } catch (error) {
             console.error(`❌ [DATA SOURCE] FAILED to load ${type} from remote:`, error.message);
@@ -173,11 +197,13 @@ const API_CONFIG = {
     // Check for data updates
     async checkForUpdates() {
         try {
+            console.log('🔍 Checking for data updates...');
+            
             // Get local version
             const localVersionData = await this.fetchStaticData('version', false);
             const localVersion = localVersionData?.version || '0';
             
-            // Get remote version (always check)
+            // Get remote version (always check remote for updates)
             const remoteVersionData = await this.fetchStaticData('version', true);
             const remoteVersion = remoteVersionData?.version || '0';
             
@@ -190,7 +216,11 @@ const API_CONFIG = {
             };
         } catch (error) {
             console.warn('⚠️ Could not check for updates:', error.message);
-            return { hasUpdate: false };
+            return {
+                hasUpdate: false,
+                localVersion: '0',
+                remoteVersion: '0'
+            };
         }
     }
 };

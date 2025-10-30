@@ -20,6 +20,8 @@ class MobileApp {
         this.liveTrackingLastUpdatedTime = null;
         this.scheduleLastUpdatedTime = null;
         this.trainDetailLastUpdatedTime = null;
+        this.favoritesLastUpdatedTime = null;
+        this.favoritesRefreshInterval = null;
         
         // Map-related properties
         this.map = null;
@@ -38,6 +40,30 @@ class MobileApp {
         this.init();
     }
 
+    // Favorites auto-refresh
+    startFavoritesRefresh() {
+        this.stopFavoritesRefresh();
+        // Refresh every 15 seconds
+        this.favoritesRefreshInterval = setInterval(async () => {
+            if (this.currentScreen === 'favoritesScreen') {
+                try {
+                    await this.loadLiveTrains();
+                    this.loadFavorites();
+                    this.favoritesLastUpdatedTime = new Date();
+                } catch (e) {
+                    console.warn('Favorites auto-refresh error:', e?.message);
+                }
+            }
+        }, 10000);
+    }
+
+    stopFavoritesRefresh() {
+        if (this.favoritesRefreshInterval) {
+            clearInterval(this.favoritesRefreshInterval);
+            this.favoritesRefreshInterval = null;
+        }
+    }
+
     async init() {
         console.log('🚂 Mobile Train Tracker initialized');
         
@@ -49,7 +75,7 @@ class MobileApp {
         document.body.classList.remove('screen-active');
         this.currentScreen = 'home';
         
-        // Make sure main content is visible
+        // Make sure main content is visible (shows loading state, then updates)
         this.showMainContent();
         
         // Request location permission on app startup (native dialog)
@@ -74,6 +100,7 @@ class MobileApp {
         this.initializeDarkMode();
         this.startAutoRefresh();
         this.startLastUpdatedCountdown();
+        this.initializePullToRefresh();
     }
 
     async requestLocationPermission() {
@@ -341,8 +368,27 @@ class MobileApp {
         if (this.currentScreen === 'liveTrainDetail' && screenId !== 'liveTrainDetail') {
             this.stopDetailAutoRefresh();
         }
+        
+        // Stop schedule screen auto-refresh if leaving
+        if (this.currentScreen === 'scheduleScreen' && screenId !== 'scheduleScreen') {
+            this.stopScheduleRefresh();
+        }
+        // Stop favorites auto-refresh when leaving
+        if (this.currentScreen === 'favoritesScreen' && screenId !== 'favoritesScreen') {
+            this.stopFavoritesRefresh();
+        }
 
         this.currentScreen = screenId;
+        
+        // For inner screens, disable outer scroll; let .screen scroll (prevents header pull)
+        const appContainer = document.querySelector('div.mobile-app');
+        if (appContainer) {
+            if (screenId === 'home') {
+                appContainer.classList.remove('inner-scroll');
+            } else {
+                appContainer.classList.add('inner-scroll');
+            }
+        }
 
         // Push to navigation stack
         if (pushHistory && this.navigationStack[this.navigationStack.length - 1] !== screenId) {
@@ -355,6 +401,67 @@ class MobileApp {
         } else if (!pushHistory) {
             // Don't add to stack if it's a back navigation
             console.log('📚 Back navigation - not adding to stack');
+        }
+
+        // Favorites: prevent initial rubber-band pull that moves header
+        if (screenId === 'favoritesScreen') {
+            const favScreen = document.getElementById('favoritesScreen');
+            if (favScreen) {
+                // Nudge once on entry
+                requestAnimationFrame(() => { try { favScreen.scrollTop = Math.max(1, favScreen.scrollTop); } catch (_) {} });
+
+                if (!favScreen._pullGuardInstalled) {
+                    let startY = 0;
+                    let topOnStart = false;
+                    let nudgedOnce = false;
+
+                    favScreen.addEventListener('touchstart', (e) => {
+                        if (!e.touches || e.touches.length === 0) return;
+                        startY = e.touches[0].pageY;
+                        topOnStart = (favScreen.scrollTop || 0) <= 0;
+                        nudgedOnce = false;
+                    }, { passive: true });
+
+                    favScreen.addEventListener('touchmove', (e) => {
+                        if (!e.touches || e.touches.length === 0) return;
+                        if (!topOnStart) return; // normal behavior if not starting at top
+
+                        const dy = e.touches[0].pageY - startY;
+                        // Only guard the very first downward pull to avoid flicker
+                        if (dy > 0 && (favScreen.scrollTop || 0) <= 0 && !nudgedOnce) {
+                            try { favScreen.scrollTop = 1; } catch (_) {}
+                            nudgedOnce = true;
+                            if (e.cancelable) e.preventDefault();
+                        }
+                    }, { passive: false });
+
+                    favScreen._pullGuardInstalled = true;
+                }
+            }
+            // Start auto-refresh for favorites
+            this.startFavoritesRefresh();
+        }
+
+        // Ensure no leftover inline styles on favorites screen (CSS controls layout)
+        if (screenId === 'favoritesScreen') {
+            const favScreen = document.getElementById('favoritesScreen');
+            const favHeader = favScreen ? favScreen.querySelector('.sticky-header') : null;
+            const favContent = favScreen ? favScreen.querySelector('.screen-content') : null;
+            if (favScreen) {
+                favScreen.style.overflowY = '';
+                favScreen.style.webkitOverflowScrolling = '';
+            }
+            if (favHeader) {
+                favHeader.style.position = '';
+                favHeader.style.top = '';
+                favHeader.style.left = '';
+                favHeader.style.right = '';
+                favHeader.style.width = '';
+                favHeader.style.zIndex = '';
+            }
+            if (favContent) {
+                favContent.style.paddingTop = '';
+            }
         }
 
         // Special case for home/dashboard
@@ -466,24 +573,29 @@ class MobileApp {
         // Update navigation
         this.updateNavigation('home');
         
-        // Refresh home screen data immediately
-        setTimeout(() => {
-            this.refreshHomeScreenData();
-        }, 100); // Small delay to ensure DOM is ready
-    }
-    
-    // Refresh home screen data
-    refreshHomeScreenData() {
-        console.log('🔄 Refreshing home screen data...');
-        
-        // Refresh live trains
-        if (this.trainData && this.trainData.active) {
+        // Immediately display current filtered data (if available) to avoid showing stale counts
+        if (this.trainData && this.trainData.active && this.trainData.active.length > 0) {
+            console.log('📊 Showing current filtered home data immediately');
             this.populateLiveTrains();
             this.updateActiveTrainsCount();
         }
         
+        // Refresh home screen data in background (don't await - let it update when ready)
+        this.refreshHomeScreenData();
+    }
+    
+    // Refresh home screen data
+    async refreshHomeScreenData() {
+        console.log('🔄 Refreshing home screen data...');
+        
+        // Load fresh data from API (same as auto-refresh)
+        await this.loadScheduledTrainsForHome();
+        await this.loadLiveTrains();
+        
         // Refresh live updates
         this.loadLiveUpdates();
+        
+        console.log('✅ Home screen data refreshed with latest from API');
     }
 
 
@@ -616,6 +728,9 @@ class MobileApp {
                 let filteredTrains = this.filterDuplicateTrains(data.data);
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
+                
+                // Filter to only show trains that have schedule data
+                filteredTrains = this.filterByScheduleAvailability(filteredTrains);
                 
                 this.trainData.active = filteredTrains;
                 this.liveDataLastFetchTime = new Date(); // Update timestamp when live data is successfully fetched
@@ -774,7 +889,6 @@ class MobileApp {
         
         return filteredTrains;
     }
-
     // Filter out trains that have reached destination and been stopped for 30+ minutes
     filterCompletedJourneys(trains) {
         console.log('🔍 Filtering completed journeys (destination reached, stopped, 30+ min old)...');
@@ -1562,8 +1676,6 @@ class MobileApp {
             console.error('❌ Error refreshing train details:', error);
         }
     }
-    
-
     updateTrainMetrics(train) {
         if (!train) {
             console.warn('⚠️ updateTrainMetrics called with null/undefined train');
@@ -2228,7 +2340,6 @@ class MobileApp {
         const status = train.Status === 'A' ? 'Active' : train.Status === 'D' ? 'Departed' : 'En Route';
         alert(`Station Information:\n\nNext Station: ${train.NextStation || 'Unknown'}\nETA: ${eta}\nTrain Status: ${status}`);
     }
-    
     // NOTE: refreshTrainDetails() function is defined at line ~1522 - this old duplicate has been removed
 
     populateVerticalRouteStations(stations, train) {
@@ -2923,7 +3034,6 @@ class MobileApp {
             return timeString || '--:--';
         }
     }
-
     // Centralized function to get the correct ETA for a train (returns raw time in HH:MM format)
     // This function handles both API ETA and calculated fallback ETA based on speed/distance
     getTrainETA(train) {
@@ -3714,7 +3824,6 @@ class MobileApp {
             return new Date().toLocaleDateString();
         }
     }
-
     // Simplified wrapper for getting train date from train object
     getTrainDateFromInnerKey(innerKeyOrTrainId) {
         try {
@@ -3928,7 +4037,7 @@ class MobileApp {
         try {
             console.log('📅 Loading scheduled trains for home...');
             
-            // Use hybrid approach: local files first, remote fallback
+            // Use hybrid approach: local files first, remote fallback (remote currently disabled)
             const schedulesData = await API_CONFIG.fetchStaticData('schedules');
             const trainsData = await API_CONFIG.fetchStaticData('trains');
             const stationsData = await API_CONFIG.fetchStaticData('stations');
@@ -4151,6 +4260,17 @@ class MobileApp {
                 trainDetailEl.textContent = `Last updated: ${elapsed}`;
             } else {
                 trainDetailEl.textContent = 'Last updated: Loading...';
+            }
+        }
+
+        // Favorites
+        const favoritesEl = document.getElementById('favoritesLastUpdated');
+        if (favoritesEl) {
+            if (this.favoritesLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.favoritesLastUpdatedTime);
+                favoritesEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                favoritesEl.textContent = 'Last updated: Loading...';
             }
         }
     }
@@ -4382,21 +4502,30 @@ class MobileApp {
                 delay = calculatedDelay !== null ? calculatedDelay : (liveTrainData.LateBy || 0);
             }
 
+            // Extra details
+            const eta = isLive ? (this.calculateTrainETA(liveTrainData) || 'ETA N/A') : '';
+            const scheduledNext = isLive ? (this.getScheduledTimeForNextStation(liveTrainData) || 'Schedule N/A') : '';
+            const lastUpd = isLive ? (this.formatLastUpdated(liveTrainData.LastUpdated || liveTrainData.__last_updated || liveTrainData.last_updated) || 'Unknown') : '';
+            const nextStation = isLive ? (liveTrainData.NextStation || 'Next station N/A') : '';
+
             let statusClass = 'on-time';
-            let statusText = isLive ? 'Live & On Time' : 'Scheduled';
+            let statusText = isLive ? 'On Time' : 'Scheduled';
 
             if (isLive && delay > 0) {
                 statusClass = delay > 15 ? 'delayed' : 'slightly-delayed';
-                statusText = `${delay} min late`;
+                statusText = this.formatDelayDisplay(delay).replace(' Late', '');
             }
             
             console.log(`⭐ Showing favorite: ${trainName} (${isLive ? 'LIVE' : 'SCHEDULED'}) - Date: ${trainDate}`);
             
+            const delayText = delay > 0 ? this.formatDelayDisplay(delay) : 'On Time';
+            const scheduledAMPM = scheduledNext && scheduledNext !== 'Schedule N/A' ? this.formatTimeAMPM(scheduledNext.replace('📅 ', '')) : scheduledNext;
+
             html += `
                 <div class="favorite-train-card ${isLive ? 'has-live' : ''}" onclick="mobileApp.${isLive ? 'openTrainDetails' : 'openTrainScheduleDetails'}('${liveTrainData?.InnerKey || scheduleTrainData?.trainId || trainNumber}')">
                     <div class="favorite-header">
                         <div class="favorite-train-info">
-                            <div class="train-number">${trainNumber}</div>
+                            <div class="train-number">#${trainNumber}</div>
                             <div class="train-name">${trainName}</div>
                         </div>
                         <div class="favorite-actions">
@@ -4404,11 +4533,18 @@ class MobileApp {
                             <button class="favorite-btn favorited" onclick="event.stopPropagation(); mobileApp.toggleFavorite('${trainNumber}')">⭐</button>
                         </div>
                     </div>
-                    <div class="favorite-details">
-                        ${isLive ? `<div class="current-location">📍 ${currentStation}</div>` : ''}
-                        ${isLive && trainDate ? `<div class="train-date">📅 ${trainDate}</div>` : ''}
-                        <div class="status-info">${statusText}</div>
+                    <div class="train-info-grid">
+                        ${isLive ? `
+                        <div class="info-row"><span class="info-icon">📍</span><span class="info-text">Next Station: ${nextStation || currentStation}</span></div>
+                        <div class="info-row"><span class="info-icon">📅</span><span class="info-text">Scheduled: ${scheduledAMPM || 'N/A'}</span></div>
+                        <div class="info-row"><span class="info-icon">⏱️</span><span class="info-text">Delay: ${delayText}</span></div>
+                        <div class="info-row"><span class="info-icon">⏰</span><span class="info-text">${eta || 'ETA N/A'}</span></div>
+                        <div class="info-row"><span class="info-icon">🔄</span><span class="info-text">Updated: ${lastUpd || 'Unknown'}</span></div>
+                        ` : `
+                        <div class="info-row"><span class="info-icon">📍</span><span class="info-text">Schedule only</span></div>
+                        `}
                     </div>
+                    ${isLive && trainDate ? `<div class="train-status-row"><div class="delay-badge ${delay > 15 ? 'delay-high' : delay > 5 ? 'delay-medium' : 'delay-none'}">${delayText}</div></div>` : ''}
                 </div>
             `;
             }); // End of matchingTrains.forEach
@@ -4431,6 +4567,43 @@ class MobileApp {
     }
 
 
+    // Clear all caches and reload data
+    async clearAllCachesAndReload() {
+        console.log('🗑️ Clearing all caches...');
+        
+        try {
+            // Clear localStorage
+            localStorage.removeItem('cachedSchedules');
+            localStorage.removeItem('cachedTrains');
+            localStorage.removeItem('cachedStations');
+            localStorage.removeItem('cacheTimestamp');
+            console.log('✅ Cleared localStorage');
+            
+            // Clear any other app data cache
+            this.scheduleData = [];
+            this.trainData = { active: [], inactive: [] };
+            this.trainsMetadata = [];
+            this.stationsMetadata = [];
+            console.log('✅ Cleared app data');
+            
+            // Show loading toast
+            this.showToast('Clearing cache and reloading data...');
+            
+            // Force reload from files (not cache)
+            await this.loadScheduledTrainsForHome();
+            await this.loadLiveTrains();
+            
+            // Refresh UI
+            this.populateLiveTrains();
+            this.updateActiveTrainsCount();
+            
+            this.showToast('✅ Cache cleared! Data reloaded successfully.');
+            console.log('✅ All caches cleared and data reloaded');
+        } catch (error) {
+            console.error('❌ Error clearing caches:', error);
+            this.showToast('❌ Error clearing cache. Please try again.');
+        }
+    }
     // Profile functionality
     async loadProfile() {
         // Load version from version.json
@@ -4544,30 +4717,99 @@ class MobileApp {
         try {
             console.log('📅 Loading schedule...');
             
-            // Load both schedule and live data for correlation
-            const [scheduleResponse, liveResponse] = await Promise.all([
-                fetch(getAPIUrl('schedule')),
-                fetch(getAPIUrl('live'))
-            ]);
+            // Ensure schedule data is loaded using hybrid approach
+            if (!this.scheduleData || this.scheduleData.length === 0) {
+                await this.loadScheduledTrainsForHome();
+            }
             
-            const scheduleData = await scheduleResponse.json();
+            // Load live data for correlation
+            await this.refreshScheduleLiveData();
+            
+            // Populate schedule with loaded data
+            if (this.scheduleData && this.scheduleData.length > 0) {
+                this.populateSchedule(this.scheduleData);
+                this.initializeScheduleSearch();
+            }
+            
+            // Start auto-refresh for live data (every 10 seconds)
+            this.startScheduleRefresh();
+        } catch (error) {
+            console.error('❌ Error loading schedule:', error);
+        }
+    }
+    
+    async refreshScheduleLiveData() {
+        try {
+            console.log('🔄 Refreshing live data for schedule screen...');
+            const liveResponse = await fetch(getAPIUrl('live'));
             const liveData = await liveResponse.json();
             
             // Update live train data if available
             if (liveData.success && liveData.data) {
-                this.trainData.active = liveData.data;
-            }
-            
-            if (scheduleData.success && scheduleData.data) {
-                // Store schedule data for use in other methods
-                this.scheduleData = scheduleData.data;
-                this.populateSchedule(scheduleData.data);
+                // Apply filters (duplicates, completed, unrealistic delays)
+                let filteredTrains = this.filterDuplicateTrains(liveData.data);
+                filteredTrains = this.filterCompletedJourneys(filteredTrains);
+                filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                 
-                // Initialize search functionality
-                this.initializeScheduleSearch();
+                // Filter to only show trains that have schedule data
+                filteredTrains = this.filterByScheduleAvailability(filteredTrains);
+                
+                this.trainData.active = filteredTrains;
+                
+                // Re-populate schedule to update live indicators
+                if (this.currentScreen === 'scheduleScreen' && this.scheduleData) {
+                    this.populateSchedule(this.scheduleData);
+                }
             }
         } catch (error) {
-            console.error('❌ Error loading schedule:', error);
+            console.error('❌ Error refreshing schedule live data:', error);
+        }
+    }
+    
+    filterByScheduleAvailability(trains) {
+        if (!this.scheduleData || !Array.isArray(this.scheduleData)) {
+            console.warn('⚠️ No schedule data available for filtering');
+            return trains;
+        }
+        
+        console.log('🔍 Filtering live trains by schedule availability...');
+        console.log('📊 Trains before schedule filter:', trains.length);
+        
+        const filteredTrains = trains.filter(train => {
+            const trainNumber = String(train.TrainNumber);
+            
+            // Check if this train exists in schedule data
+            const hasSchedule = this.scheduleData.some(scheduledTrain => 
+                String(scheduledTrain.trainNumber) === trainNumber ||
+                String(scheduledTrain.TrainNumber) === trainNumber
+            );
+            
+            return hasSchedule;
+        });
+        
+        console.log('✅ Trains after schedule filter:', filteredTrains.length);
+        console.log('🗑️ Filtered out:', trains.length - filteredTrains.length, 'trains without schedules');
+        
+        return filteredTrains;
+    }
+    
+    startScheduleRefresh() {
+        // Clear any existing interval first
+        this.stopScheduleRefresh();
+        
+        console.log('⏱️ Starting schedule auto-refresh (every 10 seconds)');
+        this.scheduleRefreshInterval = setInterval(async () => {
+            if (this.currentScreen === 'scheduleScreen') {
+                await this.refreshScheduleLiveData();
+            }
+        }, 10000); // Refresh every 10 seconds
+    }
+    
+    stopScheduleRefresh() {
+        if (this.scheduleRefreshInterval) {
+            console.log('⏹️ Stopping schedule auto-refresh');
+            clearInterval(this.scheduleRefreshInterval);
+            this.scheduleRefreshInterval = null;
         }
     }
 
@@ -4921,34 +5163,16 @@ class MobileApp {
         try {
             console.log('🚂 Loading schedule details for train:', trainId);
             
-            // First try to get the train data from the schedule list
-            let trainData = null;
+            // Ensure schedule data is loaded using hybrid approach
+            if (!this.scheduleData || this.scheduleData.length === 0) {
+                await this.loadScheduledTrainsForHome();
+            }
             
-            // Check if we have the train in our current schedule data
-            const scheduleContainer = document.getElementById('scheduleList');
-            if (scheduleContainer) {
-                // Find the train in our loaded schedule data
-                const response = await fetch(getAPIUrl('schedule'));
-                const data = await response.json();
-                
-                if (data.success && data.data) {
-                    trainData = data.data.find(train => 
-                        String(train.trainId) === String(trainId) ||
-                        String(train.trainNumber) === String(trainId) ||
-                        String(train.TrainNumber) === String(trainId)
-                    );
-                }
-            }
-
-            if (!trainData) {
-                // Try to fetch individual train details
-                const trainResponse = await fetch(getAPIPath(`/api/train/${trainId}`));
-                const trainInfo = await trainResponse.json();
-                
-                if (trainInfo.success && trainInfo.data) {
-                    trainData = trainInfo.data;
-                }
-            }
+            // Find the train in schedule data
+            const trainData = this.scheduleData?.find(train => 
+                String(train.trainId) === String(trainId) ||
+                String(train.trainNumber) === String(trainId)
+            );
 
             if (trainData) {
                 this.populateScheduleDetails(trainData);
@@ -5117,6 +5341,263 @@ class MobileApp {
         localStorage.setItem('darkMode', isDarkMode);
         this.updateDarkModeIcon(isDarkMode);
         console.log('🌙 Dark mode:', isDarkMode ? 'enabled' : 'disabled');
+    }
+    // Pull-to-refresh functionality
+    initializePullToRefresh() {
+        console.log('🔄 Initializing pull-to-refresh...');
+        
+        // Resolve containers
+        const appScrollContainer = document.querySelector('div.mobile-app');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (!scrollContainer || !mainContent) {
+            console.warn('⚠️ Scroll container or main content not found, skipping pull-to-refresh');
+            return;
+        }
+        
+        let startY = 0;
+        let currentY = 0;
+        let isPulling = false;
+        let isRefreshing = false;
+        let currentPullContainer = null;
+        
+        // Create refresh indicator (fixed position, just below header)
+        const refreshIndicator = document.createElement('div');
+        refreshIndicator.className = 'pull-to-refresh-indicator';
+        refreshIndicator.innerHTML = `
+            <div class="refresh-spinner"></div>
+            <div class="refresh-text">Pull to refresh</div>
+        `;
+        document.body.appendChild(refreshIndicator);
+
+        // Helper: bind listeners to a specific container
+        const bindPullHandlers = (containerEl) => {
+            if (!containerEl) return;
+            const name = containerEl.id || (containerEl === appScrollContainer ? 'appScrollContainer' : 'unknown');
+            console.log('🧩 Binding PTR handlers to:', name);
+            containerEl.addEventListener('touchstart', (e) => {
+                const isAtTop = (containerEl.scrollTop || 0) <= 15;
+                if (isAtTop && !isRefreshing) {
+                    currentPullContainer = containerEl;
+                    startY = e.touches[0].pageY;
+                    isPulling = true;
+                    console.log('👆 PTR start on', name, 'scrollTop=', containerEl.scrollTop);
+                }
+            }, { passive: true });
+
+            containerEl.addEventListener('touchmove', (e) => {
+                if (!isPulling || isRefreshing || currentPullContainer !== containerEl) return;
+                currentY = e.touches[0].pageY;
+                const pullDistance = currentY - startY;
+                const isAtTop = (containerEl.scrollTop || 0) <= 15;
+                if (pullDistance > 0 && isAtTop) {
+                    if (pullDistance > 10) e.preventDefault();
+                    const maxPull = 120;
+                    const resistance = 0.5;
+                    const actualPull = Math.min(pullDistance * resistance, maxPull);
+                    refreshIndicator.style.transform = `translateY(${actualPull - 60}px)`;
+                    refreshIndicator.style.opacity = Math.min(actualPull / 60, 1);
+                    if (actualPull >= 60) {
+                        refreshIndicator.querySelector('.refresh-text').textContent = 'Release to refresh';
+                        refreshIndicator.classList.add('ready');
+                    } else {
+                        refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
+                        refreshIndicator.classList.remove('ready');
+                    }
+                    if (Math.abs(actualPull - 60) < 1) {
+                        console.log('⚓ PTR threshold reached on', name);
+                    }
+                }
+            }, { passive: false });
+
+            containerEl.addEventListener('touchend', async () => {
+                if (!isPulling || isRefreshing || currentPullContainer !== containerEl) return;
+                const pullDistance = (currentY - startY) * 0.5;
+                const isAtTop = (containerEl.scrollTop || 0) <= 15;
+                if (pullDistance >= 60 && isAtTop) {
+                    console.log('🔄 PTR triggering refresh on', name);
+                    isRefreshing = true;
+                    refreshIndicator.classList.add('refreshing');
+                    refreshIndicator.querySelector('.refresh-text').textContent = 'Refreshing...';
+                    await this.performPullRefresh();
+                    setTimeout(() => {
+                        refreshIndicator.style.transform = 'translateY(-60px)';
+                        refreshIndicator.style.opacity = '0';
+                        refreshIndicator.classList.remove('refreshing', 'ready');
+                        refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
+                        isRefreshing = false;
+                    }, 500);
+                } else {
+                    console.log('🛑 PTR cancelled on', name, 'distance=', pullDistance, 'top=', containerEl.scrollTop);
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                }
+                isPulling = false;
+                startY = 0;
+                currentY = 0;
+                currentPullContainer = null;
+            }, { passive: true });
+        };
+
+        // Also attach document-level listeners to catch inner screen scroll
+        console.log('🧷 Installing document-level PTR listeners');
+
+        const getNearestScrollContainer = (target) => {
+            const screenEl = typeof target.closest === 'function' ? target.closest('.screen') : null;
+            if (screenEl) return screenEl;
+            return appScrollContainer;
+        };
+
+        document.addEventListener('touchstart', (e) => {
+            const containerEl = getNearestScrollContainer(e.target);
+            const isAtTop = (containerEl.scrollTop || 0) <= 15;
+            if (isAtTop && !isRefreshing) {
+                currentPullContainer = containerEl;
+                startY = e.touches[0].pageY;
+                isPulling = true;
+                console.log('👆 PTR(doc) start on', containerEl.id || 'app', 'scrollTop=', containerEl.scrollTop);
+            }
+        }, { passive: true, capture: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling || isRefreshing || !currentPullContainer) return;
+            currentY = e.touches[0].pageY;
+            const pullDistance = currentY - startY;
+            const isAtTop = (currentPullContainer.scrollTop || 0) <= 15;
+            if (pullDistance > 0 && isAtTop) {
+                if (pullDistance > 10) e.preventDefault();
+                const maxPull = 120;
+                const resistance = 0.5;
+                const actualPull = Math.min(pullDistance * resistance, maxPull);
+                refreshIndicator.style.transform = `translateY(${actualPull - 60}px)`;
+                refreshIndicator.style.opacity = Math.min(actualPull / 60, 1);
+                if (actualPull >= 60) {
+                    refreshIndicator.querySelector('.refresh-text').textContent = 'Release to refresh';
+                    refreshIndicator.classList.add('ready');
+                } else {
+                    refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
+                    refreshIndicator.classList.remove('ready');
+                }
+                if (Math.abs(actualPull - 60) < 1) {
+                    console.log('⚓ PTR(doc) threshold reached on', currentPullContainer.id || 'app');
+                }
+            }
+        }, { passive: false, capture: true });
+
+        document.addEventListener('touchend', async () => {
+            if (!isPulling || isRefreshing || !currentPullContainer) return;
+            const pullDistance = (currentY - startY) * 0.5;
+            const isAtTop = (currentPullContainer.scrollTop || 0) <= 15;
+            if (pullDistance >= 60 && isAtTop) {
+                console.log('🔄 PTR(doc) triggering refresh on', currentPullContainer.id || 'app');
+                isRefreshing = true;
+                refreshIndicator.classList.add('refreshing');
+                refreshIndicator.querySelector('.refresh-text').textContent = 'Refreshing...';
+                await this.performPullRefresh();
+                setTimeout(() => {
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('refreshing', 'ready');
+                    refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
+                    isRefreshing = false;
+                }, 500);
+            } else {
+                console.log('🛑 PTR(doc) cancelled; distance=', pullDistance, 'top=', currentPullContainer.scrollTop);
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+            }
+            isPulling = false;
+            startY = 0;
+            currentY = 0;
+            currentPullContainer = null;
+        }, { passive: true, capture: true });
+
+        // Bind to outer app container as well (home)
+        bindPullHandlers(appScrollContainer);
+        console.log('✅ PTR bound (doc + app container)');
+        
+        const getActiveContainer = (evtTarget) => {
+            // Prefer the nearest .screen ancestor of the touch target
+            if (evtTarget && typeof evtTarget.closest === 'function') {
+                const screenEl = evtTarget.closest('.screen');
+                if (screenEl) return screenEl;
+            }
+            // Fallback to currentScreen element, then app container
+            const byId = document.getElementById(this.currentScreen);
+            return byId || appScrollContainer;
+        };
+
+        // Remove previous global approach to avoid duplicate handling
+        
+        console.log('✅ Pull-to-refresh initialized');
+    }
+    
+    async performPullRefresh() {
+        console.log('🔄 Performing pull-to-refresh for screen:', this.currentScreen);
+        
+        try {
+            switch (this.currentScreen) {
+                case 'home':
+                    await this.refreshHomeScreenData();
+                    this.showToast('✅ Home refreshed');
+                    break;
+                
+                case 'liveTracking':
+                    await this.loadLiveTrains();
+                    this.showToast('✅ Live trains refreshed');
+                    break;
+                
+                case 'scheduleScreen':
+                    await this.refreshScheduleLiveData();
+                    this.showToast('✅ Schedule refreshed');
+                    break;
+                
+                case 'liveTrainDetail':
+                    await this.refreshTrainDetails();
+                    this.showToast('✅ Train details refreshed');
+                    break;
+                
+                case 'stationScreen':
+                    await this.loadStations();
+                    this.showToast('✅ Stations refreshed');
+                    break;
+                
+                case 'mapScreen':
+                    await this.refreshMapData();
+                    this.showToast('✅ Map refreshed');
+                    break;
+                
+                case 'favoritesScreen':
+                    try {
+                        // Refresh live and then favorites
+                        await this.loadLiveTrains();
+                        if (this.loadFavorites) await this.loadFavorites();
+                        this.favoritesLastUpdatedTime = new Date();
+                    } catch (e) { console.warn('favorites refresh:', e?.message); }
+                    this.showToast('✅ Favorites refreshed');
+                    break;
+                
+                case 'profileScreen':
+                    try { if (this.loadProfile) await this.loadProfile(); } catch (e) { console.warn('profile refresh:', e?.message); }
+                    this.showToast('✅ Profile refreshed');
+                    break;
+                
+                case 'trainSearchScreen':
+                    // No network fetch needed; reinitialize search UI
+                    if (this.initializeSearch) this.initializeSearch();
+                    this.showToast('✅ Search ready');
+                    break;
+                
+                default:
+                    console.log('📱 No specific refresh action for this screen');
+                    this.showToast('✅ Refreshed');
+            }
+        } catch (error) {
+            console.error('❌ Error during pull-to-refresh:', error);
+            this.showToast('❌ Refresh failed');
+        }
     }
 
     // Live Updates functionality
@@ -5711,7 +6192,6 @@ class MobileApp {
             this.findNearestStation();
         }
     }
-
     async findNearestStation() {
         if (!this.userLocation) return;
         
@@ -6498,7 +6978,6 @@ class MobileApp {
             .replace(/\s+/g, ' ')
             .trim();
     }
-
     generateStationTrainsHTML(upcomingTrains) {
         let html = '';
         
@@ -7272,7 +7751,6 @@ class MobileApp {
             console.error('❌ Error loading train route:', error);
         }
     }
-
     displayTrainRoute(stations) {
         if (!this.map || !stations || stations.length === 0) return;
 
@@ -7986,7 +8464,6 @@ class MobileApp {
         // Also check immediately
         this.checkNotifications();
     }
-
     async checkNotifications() {
         if (this.notifications.length === 0) return;
 

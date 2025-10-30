@@ -28,6 +28,17 @@ div.mobile-app {
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding-bottom: 80px;
+    overscroll-behavior-y: contain;
+}
+
+/* When viewing inner screens, disable outer scrolling; let .screen own scroll */
+div.mobile-app.inner-scroll {
+    overflow-y: hidden;
+}
+
+/* When viewing inner screens, disable outer scrolling; let .screen own scroll */
+div.mobile-app.inner-scroll {
+    overflow-y: hidden;
 }
 
 div.mobile-app::-webkit-scrollbar {
@@ -737,7 +748,7 @@ body.mobile-app.dark-mode .station-route-section {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.95);
     border: 2px solid rgba(102, 126, 234, 0.2);
-    margin-bottom: 0;
+    margin: 0;
     position: relative;
     z-index: 10;
 }
@@ -767,10 +778,10 @@ body.mobile-app.dark-mode .station-route-section {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.95);
     border: 2px solid rgba(102, 126, 234, 0.2);
-    margin-bottom: 0;
+    margin: 0;
+    margin-bottom: 15px;
     position: relative;
     z-index: 10;
-    margin-bottom: 15px;
 }
 
 /* Journey Map - Updated 2025 */
@@ -2737,7 +2748,9 @@ body.mobile-app.dark-mode .train-info h3 {
 /* Main Content Container */
 .main-content {
     padding: 0;
-    min-height: calc(100vh - 60px);
+    padding-top: calc(70px + env(safe-area-inset-top));
+    padding-top: calc(70px + constant(safe-area-inset-top)); /* iOS 11 fallback */
+    min-height: calc(100vh - 70px);
     overflow-y: visible;
     position: relative;
 }
@@ -2837,9 +2850,8 @@ body.mobile-app.dark-mode .train-info h3 {
 
 /* Sticky Header for Screens and Homepage */
 .sticky-header {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
+    position: fixed !important;
+    top: 0 !important;
     left: 0;
     right: 0;
     z-index: 1000;
@@ -2849,6 +2861,9 @@ body.mobile-app.dark-mode .train-info h3 {
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     width: 100%;
+    transform: translateZ(0); /* stabilize on iOS */
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 /* Home screen sticky header - needs top padding for status bar */
@@ -2872,6 +2887,16 @@ body.mobile-app.dark-mode .train-info h3 {
 .screen {
     padding-top: calc(70px + env(safe-area-inset-top));
     padding-top: calc(70px + constant(safe-area-inset-top)); /* iOS 11.0 fallback */
+    overflow-y: auto; /* Inner screens own their scroll to prevent header pull */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* Favorites uses same structure as other inner screens - no overrides, inherits .screen scrolling */
+
+/* When any inner screen is active, hard-disable outer scroll to prevent header pull */
+body.screen-active div.mobile-app {
+    overflow-y: hidden;
 }
 
 .header-content-sticky {
@@ -5017,10 +5042,11 @@ input:checked + .toggle-slider:before {
     bottom: 0;
     display: none;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #2563EB 100%);
-    overflow-y: auto;
+    overflow-y: auto; /* Inner screens scroll independently */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
     pointer-events: auto;
     padding-bottom: 100px;
-    -webkit-overflow-scrolling: touch;
 }
 
 .screen.active {
@@ -5085,6 +5111,7 @@ body:not(.screen-active) .screens {
 .screen-content {
     padding: 20px;
     padding-bottom: 100px;
+    overflow: visible; /* let parent .screen own the scroll */
 }
 
 /* Screen Header Styles */
@@ -7827,4 +7854,77 @@ body.mobile-app.dark-mode .train-eta-value {
 
 body.mobile-app.dark-mode .notification-badge {
     border-color: #0f172a;
+}
+
+/* Pull-to-Refresh Styles */
+.pull-to-refresh-indicator {
+    position: fixed;
+    top: calc(70px + env(safe-area-inset-top));
+    top: calc(70px + constant(safe-area-inset-top)); /* iOS 11 fallback */
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 999;
+    pointer-events: none;
+    transform: translateY(-60px);
+}
+
+.refresh-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(0, 0, 0, 0.2);
+    border-top-color: #1e293b;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.pull-to-refresh-indicator.ready .refresh-spinner {
+    transform: rotate(180deg);
+}
+
+.pull-to-refresh-indicator.refreshing .refresh-spinner {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.refresh-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e293b;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Disable zoom on all elements */
+* {
+    touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+}
+
+input, textarea, select {
+    touch-action: manipulation;
+}
+
+/* Prevent double-tap zoom */
+button, a, .card, .train-card, .stat-card {
+    touch-action: manipulation;
+}
+
+/* Dark mode support for pull-to-refresh */
+body.dark-mode .refresh-spinner {
+    border-color: rgba(148, 163, 184, 0.3);
+    border-top-color: #94a3b8;
+}
+
+body.dark-mode .refresh-text {
+    color: #94a3b8;
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -801,6 +801,11 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="detail-item" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
+                                <button class="track-btn" onclick="mobileApp.clearAllCachesAndReload()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                                    🗑️ Clear Cache & Reload Data
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -816,7 +821,7 @@
                 </div>
             </div>
 
-            <!-- Favorites Screen -->
+            <!-- Favorites Screen (structure cloned from Schedule screen) -->
             <div id="favoritesScreen" class="screen hidden">
                 <div class="sticky-header">
                     <div class="header-content-sticky">
@@ -844,14 +849,9 @@
                         </div>
                     </div>
                 </div>
-
+                <div class="last-updated-header"><span id="favoritesLastUpdated">Last updated: Loading...</span></div>
                 <div class="screen-content">
-                    <div class="favorites-list" id="favoritesList">
-                        <div class="empty-state">
-                            <p>⭐ No favorite trains yet</p>
-                            <p>Tap the star on any train to add it to favorites</p>
-                        </div>
-                    </div>
+                    <div id="favoritesList" class="favorites-list"></div>
                 </div>
             </div>
 
