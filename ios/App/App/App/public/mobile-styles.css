@@ -100,6 +100,21 @@ body.mobile-app::-webkit-scrollbar {
     transform: translateY(0);
 }
 
+.train-selection-panel.minimized {
+    transform: translateY(calc(100% - 100px)); /* Show top 100px (header + handle) */
+}
+
+.train-selection-panel.minimized .panel-header {
+    cursor: pointer;
+    position: relative;
+}
+
+/* Removed center "Tap to expand" text - now using expand button */
+
+.train-selection-panel.minimized .panel-header h3 {
+    opacity: 0.6;
+}
+
 .panel-header {
     display: flex;
     justify-content: space-between;
@@ -108,12 +123,48 @@ body.mobile-app::-webkit-scrollbar {
     border-bottom: 1px solid #e5e7eb;
 }
 
+.panel-header-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.train-selection-panel.minimized .minimize-panel-btn {
+    display: none;
+}
+
+.train-selection-panel.minimized .expand-panel-btn {
+    display: flex;
+}
+
+.expand-panel-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: #3b82f6;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    animation: bounce-up 2s infinite;
+}
+
+.expand-panel-btn:hover {
+    background: #dbeafe;
+}
+
 .panel-header h3 {
     margin: 0;
     font-size: 1.2em;
     font-weight: 600;
 }
 
+.minimize-panel-btn,
 .close-panel-btn {
     background: none;
     border: none;
@@ -127,10 +178,67 @@ body.mobile-app::-webkit-scrollbar {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s ease;
 }
 
+.minimize-panel-btn:hover,
 .close-panel-btn:hover {
     background: #f3f4f6;
+}
+
+.panel-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    z-index: 1001;
+    height: 40px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.train-selection-panel.minimized .panel-handle {
+    display: flex;
+    bottom: 0;
+}
+
+.handle-drag-bar {
+    width: 40px;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    margin-bottom: 4px;
+}
+
+.handle-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.panel-handle .handle-icon {
+    font-size: 1.4em;
+    color: #3b82f6;
+    animation: bounce-up 2s infinite;
+}
+
+.panel-handle span {
+    font-size: 0.9em;
+    color: #374151;
+    font-weight: 600;
+}
+
+@keyframes bounce-up {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
 }
 
 .train-list {

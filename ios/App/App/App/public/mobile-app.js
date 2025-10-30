@@ -357,9 +357,56 @@ class MobileApp {
         }
     }
 
+    // Helper: clear search inputs when navigating to a screen
+    clearScreenSearchInputs(screenId) {
+        switch (screenId) {
+            case 'liveTracking':
+                const liveSearchInput = document.getElementById('liveTrackingSearchInput');
+                const clearLiveBtn = document.getElementById('clearLiveTrackingSearch');
+                const liveSearchResults = document.getElementById('liveTrackingSearchResults');
+                if (liveSearchInput) liveSearchInput.value = '';
+                if (clearLiveBtn) clearLiveBtn.style.display = 'none';
+                if (liveSearchResults) liveSearchResults.style.display = 'none';
+                this.isLiveSearchActive = false;
+                break;
+            case 'scheduleScreen':
+                const scheduleSearchInput = document.getElementById('scheduleSearchInput');
+                const clearScheduleBtn = document.getElementById('clearSearchBtn');
+                if (scheduleSearchInput) scheduleSearchInput.value = '';
+                if (clearScheduleBtn) clearScheduleBtn.style.display = 'none';
+                break;
+            case 'stationScreen':
+                const stationSearchInput = document.getElementById('stationSearchInput');
+                const clearStationBtn = document.getElementById('clearStationSearch');
+                const stationSearchResults = document.getElementById('stationSearchResults');
+                if (stationSearchInput) stationSearchInput.value = '';
+                if (clearStationBtn) clearStationBtn.style.display = 'none';
+                if (stationSearchResults) stationSearchResults.style.display = 'none';
+                break;
+            case 'mapScreen':
+                const mapSearchInput = document.getElementById('mapSearchInput');
+                const clearMapBtn = document.getElementById('clearMapSearch');
+                if (mapSearchInput) mapSearchInput.value = '';
+                if (clearMapBtn) clearMapBtn.style.display = 'none';
+                break;
+            case 'trainSearchScreen':
+                const trainSearchInput = document.getElementById('trainSearchInput');
+                if (trainSearchInput) trainSearchInput.value = '';
+                break;
+        }
+    }
+
     // Main screen navigation function
     navigateToScreen(screenId, pushHistory = true) {
         console.log('🔄 Navigating to screen:', screenId);
+
+        // Blur any active inputs before navigation to prevent RTI warnings
+        const activeElement = document.activeElement;
+        if (activeElement && (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLElement && activeElement.isContentEditable)) {
+            try {
+                activeElement.blur();
+            } catch (_) {}
+        }
 
         // Store previous screen
         const previousScreen = this.currentScreen;
@@ -377,8 +424,15 @@ class MobileApp {
         if (this.currentScreen === 'favoritesScreen' && screenId !== 'favoritesScreen') {
             this.stopFavoritesRefresh();
         }
+        // Stop map auto-refresh when leaving
+        if (this.currentScreen === 'mapScreen' && screenId !== 'mapScreen') {
+            this.stopMapAutoRefresh();
+        }
 
         this.currentScreen = screenId;
+        
+        // Clear search inputs when navigating to screens (clean state on entry)
+        this.clearScreenSearchInputs(screenId);
         
         // For inner screens, disable outer scroll; let .screen scroll (prevents header pull)
         const appContainer = document.querySelector('div.mobile-app');
@@ -2624,6 +2678,7 @@ class MobileApp {
 
         // Calculate progress percentage
         let progressPercentage = 0;
+        let calculatedDistance = 0; // Track calculated distance for log
 
         if (currentStationIndex >= 0 && stations.length > 1 && totalDistance > 0) {
             const currentStation = stations[currentStationIndex];
@@ -2631,6 +2686,7 @@ class MobileApp {
 
             // Base progress at current station (based on distance, not index)
             const baseProgress = (currentDistance / totalDistance) * 100;
+            calculatedDistance = currentDistance; // Default to station distance
 
             // Try to use train's actual coordinates for precise positioning (like map)
             let useCoordinatePosition = false;
@@ -2669,6 +2725,7 @@ class MobileApp {
 
                         // Calculate actual distance covered in this segment
                         const distanceCovered = segmentDistance * progressAlongSegment;
+                        calculatedDistance = currentDistance + distanceCovered; // Track calculated distance
                         
                         // Add the partial distance to current distance and convert to percentage
                         progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
@@ -2725,6 +2782,7 @@ class MobileApp {
                             
                             // Calculate how much distance the train has covered in this segment
                             const distanceCovered = segmentDistance * partialProgress;
+                            calculatedDistance = currentDistance + distanceCovered; // Track calculated distance
                             
                             // Add the partial distance to current distance and convert to percentage
                             progressPercentage = ((currentDistance + distanceCovered) / totalDistance) * 100;
@@ -2786,8 +2844,9 @@ class MobileApp {
 
         const trainSpeed = train && train.Speed ? train.Speed : 0;
         const trainStatus = train && train.Status ? train.Status : 'Unknown';
-        const currentDistance = stations[currentStationIndex]?.DistanceFromOrigin || 0;
-        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${currentDistance}/${totalDistance} km)`);
+        // Use calculated distance (includes partial progress) if available, otherwise fall back to station distance
+        const displayDistance = calculatedDistance > 0 ? calculatedDistance : (stations[currentStationIndex]?.DistanceFromOrigin || 0);
+        console.log(`🗺️ Progress: ${progressPercentage.toFixed(1)}% (Station ${currentStationIndex + 1}/${stations.length}, Status: ${trainStatus}, Speed: ${trainSpeed} km/h, Distance: ${displayDistance.toFixed(2)}/${totalDistance} km)`);
     }
 
     getCurrentTime() {
@@ -7256,6 +7315,8 @@ class MobileApp {
             // Map already exists, just reload trains and show selection panel
             this.loadMapTrains();
             this.showTrainSelectionPanel();
+            // Start auto-refresh for map screen
+            this.startMapAutoRefresh();
             return;
         }
 
@@ -7273,6 +7334,9 @@ class MobileApp {
             // Load active trains and show train selection panel
             this.loadMapTrains();
             this.showTrainSelectionPanel();
+            
+            // Start auto-refresh for map screen
+            this.startMapAutoRefresh();
             
         } catch (error) {
             console.error('❌ Error initializing map:', error);
@@ -7343,10 +7407,10 @@ class MobileApp {
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
-            const trainDate = this.getTrainDate(train.LastUpdated, train.InnerKey || train.TrainId, train.TrainNumber);
+            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated, train.InnerKey || train.TrainId, train.TrainNumber);
             
-            // Updated time
-            const updatedTime = train.LastUpdated ? this.formatTimeAMPM(train.LastUpdated) : '--:--';
+            // Updated time - use standard formatLastUpdated function
+            const updatedTime = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated) || 'Unknown';
             
             // Scheduled time
             const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
@@ -7483,10 +7547,10 @@ class MobileApp {
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
-            const trainDate = this.getTrainDate(train.LastUpdated, train.InnerKey || train.TrainId, train.TrainNumber);
+            const trainDate = this.getTrainDate(train.LastUpdated || train.__last_updated || train.last_updated, train.InnerKey || train.TrainId, train.TrainNumber);
             
-            // Updated time
-            const updatedTime = train.LastUpdated ? this.formatTimeAMPM(train.LastUpdated) : '--:--';
+            // Updated time - use standard formatLastUpdated function
+            const updatedTime = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated) || 'Unknown';
             
             // Scheduled time
             const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
@@ -7811,7 +7875,13 @@ class MobileApp {
     showTrainSelectionPanel() {
         const panel = document.getElementById('trainSelectionPanel');
         if (panel) {
-            panel.classList.add('show');
+            // If minimized, expand it; otherwise just show
+            if (panel.classList.contains('minimized')) {
+                this.expandTrainSelection();
+            } else {
+                panel.classList.add('show');
+                panel.classList.remove('minimized');
+            }
         }
     }
 
@@ -8007,18 +8077,42 @@ class MobileApp {
                     this.closeTrainInfo();
                     this.showTrainSelectionPanel();
                     this.updateMapWithTrains(filteredTrains);
+                    this.populateTrainSelection();
                 }
             } else {
-                // Update all trains on map
+                // Update all trains on map and refresh train list display
                 this.updateMapWithTrains(filteredTrains);
+                this.populateTrainSelection();
             }
         } catch (error) {
             console.error('❌ Error refreshing map data:', error);
         }
     }
 
+    minimizeTrainSelection() {
+        const panel = document.getElementById('trainSelectionPanel');
+        if (panel) {
+            panel.classList.add('minimized');
+            panel.classList.remove('show');
+            // Handle visibility is controlled by CSS (.train-selection-panel.minimized .panel-handle)
+        }
+    }
+
+    expandTrainSelection() {
+        const panel = document.getElementById('trainSelectionPanel');
+        if (panel) {
+            panel.classList.remove('minimized');
+            panel.classList.add('show');
+            // Handle will be hidden by CSS when not minimized
+        }
+    }
+
     closeTrainSelection() {
-        this.hideTrainSelectionPanel();
+        const panel = document.getElementById('trainSelectionPanel');
+        if (panel) {
+            panel.classList.remove('show', 'minimized');
+            // Handle will be hidden by CSS when not minimized
+        }
     }
 
     closeTrainInfo() {

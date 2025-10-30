@@ -8,6 +8,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        // Configure WKWebView scrollView to prevent automatic content inset adjustments
+        // This prevents header height from changing when keyboard appears
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let window = self.window,
+               let rootViewController = window.rootViewController,
+               let bridgeViewController = rootViewController as? CAPBridgeViewController {
+                if let webView = bridgeViewController.webView {
+                    webView.scrollView.contentInsetAdjustmentBehavior = .never
+                    webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+                }
+            }
+        }
+        
         return true
     }
 

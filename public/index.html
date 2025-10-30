@@ -442,9 +442,20 @@
                 
                 <!-- Train Selection Panel -->
                 <div class="train-selection-panel" id="trainSelectionPanel">
-                    <div class="panel-header">
+                    <div class="panel-header" id="panelHeader" onclick="if(document.getElementById('trainSelectionPanel').classList.contains('minimized')) mobileApp.expandTrainSelection()">
                         <h3>Select Train to Track</h3>
-                        <button class="close-panel-btn" onclick="mobileApp.closeTrainSelection()">×</button>
+                        <div class="panel-header-buttons">
+                            <button class="minimize-panel-btn" onclick="event.stopPropagation(); mobileApp.minimizeTrainSelection()" title="Minimize">−</button>
+                            <button class="expand-panel-btn" onclick="event.stopPropagation(); mobileApp.expandTrainSelection()" title="Expand">⌃</button>
+                            <button class="close-panel-btn" onclick="event.stopPropagation(); mobileApp.closeTrainSelection()" title="Close">×</button>
+                        </div>
+                    </div>
+                    <div class="panel-handle" onclick="mobileApp.expandTrainSelection()" id="panelHandle">
+                        <div class="handle-drag-bar"></div>
+                        <div class="handle-content">
+                            <div class="handle-icon">⌃</div>
+                            <span>Tap to expand</span>
+                        </div>
                     </div>
                     
                     <!-- Search Box -->

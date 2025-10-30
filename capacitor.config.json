@@ -34,6 +34,10 @@
     "Geolocation": {
       "permissions": ["location"]
     },
+    "Keyboard": {
+      "resize": "none",
+      "style": "dark"
+    },
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#4CAF50",
