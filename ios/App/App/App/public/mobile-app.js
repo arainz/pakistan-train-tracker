@@ -22,6 +22,8 @@ class MobileApp {
         this.trainDetailLastUpdatedTime = null;
         this.favoritesLastUpdatedTime = null;
         this.favoritesRefreshInterval = null;
+        this.stationLastUpdatedTime = null;
+        this.mapLastUpdatedTime = null;
         
         // Map-related properties
         this.map = null;
@@ -4504,6 +4506,28 @@ class MobileApp {
                 favoritesEl.textContent = 'Last updated: Loading...';
             }
         }
+
+        // Stations
+        const stationEl = document.getElementById('stationLastUpdated');
+        if (stationEl) {
+            if (this.stationLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.stationLastUpdatedTime);
+                stationEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                stationEl.textContent = 'Last updated: Loading...';
+            }
+        }
+
+        // Map
+        const mapEl = document.getElementById('mapLastUpdated');
+        if (mapEl) {
+            if (this.mapLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.mapLastUpdatedTime);
+                mapEl.textContent = `Last updated: ${elapsed}`;
+            } else {
+                mapEl.textContent = 'Last updated: Loading...';
+            }
+        }
     }
 
     getTimeElapsed(now, lastUpdated) {
@@ -5591,6 +5615,169 @@ class MobileApp {
         let isPulling = false;
         let isRefreshing = false;
         let currentPullContainer = null;
+        let startScrollTop = 0; // Track initial scroll position
+        let hasScrolled = false; // Track if user scrolled during gesture
+        let initialPullDirection = null; // Track initial pull direction (up/down)
+        
+        // Helper: Check if last updated banner is visible in viewport
+        const isLastUpdatedBannerVisible = (containerEl) => {
+            // Try to find last updated banner for current screen
+            // For inner screens, try to find banner within the active screen first
+            let banner = null;
+            
+            // First, try to find banner within active screen based on currentScreen
+            const activeScreen = document.getElementById(this.currentScreen) || 
+                                document.querySelector(`.screen.active`) ||
+                                document.querySelector(`#${this.currentScreen}`);
+            
+            if (activeScreen) {
+                // Try specific IDs first for current screen
+                const screenBannerIds = {
+                    'home': '#homeLastUpdated',
+                    'liveTracking': '#liveTrackingLastUpdated',
+                    'liveTrainDetail': '#trainDetailLastUpdated',
+                    'scheduleScreen': '#scheduleLastUpdated',
+                    'favoritesScreen': '#favoritesLastUpdated',
+                    'stationScreen': '#stationLastUpdated',
+                    'mapScreen': '#mapLastUpdated'
+                };
+                
+                const specificId = screenBannerIds[this.currentScreen];
+                if (specificId) {
+                    banner = activeScreen.querySelector(specificId)?.closest('.last-updated-header') ||
+                             document.querySelector(specificId)?.closest('.last-updated-header');
+                }
+                
+                // If not found by ID, try class selector within active screen
+                if (!banner) {
+                    banner = activeScreen.querySelector('.last-updated-header');
+                }
+            }
+            
+            // Fallback: try all selectors in document
+            if (!banner) {
+                const uniqueSelectors = [
+                    '#homeLastUpdated',
+                    '#liveTrackingLastUpdated',
+                    '#trainDetailLastUpdated',
+                    '#scheduleLastUpdated',
+                    '#favoritesLastUpdated',
+                    '#stationLastUpdated',
+                    '#mapLastUpdated',
+                    '.home-last-updated',
+                    '.favorites-last-updated',
+                    '.last-updated-header',
+                    '[id*="lastUpdated"]',
+                    '[id*="LastUpdated"]'
+                ];
+                
+                for (const selector of uniqueSelectors) {
+                    try {
+                        banner = document.querySelector(selector);
+                        if (banner) break;
+                    } catch (e) {
+                        continue;
+                    }
+                }
+            }
+            
+            if (!banner) {
+                console.log('⚠️ Last updated banner not found for screen:', this.currentScreen);
+                return false;
+            }
+            
+            // Check if banner is actually in the DOM and not hidden
+            const bannerStyle = window.getComputedStyle(banner);
+            if (bannerStyle.display === 'none' || bannerStyle.visibility === 'hidden' || bannerStyle.opacity === '0') {
+                console.log('⚠️ Banner is hidden:', {
+                    display: bannerStyle.display,
+                    visibility: bannerStyle.visibility,
+                    opacity: bannerStyle.opacity
+                });
+                return false;
+            }
+            
+            // Check if banner's parent screen is active (for inner screens)
+            const parentScreen = banner.closest('.screen');
+            if (parentScreen && !parentScreen.classList.contains('active') && this.currentScreen !== 'home') {
+                console.log('⚠️ Banner is in inactive screen:', parentScreen.id);
+                return false;
+            }
+            
+            // Get header height (accounting for safe area on inner screens)
+            let headerBottom = 0;
+            const stickyHeader = banner.closest('.screen')?.querySelector('.sticky-header') ||
+                                document.querySelector('.sticky-header');
+            
+            if (stickyHeader) {
+                const headerRect = stickyHeader.getBoundingClientRect();
+                headerBottom = headerRect.bottom;
+                
+                // If header is fixed and not visible, check its computed height
+                if (headerRect.height === 0) {
+                    const headerStyle = window.getComputedStyle(stickyHeader);
+                    // Estimate header height: safe area + content (~70px)
+                    const safeAreaTop = parseFloat(headerStyle.paddingTop) || 0;
+                    headerBottom = safeAreaTop + 70; // Base header height
+                }
+            } else {
+                // Fallback: assume header is ~70px + safe area
+                const safeAreaTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0;
+                headerBottom = safeAreaTop + 70;
+            }
+            
+            const rect = banner.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportTop = 0;
+            const viewportBottom = viewportHeight;
+            
+            // Check if banner has dimensions (is rendered)
+            // Allow check even if dimensions are 0 initially, as it might be in transition
+            if (rect.height === 0 && rect.width === 0) {
+                // Check if it's actually hidden or just not rendered yet
+                if (bannerStyle.display === 'none' || banner.offsetParent === null) {
+                    console.log('⚠️ Banner has zero dimensions and is not displayed:', rect);
+                    return false;
+                }
+            }
+            
+            // CRITICAL: Banner must be below the header (not behind it)
+            // Banner top must be at or below header bottom
+            const isBelowHeader = rect.top >= headerBottom;
+            
+            // Check if banner is visible in viewport (even partially)
+            // Banner is visible if any part of it is within the viewport
+            const isInViewport = (
+                rect.bottom > viewportTop &&  // Bottom of banner is below top of viewport
+                rect.top < viewportBottom     // Top of banner is above bottom of viewport
+            );
+            
+            // Check if banner is near the top (within reasonable distance from header)
+            // Banner should be within 200px below header (accounting for search bars, etc.)
+            const maxDistanceFromHeader = 200;
+            const isNearTop = isBelowHeader && rect.top <= headerBottom + maxDistanceFromHeader;
+            
+            console.log('📊 Banner visibility check:', {
+                screen: this.currentScreen,
+                banner: banner.id || banner.className || 'found',
+                isBelowHeader,
+                isInViewport,
+                isNearTop,
+                headerBottom: headerBottom.toFixed(1),
+                bannerTop: rect.top.toFixed(1),
+                bannerBottom: rect.bottom.toFixed(1),
+                distanceFromHeader: (rect.top - headerBottom).toFixed(1),
+                viewportTop,
+                viewportBottom,
+                bannerHeight: rect.height.toFixed(1),
+                bannerWidth: rect.width.toFixed(1),
+                display: bannerStyle.display,
+                parentActive: parentScreen ? parentScreen.classList.contains('active') : 'N/A'
+            });
+            
+            // Banner must be: below header, visible in viewport, and near the top
+            return isBelowHeader && isInViewport && isNearTop;
+        };
         
         // Create refresh indicator (fixed position, just below header)
         const refreshIndicator = document.createElement('div');
@@ -5607,21 +5794,108 @@ class MobileApp {
             const name = containerEl.id || (containerEl === appScrollContainer ? 'appScrollContainer' : 'unknown');
             console.log('🧩 Binding PTR handlers to:', name);
             containerEl.addEventListener('touchstart', (e) => {
-                const isAtTop = (containerEl.scrollTop || 0) <= 15;
-                if (isAtTop && !isRefreshing) {
+                const scrollTop = containerEl.scrollTop || 0;
+                
+                // CRITICAL: Only allow PTR if last updated banner is visible
+                const bannerVisible = isLastUpdatedBannerVisible(containerEl);
+                
+                if (!bannerVisible) {
+                    console.log('🚫 PTR blocked: last updated banner not visible');
+                    isPulling = false;
+                    currentPullContainer = null;
+                    return;
+                }
+                
+                // Additional check: Must be at top (scrollTop <= 5 for some tolerance)
+                const isAtTop = scrollTop <= 5;
+                if (isAtTop && !isRefreshing && bannerVisible) {
                     currentPullContainer = containerEl;
                     startY = e.touches[0].pageY;
+                    startScrollTop = scrollTop;
+                    hasScrolled = false;
+                    initialPullDirection = null; // Reset direction
                     isPulling = true;
-                    console.log('👆 PTR start on', name, 'scrollTop=', containerEl.scrollTop);
+                    console.log('👆 PTR start on', name, 'scrollTop=', scrollTop, 'banner visible:', bannerVisible);
+                } else {
+                    // Cancel if conditions not met
+                    isPulling = false;
+                    currentPullContainer = null;
+                    if (scrollTop > 5) {
+                        console.log('🚫 PTR blocked: not at top, scrollTop=', scrollTop);
+                    }
                 }
             }, { passive: true });
 
             containerEl.addEventListener('touchmove', (e) => {
                 if (!isPulling || isRefreshing || currentPullContainer !== containerEl) return;
+                
+                const scrollTop = containerEl.scrollTop || 0;
                 currentY = e.touches[0].pageY;
                 const pullDistance = currentY - startY;
-                const isAtTop = (containerEl.scrollTop || 0) <= 15;
-                if (pullDistance > 0 && isAtTop) {
+                
+                // CRITICAL: Check if last updated banner is still visible
+                const bannerVisible = isLastUpdatedBannerVisible(containerEl);
+                if (!bannerVisible) {
+                    console.log('🛑 PTR cancelled: last updated banner no longer visible');
+                    isPulling = false;
+                    currentPullContainer = null;
+                    hasScrolled = true;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                    return;
+                }
+                
+                // CRITICAL: Must still be at top (with tolerance)
+                if (scrollTop > 5) {
+                    console.log('🛑 PTR cancelled: scrolled away from top, scrollTop=', scrollTop);
+                    isPulling = false;
+                    currentPullContainer = null;
+                    hasScrolled = true;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                    return;
+                }
+                
+                // CRITICAL: Cancel if scrollTop increased (user is scrolling, not pulling)
+                if (scrollTop > startScrollTop) {
+                    console.log('🛑 PTR cancelled: scrollTop increased', scrollTop, '>', startScrollTop);
+                    isPulling = false;
+                    currentPullContainer = null;
+                    hasScrolled = true;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                    return;
+                }
+                
+                // CRITICAL: Detect initial pull direction - cancel if pulling UP (negative distance)
+                // This prevents PTR when user swipes up to scroll
+                if (initialPullDirection === null && Math.abs(pullDistance) > 5) {
+                    initialPullDirection = pullDistance > 0 ? 'down' : 'up';
+                    console.log('📐 Initial pull direction detected:', initialPullDirection, 'distance=', pullDistance);
+                }
+                
+                // If initial direction is UP, cancel immediately - user wants to scroll, not refresh
+                if (initialPullDirection === 'up') {
+                    console.log('🛑 PTR cancelled: initial pull was upward (user scrolling up)');
+                    isPulling = false;
+                    currentPullContainer = null;
+                    hasScrolled = true;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                    return;
+                }
+                
+                // Only allow pull DOWN if:
+                // 1. Pulling down (positive distance)
+                // 2. Last updated banner still visible
+                // 3. Still at top (scrollTop <= 5)
+                // 4. ScrollTop hasn't increased
+                // 5. Initial direction is down (not up)
+                if (pullDistance > 0 && bannerVisible && scrollTop <= 5 && scrollTop <= startScrollTop && initialPullDirection !== 'up') {
                     if (pullDistance > 10) e.preventDefault();
                     const maxPull = 120;
                     const resistance = 0.5;
@@ -5635,17 +5909,50 @@ class MobileApp {
                         refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
                         refreshIndicator.classList.remove('ready');
                     }
-                    if (Math.abs(actualPull - 60) < 1) {
-                        console.log('⚓ PTR threshold reached on', name);
+                } else {
+                    // Cancel if conditions not met
+                    if (pullDistance <= 0 || !bannerVisible || scrollTop > 5 || scrollTop > startScrollTop || initialPullDirection === 'up') {
+                        isPulling = false;
+                        currentPullContainer = null;
+                        hasScrolled = true;
+                        refreshIndicator.style.transform = 'translateY(-60px)';
+                        refreshIndicator.style.opacity = '0';
+                        refreshIndicator.classList.remove('ready');
                     }
                 }
             }, { passive: false });
 
             containerEl.addEventListener('touchend', async () => {
-                if (!isPulling || isRefreshing || currentPullContainer !== containerEl) return;
+                if (!isPulling || isRefreshing || currentPullContainer !== containerEl || hasScrolled || initialPullDirection === 'up') {
+                    // Reset state
+                    isPulling = false;
+                    startY = 0;
+                    currentY = 0;
+                    currentPullContainer = null;
+                    startScrollTop = 0;
+                    hasScrolled = false;
+                    initialPullDirection = null;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
+                    return;
+                }
+                
+                const scrollTop = containerEl.scrollTop || 0;
                 const pullDistance = (currentY - startY) * 0.5;
-                const isAtTop = (containerEl.scrollTop || 0) <= 15;
-                if (pullDistance >= 60 && isAtTop) {
+                const isAtTop = scrollTop <= 5;
+                
+                // CRITICAL: Final check - banner must still be visible
+                const bannerVisible = isLastUpdatedBannerVisible(containerEl);
+                
+                // Final check: only trigger if:
+                // 1. Pull distance sufficient
+                // 2. Last updated banner still visible
+                // 3. Still at top (scrollTop <= 5)
+                // 4. ScrollTop didn't increase (user didn't scroll)
+                // 5. User didn't scroll during gesture
+                // 6. Initial direction was down (not up)
+                if (pullDistance >= 60 && bannerVisible && isAtTop && scrollTop <= startScrollTop && !hasScrolled && initialPullDirection === 'down') {
                     console.log('🔄 PTR triggering refresh on', name);
                     isRefreshing = true;
                     refreshIndicator.classList.add('refreshing');
@@ -5659,15 +5966,20 @@ class MobileApp {
                         isRefreshing = false;
                     }, 500);
                 } else {
-                    console.log('🛑 PTR cancelled on', name, 'distance=', pullDistance, 'top=', containerEl.scrollTop);
+                    console.log('🛑 PTR cancelled on', name, 'distance=', pullDistance, 'scrollTop=', scrollTop, 'startScrollTop=', startScrollTop, 'hasScrolled=', hasScrolled, 'direction=', initialPullDirection);
                     refreshIndicator.style.transform = 'translateY(-60px)';
                     refreshIndicator.style.opacity = '0';
                     refreshIndicator.classList.remove('ready');
                 }
+                
+                // Reset state
                 isPulling = false;
                 startY = 0;
                 currentY = 0;
                 currentPullContainer = null;
+                startScrollTop = 0;
+                hasScrolled = false;
+                initialPullDirection = null;
             }, { passive: true });
         };
 
@@ -5682,21 +5994,108 @@ class MobileApp {
 
         document.addEventListener('touchstart', (e) => {
             const containerEl = getNearestScrollContainer(e.target);
-            const isAtTop = (containerEl.scrollTop || 0) <= 15;
-            if (isAtTop && !isRefreshing) {
+            const scrollTop = containerEl.scrollTop || 0;
+            
+            // CRITICAL: Only allow PTR if last updated banner is visible
+            const bannerVisible = isLastUpdatedBannerVisible(containerEl);
+            
+            if (!bannerVisible) {
+                console.log('🚫 PTR(doc) blocked: last updated banner not visible');
+                isPulling = false;
+                currentPullContainer = null;
+                return;
+            }
+            
+            // Additional check: Must be at top (scrollTop <= 5 for some tolerance)
+            const isAtTop = scrollTop <= 5;
+            if (isAtTop && !isRefreshing && bannerVisible) {
                 currentPullContainer = containerEl;
                 startY = e.touches[0].pageY;
+                startScrollTop = scrollTop;
+                hasScrolled = false;
+                initialPullDirection = null; // Reset direction
                 isPulling = true;
-                console.log('👆 PTR(doc) start on', containerEl.id || 'app', 'scrollTop=', containerEl.scrollTop);
+                console.log('👆 PTR(doc) start on', containerEl.id || 'app', 'scrollTop=', scrollTop, 'banner visible:', bannerVisible);
+            } else {
+                // Cancel if conditions not met
+                isPulling = false;
+                currentPullContainer = null;
+                if (scrollTop > 5) {
+                    console.log('🚫 PTR(doc) blocked: not at top, scrollTop=', scrollTop);
+                }
             }
         }, { passive: true, capture: true });
 
         document.addEventListener('touchmove', (e) => {
             if (!isPulling || isRefreshing || !currentPullContainer) return;
+            
+            const scrollTop = currentPullContainer.scrollTop || 0;
             currentY = e.touches[0].pageY;
             const pullDistance = currentY - startY;
-            const isAtTop = (currentPullContainer.scrollTop || 0) <= 15;
-            if (pullDistance > 0 && isAtTop) {
+            
+            // CRITICAL: Check if last updated banner is still visible
+            const bannerVisible = isLastUpdatedBannerVisible(currentPullContainer);
+            if (!bannerVisible) {
+                console.log('🛑 PTR(doc) cancelled: last updated banner no longer visible');
+                isPulling = false;
+                currentPullContainer = null;
+                hasScrolled = true;
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+                return;
+            }
+            
+            // CRITICAL: Must still be at top (with tolerance)
+            if (scrollTop > 5) {
+                console.log('🛑 PTR(doc) cancelled: scrolled away from top, scrollTop=', scrollTop);
+                isPulling = false;
+                currentPullContainer = null;
+                hasScrolled = true;
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+                return;
+            }
+            
+            // CRITICAL: Cancel if scrollTop increased (user is scrolling, not pulling)
+            if (scrollTop > startScrollTop) {
+                console.log('🛑 PTR(doc) cancelled: scrollTop increased', scrollTop, '>', startScrollTop);
+                isPulling = false;
+                currentPullContainer = null;
+                hasScrolled = true;
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+                return;
+            }
+            
+            // CRITICAL: Detect initial pull direction - cancel if pulling UP (negative distance)
+            // This prevents PTR when user swipes up to scroll
+            if (initialPullDirection === null && Math.abs(pullDistance) > 5) {
+                initialPullDirection = pullDistance > 0 ? 'down' : 'up';
+                console.log('📐 PTR(doc) initial pull direction detected:', initialPullDirection, 'distance=', pullDistance);
+            }
+            
+            // If initial direction is UP, cancel immediately - user wants to scroll, not refresh
+            if (initialPullDirection === 'up') {
+                console.log('🛑 PTR(doc) cancelled: initial pull was upward (user scrolling up)');
+                isPulling = false;
+                currentPullContainer = null;
+                hasScrolled = true;
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+                return;
+            }
+            
+            // Only allow pull DOWN if:
+            // 1. Pulling down (positive distance)
+            // 2. Last updated banner still visible
+            // 3. Still at top (scrollTop <= 5)
+            // 4. ScrollTop hasn't increased
+            // 5. Initial direction is down (not up)
+            if (pullDistance > 0 && bannerVisible && scrollTop <= 5 && scrollTop <= startScrollTop && initialPullDirection !== 'up') {
                 if (pullDistance > 10) e.preventDefault();
                 const maxPull = 120;
                 const resistance = 0.5;
@@ -5710,17 +6109,50 @@ class MobileApp {
                     refreshIndicator.querySelector('.refresh-text').textContent = 'Pull to refresh';
                     refreshIndicator.classList.remove('ready');
                 }
-                if (Math.abs(actualPull - 60) < 1) {
-                    console.log('⚓ PTR(doc) threshold reached on', currentPullContainer.id || 'app');
+            } else {
+                // Cancel if conditions not met
+                if (pullDistance <= 0 || !bannerVisible || scrollTop > 5 || scrollTop > startScrollTop || initialPullDirection === 'up') {
+                    isPulling = false;
+                    currentPullContainer = null;
+                    hasScrolled = true;
+                    refreshIndicator.style.transform = 'translateY(-60px)';
+                    refreshIndicator.style.opacity = '0';
+                    refreshIndicator.classList.remove('ready');
                 }
             }
         }, { passive: false, capture: true });
 
         document.addEventListener('touchend', async () => {
-            if (!isPulling || isRefreshing || !currentPullContainer) return;
+            if (!isPulling || isRefreshing || !currentPullContainer || hasScrolled || initialPullDirection === 'up') {
+                // Reset state
+                isPulling = false;
+                startY = 0;
+                currentY = 0;
+                currentPullContainer = null;
+                startScrollTop = 0;
+                hasScrolled = false;
+                initialPullDirection = null;
+                refreshIndicator.style.transform = 'translateY(-60px)';
+                refreshIndicator.style.opacity = '0';
+                refreshIndicator.classList.remove('ready');
+                return;
+            }
+            
+            const scrollTop = currentPullContainer.scrollTop || 0;
             const pullDistance = (currentY - startY) * 0.5;
-            const isAtTop = (currentPullContainer.scrollTop || 0) <= 15;
-            if (pullDistance >= 60 && isAtTop) {
+            const isAtTop = scrollTop <= 5;
+            
+            // CRITICAL: Final check - banner must still be visible
+            const bannerVisible = isLastUpdatedBannerVisible(currentPullContainer);
+            
+            // Final check: only trigger if:
+            // 1. Pull distance sufficient
+            // 2. Last updated banner still visible
+            // 3. Still at top (scrollTop <= 5)
+            // 4. ScrollTop didn't increase (user didn't scroll)
+            // 5. User didn't scroll during gesture
+            // 6. Initial direction was down (not up)
+            if (pullDistance >= 60 && bannerVisible && isAtTop && scrollTop <= startScrollTop && !hasScrolled && initialPullDirection === 'down') {
                 console.log('🔄 PTR(doc) triggering refresh on', currentPullContainer.id || 'app');
                 isRefreshing = true;
                 refreshIndicator.classList.add('refreshing');
@@ -5734,15 +6166,20 @@ class MobileApp {
                     isRefreshing = false;
                 }, 500);
             } else {
-                console.log('🛑 PTR(doc) cancelled; distance=', pullDistance, 'top=', currentPullContainer.scrollTop);
+                console.log('🛑 PTR(doc) cancelled; distance=', pullDistance, 'scrollTop=', scrollTop, 'startScrollTop=', startScrollTop, 'hasScrolled=', hasScrolled, 'direction=', initialPullDirection);
                 refreshIndicator.style.transform = 'translateY(-60px)';
                 refreshIndicator.style.opacity = '0';
                 refreshIndicator.classList.remove('ready');
             }
+            
+            // Reset state
             isPulling = false;
             startY = 0;
             currentY = 0;
             currentPullContainer = null;
+            startScrollTop = 0;
+            hasScrolled = false;
+            initialPullDirection = null;
         }, { passive: true, capture: true });
 
         // Bind to outer app container as well (home)
@@ -6992,6 +7429,9 @@ class MobileApp {
         
         // Initialize search
         this.initializeStationSearch();
+        
+        // Update timestamp
+        this.stationLastUpdatedTime = new Date();
     }
 
     extractAllStationsFromSchedule() {
@@ -7541,6 +7981,9 @@ class MobileApp {
                 this.trainData.active = filteredTrains;
                 this.populateTrainSelection();
                 this.updateMapWithTrains(filteredTrains);
+                
+                // Update timestamp
+                this.mapLastUpdatedTime = new Date();
             } else {
                 console.error('❌ Failed to load train data for map');
                 this.showError('Failed to load train data');
@@ -8256,6 +8699,9 @@ class MobileApp {
                 this.updateMapWithTrains(filteredTrains);
                 this.populateTrainSelection();
             }
+            
+            // Update timestamp
+            this.mapLastUpdatedTime = new Date();
         } catch (error) {
             console.error('❌ Error refreshing map data:', error);
         }
