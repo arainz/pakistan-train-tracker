@@ -5599,14 +5599,11 @@ class MobileApp {
     }
     // Pull-to-refresh functionality
     initializePullToRefresh() {
-        console.log('🔄 Initializing pull-to-refresh...');
-        
         // Resolve containers
         const appScrollContainer = document.querySelector('div.mobile-app');
         const mainContent = document.querySelector('.main-content');
         
         if (!appScrollContainer || !mainContent) {
-            console.warn('⚠️ Scroll container or main content not found, skipping pull-to-refresh');
             return;
         }
         
@@ -5682,25 +5679,18 @@ class MobileApp {
             }
             
             if (!banner) {
-                console.log('⚠️ Last updated banner not found for screen:', this.currentScreen);
                 return false;
             }
             
             // Check if banner is actually in the DOM and not hidden
             const bannerStyle = window.getComputedStyle(banner);
             if (bannerStyle.display === 'none' || bannerStyle.visibility === 'hidden' || bannerStyle.opacity === '0') {
-                console.log('⚠️ Banner is hidden:', {
-                    display: bannerStyle.display,
-                    visibility: bannerStyle.visibility,
-                    opacity: bannerStyle.opacity
-                });
                 return false;
             }
             
             // Check if banner's parent screen is active (for inner screens)
             const parentScreen = banner.closest('.screen');
             if (parentScreen && !parentScreen.classList.contains('active') && this.currentScreen !== 'home') {
-                console.log('⚠️ Banner is in inactive screen:', parentScreen.id);
                 return false;
             }
             
@@ -5716,14 +5706,21 @@ class MobileApp {
                 // If header is fixed and not visible, check its computed height
                 if (headerRect.height === 0) {
                     const headerStyle = window.getComputedStyle(stickyHeader);
-                    // Estimate header height: safe area + content (~70px)
+                    // Estimate header height: safe area + content
                     const safeAreaTop = parseFloat(headerStyle.paddingTop) || 0;
-                    headerBottom = safeAreaTop + 70; // Base header height
+                    
+                    // Check if this is Train Details screen with clock (taller header)
+                    const hasClock = stickyHeader.querySelector('.header-clock');
+                    const baseHeaderHeight = hasClock ? 90 : 70; // Clock adds ~20px
+                    
+                    headerBottom = safeAreaTop + baseHeaderHeight;
                 }
             } else {
-                // Fallback: assume header is ~70px + safe area
+                // Fallback: assume header is ~70px + safe area (or ~90px for Train Details)
                 const safeAreaTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0;
-                headerBottom = safeAreaTop + 70;
+                const isTrainDetail = this.currentScreen === 'liveTrainDetail';
+                const baseHeaderHeight = isTrainDetail ? 90 : 70;
+                headerBottom = safeAreaTop + baseHeaderHeight;
             }
             
             const rect = banner.getBoundingClientRect();
@@ -5736,7 +5733,6 @@ class MobileApp {
             if (rect.height === 0 && rect.width === 0) {
                 // Check if it's actually hidden or just not rendered yet
                 if (bannerStyle.display === 'none' || banner.offsetParent === null) {
-                    console.log('⚠️ Banner has zero dimensions and is not displayed:', rect);
                     return false;
                 }
             }
@@ -5757,24 +5753,6 @@ class MobileApp {
             const maxDistanceFromHeader = 200;
             const isNearTop = isBelowHeader && rect.top <= headerBottom + maxDistanceFromHeader;
             
-            console.log('📊 Banner visibility check:', {
-                screen: this.currentScreen,
-                banner: banner.id || banner.className || 'found',
-                isBelowHeader,
-                isInViewport,
-                isNearTop,
-                headerBottom: headerBottom.toFixed(1),
-                bannerTop: rect.top.toFixed(1),
-                bannerBottom: rect.bottom.toFixed(1),
-                distanceFromHeader: (rect.top - headerBottom).toFixed(1),
-                viewportTop,
-                viewportBottom,
-                bannerHeight: rect.height.toFixed(1),
-                bannerWidth: rect.width.toFixed(1),
-                display: bannerStyle.display,
-                parentActive: parentScreen ? parentScreen.classList.contains('active') : 'N/A'
-            });
-            
             // Banner must be: below header, visible in viewport, and near the top
             return isBelowHeader && isInViewport && isNearTop;
         };
@@ -5792,7 +5770,6 @@ class MobileApp {
         const bindPullHandlers = (containerEl) => {
             if (!containerEl) return;
             const name = containerEl.id || (containerEl === appScrollContainer ? 'appScrollContainer' : 'unknown');
-            console.log('🧩 Binding PTR handlers to:', name);
             containerEl.addEventListener('touchstart', (e) => {
                 const scrollTop = containerEl.scrollTop || 0;
                 
@@ -5800,7 +5777,6 @@ class MobileApp {
                 const bannerVisible = isLastUpdatedBannerVisible(containerEl);
                 
                 if (!bannerVisible) {
-                    console.log('🚫 PTR blocked: last updated banner not visible');
                     isPulling = false;
                     currentPullContainer = null;
                     return;
@@ -5815,14 +5791,10 @@ class MobileApp {
                     hasScrolled = false;
                     initialPullDirection = null; // Reset direction
                     isPulling = true;
-                    console.log('👆 PTR start on', name, 'scrollTop=', scrollTop, 'banner visible:', bannerVisible);
                 } else {
                     // Cancel if conditions not met
                     isPulling = false;
                     currentPullContainer = null;
-                    if (scrollTop > 5) {
-                        console.log('🚫 PTR blocked: not at top, scrollTop=', scrollTop);
-                    }
                 }
             }, { passive: true });
 
@@ -5836,7 +5808,6 @@ class MobileApp {
                 // CRITICAL: Check if last updated banner is still visible
                 const bannerVisible = isLastUpdatedBannerVisible(containerEl);
                 if (!bannerVisible) {
-                    console.log('🛑 PTR cancelled: last updated banner no longer visible');
                     isPulling = false;
                     currentPullContainer = null;
                     hasScrolled = true;
@@ -5848,7 +5819,6 @@ class MobileApp {
                 
                 // CRITICAL: Must still be at top (with tolerance)
                 if (scrollTop > 5) {
-                    console.log('🛑 PTR cancelled: scrolled away from top, scrollTop=', scrollTop);
                     isPulling = false;
                     currentPullContainer = null;
                     hasScrolled = true;
@@ -5860,7 +5830,6 @@ class MobileApp {
                 
                 // CRITICAL: Cancel if scrollTop increased (user is scrolling, not pulling)
                 if (scrollTop > startScrollTop) {
-                    console.log('🛑 PTR cancelled: scrollTop increased', scrollTop, '>', startScrollTop);
                     isPulling = false;
                     currentPullContainer = null;
                     hasScrolled = true;
@@ -5874,12 +5843,10 @@ class MobileApp {
                 // This prevents PTR when user swipes up to scroll
                 if (initialPullDirection === null && Math.abs(pullDistance) > 5) {
                     initialPullDirection = pullDistance > 0 ? 'down' : 'up';
-                    console.log('📐 Initial pull direction detected:', initialPullDirection, 'distance=', pullDistance);
                 }
                 
                 // If initial direction is UP, cancel immediately - user wants to scroll, not refresh
                 if (initialPullDirection === 'up') {
-                    console.log('🛑 PTR cancelled: initial pull was upward (user scrolling up)');
                     isPulling = false;
                     currentPullContainer = null;
                     hasScrolled = true;
@@ -5953,7 +5920,6 @@ class MobileApp {
                 // 5. User didn't scroll during gesture
                 // 6. Initial direction was down (not up)
                 if (pullDistance >= 60 && bannerVisible && isAtTop && scrollTop <= startScrollTop && !hasScrolled && initialPullDirection === 'down') {
-                    console.log('🔄 PTR triggering refresh on', name);
                     isRefreshing = true;
                     refreshIndicator.classList.add('refreshing');
                     refreshIndicator.querySelector('.refresh-text').textContent = 'Refreshing...';
@@ -5966,7 +5932,6 @@ class MobileApp {
                         isRefreshing = false;
                     }, 500);
                 } else {
-                    console.log('🛑 PTR cancelled on', name, 'distance=', pullDistance, 'scrollTop=', scrollTop, 'startScrollTop=', startScrollTop, 'hasScrolled=', hasScrolled, 'direction=', initialPullDirection);
                     refreshIndicator.style.transform = 'translateY(-60px)';
                     refreshIndicator.style.opacity = '0';
                     refreshIndicator.classList.remove('ready');
@@ -5984,7 +5949,6 @@ class MobileApp {
         };
 
         // Also attach document-level listeners to catch inner screen scroll
-        console.log('🧷 Installing document-level PTR listeners');
 
         const getNearestScrollContainer = (target) => {
             const screenEl = typeof target.closest === 'function' ? target.closest('.screen') : null;
@@ -6000,7 +5964,6 @@ class MobileApp {
             const bannerVisible = isLastUpdatedBannerVisible(containerEl);
             
             if (!bannerVisible) {
-                console.log('🚫 PTR(doc) blocked: last updated banner not visible');
                 isPulling = false;
                 currentPullContainer = null;
                 return;
@@ -6015,14 +5978,10 @@ class MobileApp {
                 hasScrolled = false;
                 initialPullDirection = null; // Reset direction
                 isPulling = true;
-                console.log('👆 PTR(doc) start on', containerEl.id || 'app', 'scrollTop=', scrollTop, 'banner visible:', bannerVisible);
             } else {
                 // Cancel if conditions not met
                 isPulling = false;
                 currentPullContainer = null;
-                if (scrollTop > 5) {
-                    console.log('🚫 PTR(doc) blocked: not at top, scrollTop=', scrollTop);
-                }
             }
         }, { passive: true, capture: true });
 
@@ -6036,7 +5995,6 @@ class MobileApp {
             // CRITICAL: Check if last updated banner is still visible
             const bannerVisible = isLastUpdatedBannerVisible(currentPullContainer);
             if (!bannerVisible) {
-                console.log('🛑 PTR(doc) cancelled: last updated banner no longer visible');
                 isPulling = false;
                 currentPullContainer = null;
                 hasScrolled = true;
@@ -6048,7 +6006,6 @@ class MobileApp {
             
             // CRITICAL: Must still be at top (with tolerance)
             if (scrollTop > 5) {
-                console.log('🛑 PTR(doc) cancelled: scrolled away from top, scrollTop=', scrollTop);
                 isPulling = false;
                 currentPullContainer = null;
                 hasScrolled = true;
@@ -6060,7 +6017,6 @@ class MobileApp {
             
             // CRITICAL: Cancel if scrollTop increased (user is scrolling, not pulling)
             if (scrollTop > startScrollTop) {
-                console.log('🛑 PTR(doc) cancelled: scrollTop increased', scrollTop, '>', startScrollTop);
                 isPulling = false;
                 currentPullContainer = null;
                 hasScrolled = true;
@@ -6074,12 +6030,10 @@ class MobileApp {
             // This prevents PTR when user swipes up to scroll
             if (initialPullDirection === null && Math.abs(pullDistance) > 5) {
                 initialPullDirection = pullDistance > 0 ? 'down' : 'up';
-                console.log('📐 PTR(doc) initial pull direction detected:', initialPullDirection, 'distance=', pullDistance);
             }
             
             // If initial direction is UP, cancel immediately - user wants to scroll, not refresh
             if (initialPullDirection === 'up') {
-                console.log('🛑 PTR(doc) cancelled: initial pull was upward (user scrolling up)');
                 isPulling = false;
                 currentPullContainer = null;
                 hasScrolled = true;

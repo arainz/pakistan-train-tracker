@@ -3000,6 +3000,12 @@ body.mobile-app.dark-mode .train-info h3 {
     overscroll-behavior-y: contain;
 }
 
+/* Train Details screen has taller header (~90px vs ~70px), adjust padding */
+#liveTrainDetail {
+    padding-top: calc(80px + env(safe-area-inset-top));
+    padding-top: calc(80px + constant(safe-area-inset-top)); /* iOS 11.0 fallback */
+}
+
 /* Favorites uses same structure as other inner screens - no overrides, inherits .screen scrolling */
 
 /* When any inner screen is active, hard-disable outer scroll to prevent header pull */
