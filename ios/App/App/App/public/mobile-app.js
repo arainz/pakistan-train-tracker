@@ -1433,9 +1433,9 @@ class MobileApp {
         this.trainData.active.slice(0, 10).forEach(train => {
             const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
             const trainNumber = String(train.TrainNumber);
-            // Prioritize Urdu train name if available
-            let trainName = train.TrainNameUR || train.TrainNameUr || null;
-            if (!trainName && typeof translator !== 'undefined' && translator) {
+            // Get translated train name based on current language
+            let trainName = null;
+            if (typeof translator !== 'undefined' && translator) {
                 trainName = translator.getTrainName(train);
             }
             if (!trainName) {
@@ -2133,9 +2133,9 @@ class MobileApp {
         const isOutOfCoverage = this.isTrainOutOfCoverage(train);
         
         // Update basic train info
-        // Prioritize Urdu train name if available
-        let trainName = train.TrainNameUR || train.TrainNameUr || null;
-        if (!trainName && typeof translator !== 'undefined' && translator) {
+        // Get translated train name based on current language
+        let trainName = null;
+        if (typeof translator !== 'undefined' && translator) {
             trainName = translator.getTrainName(train);
         }
         if (!trainName) {
@@ -2242,8 +2242,8 @@ class MobileApp {
             this.updateRouteStationsProgress(train);
         }, 100);
 
-        // Add click interactivity to metric cards
-        this.addMetricCardInteractivity(train);
+        // Add click interactivity to metric cards - DISABLED: Popups removed per user request
+        // this.addMetricCardInteractivity(train);
     }
 
 
@@ -10007,6 +10007,7 @@ class MobileApp {
         const notificationHeader = document.querySelector('.notification-header-content');
         const accordion = document.querySelector('.notification-settings.accordion');
         const wasOpen = accordion?.classList.contains('open');
+        const t = this.getTranslatedLabel;
         
         if (notificationHeader) {
             // Update header summary
@@ -10015,10 +10016,10 @@ class MobileApp {
                 if (existingNotifications.length === 1) {
                     headerSummary = `<span class="notification-count">${existingNotifications[0].stationName} (${existingNotifications[0].minutesBefore} min)</span>`;
                 } else {
-                    headerSummary = `<span class="notification-count">${existingNotifications.length} active notifications</span>`;
+                    headerSummary = `<span class="notification-count">${existingNotifications.length} ${t('notifications.activeNotifications')}</span>`;
                 }
             } else {
-                headerSummary = `<span class="notification-subtitle">Tap to set up notifications</span>`;
+                headerSummary = `<span class="notification-subtitle">${t('common.tapToSetup')}</span>`;
             }
             
             // Update only the subtitle/count part using textContent instead of outerHTML

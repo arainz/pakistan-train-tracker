@@ -47,7 +47,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <!-- Translation Script -->
-    <script src="translations.js" defer></script>
+    <script src="translations.js?v=1730000000" defer></script>
 </head>
 <body class="mobile-app">
     <div class="mobile-app">
@@ -82,7 +82,7 @@
         <div class="main-content">
             <!-- Last Updated Header for Home -->
             <div class="last-updated-header home-last-updated">
-                <span id="homeLastUpdatedTime">Just now</span> <span id="homeLastUpdatedLabel">آخری اپڈیٹ</span>
+                <span id="homeLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="homeLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
             </div>
 
             <!-- Stats Overview -->
@@ -294,7 +294,7 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="liveTrackingLastUpdatedTime">Just now</span> <span id="liveTrackingLastUpdatedLabel">آخری اپڈیٹ</span>
+                    <span id="liveTrackingLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="liveTrackingLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
                 </div>
 
                 <div class="search-panel">
@@ -355,7 +355,7 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="trainDetailLastUpdatedTime">Just now</span> <span id="trainDetailLastUpdatedLabel">آخری اپڈیٹ</span>
+                    <span id="trainDetailLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="trainDetailLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
                 </div>
 
                 <div class="train-detail-content">
@@ -443,7 +443,7 @@
                 </div>
                 
                 <div class="last-updated-header">
-                    <span id="mapLastUpdatedTime">Just now</span> <span id="mapLastUpdatedLabel">آخری اپڈیٹ</span>
+                    <span id="mapLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="mapLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
                 </div>
 
                 <div class="map-container">
@@ -552,7 +552,7 @@
                 </div>
                 
                 <div class="last-updated-header">
-                    <span id="stationLastUpdatedTime">Just now</span> <span id="stationLastUpdatedLabel">آخری اپڈیٹ</span>
+                    <span id="stationLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="stationLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
                 </div>
 
                 <div class="search-panel">
@@ -655,7 +655,7 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="scheduleLastUpdatedTime">Just now</span> <span id="scheduleLastUpdatedLabel">آخری اپڈیٹ</span>
+                    <span id="scheduleLastUpdatedTime" data-i18n="common.justNow">Just now</span> <span id="scheduleLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span>
                 </div>
 
                 <div class="search-panel">
@@ -883,7 +883,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="last-updated-header"><span id="favoritesLastUpdatedTime" data-i18n="common.loading">Loading...</span> <span id="favoritesLastUpdatedLabel">آخری اپڈیٹ</span></div>
+                <div class="last-updated-header"><span id="favoritesLastUpdatedTime" data-i18n="common.loading">Loading...</span> <span id="favoritesLastUpdatedLabel" data-i18n="common.lastUpdated">Last updated</span></div>
                 <div class="screen-content">
                     <div id="favoritesList" class="favorites-list"></div>
                 </div>
@@ -955,7 +955,7 @@
     <!-- Capacitor Scripts -->
     <script type="module" src="capacitor.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="config.js"></script>
-    <script src="mobile-app.js"></script>
+    <script src="config.js?v=1730000000"></script>
+    <script src="mobile-app.js?v=1730000000"></script>
 </body>
 </html>

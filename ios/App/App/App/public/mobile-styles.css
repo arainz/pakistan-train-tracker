@@ -858,7 +858,6 @@ body.mobile-app.dark-mode .station-route-section {
     font-weight: 600;
     color: #2c3e50;
     margin-bottom: 4px;
-    direction: rtl;
 }
 
 .metric-label {
@@ -918,7 +917,6 @@ body.mobile-app.dark-mode .station-route-section {
     /* Time span - dynamically updated */
     font-weight: 600;
     color: #667eea;
-    direction: rtl;
 }
 
 @keyframes clockPulse {
@@ -1350,7 +1348,6 @@ body.mobile-app.dark-mode .station-route-section {
     text-align: right;
     flex-shrink: 0;
     margin-left: 4px;
-    direction: rtl;
 }
 
 .locomotive-popover .popover-row:last-child {
@@ -4219,7 +4216,6 @@ body.mobile-app.dark-mode .logo-icon {
     border-radius: 12px;
     display: inline-block;
     backdrop-filter: blur(8px);
-    direction: rtl;
 }
 
 .update-eta {
@@ -5723,7 +5719,6 @@ body:not(.screen-active) .screens {
     color: #EF4444;
     font-weight: 600;
     margin-top: 4px;
-    direction: rtl;
 }
 
 .is-favorite {

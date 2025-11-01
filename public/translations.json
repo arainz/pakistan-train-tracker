@@ -248,7 +248,10 @@
       "min45": "45 min",
       "min30": "30 min",
       "min15": "15 min",
-      "min5": "5 min"
+      "min5": "5 min",
+      "activeNotifications": "Active Notifications",
+      "arrivalNotifications": "Arrival Notifications",
+      "getNotifiedWhen": "Get notified when train arrives at station"
     },
     "labels": {
       "delay": "DELAY",
@@ -264,7 +267,7 @@
     "common": {
       "active": "فعال",
       "onTime": "وقت پر",
-      "delayed": "دیر",
+      "delayed": "تاخیر",
       "lastUpdated": "آخری اپڈیٹ",
       "justNow": "ابھی",
       "minutesAgo": "منٹ پہلے",
@@ -311,7 +314,7 @@
     "stats": {
       "activeTrains": "فعال ٹرینیں",
       "onTimeTrains": "وقت پر",
-      "delayedTrains": "دیر"
+      "delayedTrains": "تاخیر"
     },
     "train": {
       "train": "ٹرین",
@@ -323,7 +326,7 @@
       "location": "مقام",
       "currentStation": "موجودہ اسٹیشن",
       "nextStation": "اگلا اسٹیشن",
-      "delay": "دیر",
+      "delay": "تاخیر",
       "onTime": "وقت پر",
       "arrival": "آمد",
       "arriving": "پہنچ رہا",
@@ -340,11 +343,11 @@
       "live": "براہ راست",
       "moving": "چل رہا",
       "stopped": "رکا ہوا",
-      "late": "دیر",
+      "late": "تاخیر",
       "early": "جلدی",
       "updated": "اپڈیٹ",
       "nextStationLabel": "اگلا اسٹیشن",
-      "delayLabel": "دیر",
+      "delayLabel": "تاخیر",
       "speedLabel": "رفتار",
       "updatedLabel": "اپڈیٹ",
       "completed": "مکمل",
@@ -517,7 +520,7 @@
       "getNotifiedWhen": "اسٹیشن پر ٹرین کی آمد پر مطلع کریں"
     },
     "labels": {
-      "delay": "دیر",
+      "delay": "تاخیر",
       "speed": "رفتار",
       "nextStation": "اگلا اسٹیشن"
     }
