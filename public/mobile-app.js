@@ -1433,7 +1433,14 @@ class MobileApp {
         this.trainData.active.slice(0, 10).forEach(train => {
             const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
             const trainNumber = String(train.TrainNumber);
-            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${train.TrainNumber}`);
+            // Prioritize Urdu train name if available
+            let trainName = train.TrainNameUR || train.TrainNameUr || null;
+            if (!trainName && typeof translator !== 'undefined' && translator) {
+                trainName = translator.getTrainName(train);
+            }
+            if (!trainName) {
+                trainName = train.TrainName || `Train ${train.TrainNumber}`;
+            }
             const speed = train.Speed || 0;
 
             // Calculate accurate delay from ETA
@@ -1503,7 +1510,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
@@ -1706,7 +1713,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
@@ -2079,7 +2086,7 @@ class MobileApp {
             nextStationEl.textContent = t('train.locationUnknown') || 'Location Unknown';
             console.log('🚫 Train out of coverage - metrics set to N/A');
         } else {
-            const speedText = `${train.Speed || 0} ${t('train.kmh')}`;
+            const speedText = this.formatSpeedDisplay(train.Speed || 0);
             const delayText = this.formatDelayDisplay(displayDelay);
             // Get station name using translator (synchronous lookup)
             const nextStationName = train.NextStation ? 
@@ -2126,7 +2133,14 @@ class MobileApp {
         const isOutOfCoverage = this.isTrainOutOfCoverage(train);
         
         // Update basic train info
-        const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || 'Unknown Train');
+        // Prioritize Urdu train name if available
+        let trainName = train.TrainNameUR || train.TrainNameUr || null;
+        if (!trainName && typeof translator !== 'undefined' && translator) {
+            trainName = translator.getTrainName(train);
+        }
+        if (!trainName) {
+            trainName = train.TrainName || 'Unknown Train';
+        }
         document.getElementById('trainDetailName').textContent = trainName;
         document.getElementById('trainDetailNumber').textContent = train.TrainNumber || '000';
         
@@ -2203,7 +2217,7 @@ class MobileApp {
             document.getElementById('trainDelay').textContent = t('train.outOfCoverage') || 'OUT OF COVERAGE';
             document.getElementById('nextStation').textContent = t('train.locationUnknown') || 'Location Unknown';
         } else {
-            document.getElementById('trainSpeed').textContent = `${train.Speed || 0} ${t('train.kmh')}`;
+            document.getElementById('trainSpeed').textContent = this.formatSpeedDisplay(train.Speed || 0);
             document.getElementById('trainDelay').textContent = this.formatDelayDisplay(displayDelay, false);
             // Get station name using translator
             let nextStationText = train.NextStation || (t('train.trainNotFound') || 'Unknown');
@@ -2783,7 +2797,7 @@ class MobileApp {
         const currentSpeed = train.Speed || 0;
         const maxSpeed = currentSpeed > 80 ? currentSpeed : 120;
         const speedPercentage = (currentSpeed / maxSpeed * 100).toFixed(0);
-        alert(`${t('train.speed')} ${t('train.scheduleDetails')}:\n\n${t('train.speed')}: ${currentSpeed} ${t('train.kmh')}\nMax Expected: ${maxSpeed} ${t('train.kmh')}\nPerformance: ${speedPercentage}%`);
+        alert(`${t('train.speed')} ${t('train.scheduleDetails')}:\n\n${t('train.speed')}: ${this.formatSpeedDisplay(currentSpeed)}\nMax Expected: ${this.formatSpeedDisplay(maxSpeed)}\nPerformance: ${speedPercentage}%`);
     }
     
     showDelayDetails(train) {
@@ -3547,7 +3561,7 @@ class MobileApp {
         const rows = [
             { label: t('train.nextStation'), value: nextStationName },
             { label: t('train.eta'), value: etaTime },
-            { label: t('train.speed'), value: `${speed} ${t('train.kmh')}` },
+            { label: t('train.speed'), value: this.formatSpeedDisplay(speed) },
             { label: t('train.status'), value: status },
             { label: t('train.delay'), value: this.formatDelayDisplay(delay, false) },
             { label: t('train.updated'), value: lastUpdated }
@@ -4367,6 +4381,13 @@ class MobileApp {
         return `${Math.abs(minutes)}m Early`;
     }
 
+    // Helper function to format speed
+    formatSpeedDisplay(speed) {
+        const t = this.getTranslatedLabel;
+        const speedText = `${speed} ${t('train.kmh')}`;
+        return speedText;
+    }
+
     // Helper function to format delay in hours and minutes for display only
     formatDelayDisplay(minutes, includeLabel = true) {
         // Get translations if available (logic stays in English, only display translates)
@@ -4383,15 +4404,15 @@ class MobileApp {
         const hourUnit = isUrdu ? 'گھنٹہ' : 'h';
         const minuteUnit = isUrdu ? 'منٹ' : 'm';
         
-        // Numbers stay in English format, but units are translated
+        // Always put numbers before units (English order)
         let timeStr = '';
         if (hours > 0) {
-            timeStr += `${hours}${hourUnit}`;
+            timeStr += `${hours} ${hourUnit}`;
             if (mins > 0) {
-                timeStr += ` ${mins}${minuteUnit}`;
+                timeStr += ` ${mins} ${minuteUnit}`;
             }
         } else {
-            timeStr = `${mins}${minuteUnit}`;
+            timeStr = `${mins} ${minuteUnit}`;
         }
         
         // Only include label if requested (for standalone displays, not when used with delay label)
@@ -4762,7 +4783,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
@@ -4999,12 +5020,12 @@ class MobileApp {
         const now = new Date();
         const t = this.getTranslatedLabel;
 
-        // Update home last updated
+        // Update home last updated - format: "8 سیکنڈ پہلے آخری اپڈیٹ"
         const homeTimeEl = document.getElementById('homeLastUpdatedTime');
         if (homeTimeEl) {
             if (this.homeLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.homeLastUpdatedTime);
-                homeTimeEl.textContent = elapsed;
+                homeTimeEl.textContent = elapsed; // This will be "8 سیکنڈ پہلے" (number before text)
             } else {
                 homeTimeEl.textContent = t('common.loading');
             }
@@ -5056,9 +5077,13 @@ class MobileApp {
 
         // Map last updated
         const mapTimeEl = document.getElementById('mapLastUpdatedTime');
-        if (mapTimeEl && this.mapLastUpdatedTime) {
-            const elapsed = this.getTimeElapsed(now, this.mapLastUpdatedTime);
-            mapTimeEl.textContent = elapsed;
+        if (mapTimeEl) {
+            if (this.mapLastUpdatedTime) {
+                const elapsed = this.getTimeElapsed(now, this.mapLastUpdatedTime);
+                mapTimeEl.textContent = elapsed;
+            } else {
+                mapTimeEl.textContent = t('common.loading');
+            }
         }
 
         // Station last updated
@@ -5752,7 +5777,7 @@ class MobileApp {
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">⚡</span>
-                                <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">🔄</span>
@@ -7368,24 +7393,8 @@ class MobileApp {
                 return t('errors.noRecentUpdate') || 'No recent update';
             }
             
-            const diffMs = now - updateTime;
-            const diffMins = Math.floor(diffMs / (1000 * 60));
-            
-            if (diffMins < 1) return t('common.justNow') || 'Just now';
-            if (diffMins < 60) {
-                const minLabel = diffMins > 1 ? t('time.minutes') : t('time.minute');
-                return `${diffMins} ${minLabel} ${t('time.ago')}`;
-            }
-            
-            const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) {
-                const hourLabel = diffHours > 1 ? t('time.hours') : t('time.hours');
-                return `${diffHours} ${hourLabel} ${t('time.ago')}`;
-            }
-            
-            const diffDays = Math.floor(diffHours / 24);
-            const dayLabel = diffDays > 1 ? t('time.days') : t('time.days');
-            return `${diffDays} ${dayLabel} ${t('time.ago')}`;
+            // Use the same logic as getTimeElapsed for consistency
+            return this.getTimeElapsed(now, updateTime);
         } catch (error) {
             const t = this.getTranslatedLabel;
             return t('errors.noRecentUpdate') || 'No recent update';
@@ -8339,7 +8348,7 @@ class MobileApp {
                     </div>
                     <div class="info-row">
                         <span class="info-icon">⚡</span>
-                        <span class="info-text">${t('train.speed')}: ${train.speed} ${t('train.kmh')}</span>
+                        <span class="info-text">${t('train.speed')}: ${this.formatSpeedDisplay(train.speed)}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">📅</span>
@@ -8710,7 +8719,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">${t('train.speed')}: ${speed} ${t('train.kmh')}</span>
+                            <span class="info-text">${t('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
@@ -8858,7 +8867,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">${t('train.speed')}: ${speed} ${t('train.kmh')}</span>
+                            <span class="info-text">${t('train.speed')}: ${this.formatSpeedDisplay(speed)}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
@@ -8943,7 +8952,14 @@ class MobileApp {
 
         const t = this.getTranslatedLabel;
         const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
-        const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${trainNumber}`);
+        // Prioritize Urdu train name if available, then use translator
+        let trainName = train.TrainNameUR || train.TrainNameUr || null;
+        if (!trainName && typeof translator !== 'undefined' && translator) {
+            trainName = translator.getTrainName(train);
+        }
+        if (!trainName) {
+            trainName = train.TrainName || `Train ${trainNumber}`;
+        }
         const speed = train.Speed || 0;
         const status = speed > 0 ? t('train.moving') : t('train.stopped');
         
@@ -9045,7 +9061,7 @@ class MobileApp {
             <div style="text-align: center; min-width: 200px;">
                 <h3 style="margin: 0 0 10px 0; color: #1f2937;">${trainName}</h3>
                 <p style="margin: 5px 0; font-weight: bold; color: #059669;">${t('train.trainNumber')} #${trainNumber}</p>
-                <p style="margin: 5px 0;">${t('train.speed')}: ${speed} ${t('train.kmh')}</p>
+                <p style="margin: 5px 0;">${t('train.speed')}: ${this.formatSpeedDisplay(speed)}</p>
                 <p style="margin: 5px 0;">${t('train.status')}: ${status}</p>
                 <p style="margin: 5px 0; color: ${delay > 15 ? '#EF4444' : delay > 5 ? '#F59E0B' : '#10B981'}; font-weight: ${delay > 0 ? 'bold' : 'normal'};">${t('train.delay')}: ${delayText}</p>
                 <p style="margin: 5px 0;">${t('schedule.from')}: ${direction}</p>
@@ -9240,7 +9256,7 @@ class MobileApp {
 
         // Update stats
         const speedElement = document.getElementById('trainSpeed');
-        if (speedElement) speedElement.textContent = `${speed} ${t('train.kmh')}`;
+        if (speedElement) speedElement.textContent = this.formatSpeedDisplay(speed);
 
         const statusElement = document.getElementById('trainStatus');
         if (statusElement) statusElement.textContent = `${status} (${direction})`;
