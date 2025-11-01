@@ -89,6 +89,22 @@ body.mobile-app {
     direction: rtl !important;
 }
 
+/* Ensure English version stays LTR for last updated banners */
+.lang-english #homeLastUpdatedTime,
+.lang-english #liveTrackingLastUpdatedTime,
+.lang-english #trainDetailLastUpdatedTime,
+.lang-english #mapLastUpdatedTime,
+.lang-english #stationLastUpdatedTime,
+.lang-english #scheduleLastUpdatedTime,
+.lang-english #favoritesLastUpdatedTime {
+    direction: ltr !important;
+}
+
+/* Reverse order for Urdu - number comes first */
+.lang-urdu .last-updated-header {
+    flex-direction: row-reverse;
+}
+
 html {
     scrollbar-width: none;
     -ms-overflow-style: none;
