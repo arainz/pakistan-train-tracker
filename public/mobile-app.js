@@ -112,9 +112,257 @@ class MobileApp {
         this.setupHistoryNavigation();
         this.setupNotificationCenter();
         this.initializeDarkMode();
+        this.initializeLanguage();
         this.startAutoRefresh();
         this.startLastUpdatedCountdown();
         this.initializePullToRefresh();
+        
+        // Hide splash screen once app is ready
+        this.hideSplashScreen();
+    }
+    
+    async hideSplashScreen() {
+        try {
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const { SplashScreen } = window.Capacitor.Plugins;
+                if (SplashScreen && SplashScreen.hide) {
+                    const result = await SplashScreen.hide();
+                    // SplashScreen.hide() may return undefined, which is normal
+                    if (result !== undefined) {
+                        console.log('✅ Splash screen hidden:', result);
+                    } else {
+                        console.log('✅ Splash screen hidden');
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not hide splash screen:', error);
+        }
+    }
+
+    initializeLanguage() {
+        // Wait for translator to be ready
+        if (typeof translator !== 'undefined' && translator) {
+            // Set language selector value
+            const languageSelector = document.getElementById('languageSelector');
+            if (languageSelector) {
+                const currentLang = translator.getLanguage() || 'en';
+                languageSelector.value = currentLang;
+            }
+            
+            // Listen for language changes
+            document.addEventListener('languageChanged', () => {
+                this.updateUITranslations();
+                // Refresh train and station displays when language changes
+                if (this.currentScreen === 'home') {
+                    this.populateLiveTrains();
+                } else if (this.currentScreen === 'liveTracking') {
+                    this.populateLiveTrackingScreen();
+                } else if (this.currentScreen === 'favoritesScreen') {
+                    this.loadFavorites();
+                } else if (this.currentScreen === 'liveTrainDetail') {
+                    if (this.currentTrainData) {
+                        this.updateTrainDetail(this.currentTrainData);
+                    }
+                }
+            });
+            
+            // Initial translation update
+            this.updateUITranslations();
+        } else {
+            // Retry after a short delay if translator not ready
+            setTimeout(() => this.initializeLanguage(), 100);
+        }
+    }
+
+    changeLanguage(lang) {
+        if (typeof translator !== 'undefined' && translator) {
+            translator.setLanguage(lang);
+            this.updateUITranslations();
+        }
+    }
+
+    updateUITranslations() {
+        if (typeof translator === 'undefined' || !translator) return;
+        
+        const t = (key) => translator.t(key);
+        
+        // Update navigation labels
+        const navLabels = document.querySelectorAll('.nav-label');
+        navLabels.forEach(el => {
+            const navId = el.closest('.nav-item')?.getAttribute('data-nav');
+            if (navId === 'home') el.textContent = t('navigation.home');
+            else if (navId === 'track') el.textContent = t('navigation.track');
+            else if (navId === 'schedule') el.textContent = t('navigation.schedule');
+            else if (navId === 'map') el.textContent = t('navigation.map');
+            else if (navId === 'favorites') el.textContent = t('navigation.favorites');
+            else if (navId === 'settings') el.textContent = t('navigation.settings');
+        });
+        
+        // Update app name and tagline
+        const appName = document.querySelector('.app-info-sticky h1');
+        if (appName) appName.textContent = t('app.name');
+        
+        const tagline = document.querySelector('.tagline-sticky');
+        if (tagline) tagline.textContent = t('app.tagline');
+        
+        // Update settings labels
+        const settingsLabels = document.querySelectorAll('#settingsScreen .detail-label');
+        settingsLabels.forEach(el => {
+            if (el.textContent.includes('Auto Refresh') || el.getAttribute('data-i18n') === 'settings.autoRefresh') {
+                el.textContent = t('settings.autoRefresh');
+            } else if (el.textContent.includes('Push Notifications') || el.getAttribute('data-i18n') === 'settings.pushNotifications') {
+                el.textContent = t('settings.pushNotifications');
+            } else if (el.textContent.includes('Language') || el.getAttribute('data-i18n') === 'settings.language') {
+                el.textContent = t('settings.language');
+            } else if (el.textContent.includes('Last Refreshed') || el.getAttribute('data-i18n') === 'settings.lastRefreshed') {
+                el.textContent = t('settings.lastRefreshed');
+            }
+        });
+        
+        // Update language selector options
+        const langOptions = document.querySelectorAll('#languageSelector option');
+        langOptions.forEach(opt => {
+            if (opt.value === 'en') opt.textContent = t('settings.english');
+            else if (opt.value === 'ur') opt.textContent = t('settings.urdu');
+        });
+        
+        // Update about section
+        const aboutDesc = document.querySelector('#settingsScreen .detail-label p');
+        if (aboutDesc && aboutDesc.textContent.includes('Pakistan Train Tracker')) {
+            aboutDesc.textContent = t('about.description');
+        }
+        
+        // Update station names in train details screen
+        // Update horizontal route station names
+        if (this.currentRouteStations && this.currentRouteStations.length > 0) {
+            const horizontalStationPoints = document.querySelectorAll('.route-stations .station-point');
+            horizontalStationPoints.forEach(point => {
+                const stationNameEl = point.querySelector('.station-name');
+                if (stationNameEl) {
+                    const stationIndex = parseInt(point.getAttribute('data-station-index') || '-1');
+                    if (stationIndex >= 0 && stationIndex < this.currentRouteStations.length) {
+                        const station = this.currentRouteStations[stationIndex];
+                        if (station) {
+                            const translatedName = translator.getStationName(station);
+                            stationNameEl.textContent = translatedName;
+                            point.setAttribute('data-station', translatedName);
+                        }
+                    }
+                }
+            });
+            
+            // Update vertical route station names
+            const verticalStationItems = document.querySelectorAll('.station-route-item .station-name');
+            verticalStationItems.forEach((nameEl, index) => {
+                if (index < this.currentRouteStations.length) {
+                    const station = this.currentRouteStations[index];
+                    if (station) {
+                        const translatedName = translator.getStationName(station);
+                        nameEl.textContent = translatedName;
+                    }
+                }
+            });
+        }
+        
+        // Update headers
+        const headers = document.querySelectorAll('.header-title-section h2');
+        headers.forEach(header => {
+            const screen = header.closest('.screen');
+            if (screen) {
+                const screenId = screen.id;
+                if (screenId === 'liveTracking') header.textContent = t('train.liveTracking');
+                else if (screenId === 'scheduleScreen') header.textContent = t('schedule.schedule');
+                else if (screenId === 'mapScreen') header.textContent = t('map.map');
+                else if (screenId === 'favoritesScreen') header.textContent = t('favorites.favorites');
+                else if (screenId === 'settingsScreen') header.textContent = t('settings.settings');
+            }
+        });
+        
+        // Update screen headers
+        const screenHeaders = document.querySelectorAll('.screen .station-header h3');
+        screenHeaders.forEach(h3 => {
+            if (h3.textContent.includes('Settings') || h3.textContent.includes('⚙️')) {
+                h3.textContent = '⚙️ ' + t('settings.settings');
+            } else if (h3.textContent.includes('About') || h3.textContent.includes('ℹ️')) {
+                h3.textContent = 'ℹ️ ' + t('about.about');
+            } else if (h3.textContent.includes('Train Tracker') || h3.textContent.includes('🚂')) {
+                h3.textContent = '🚂 ' + t('train.train') + ' ' + t('train.trackTrain');
+            }
+        });
+    }
+
+    // Helper to get translated station name synchronously
+    getTranslatedStationName(stationNameString) {
+        if (!stationNameString || stationNameString === 'Location updating...' || stationNameString === 'Unknown Location') {
+            return stationNameString;
+        }
+        if (typeof translator !== 'undefined' && translator && window.stationsData) {
+            const station = window.stationsData.find(s => 
+                s.StationName && (
+                    s.StationName.toLowerCase() === stationNameString.toLowerCase() ||
+                    s.StationName.toLowerCase().includes(stationNameString.toLowerCase()) ||
+                    stationNameString.toLowerCase().includes(s.StationName.toLowerCase())
+                )
+            );
+            if (station) {
+                return translator.getStationName(station);
+            }
+        }
+        return stationNameString;
+    }
+
+    // Helper method to get translated label (for use in template strings)
+    getTranslatedLabel(key) {
+        if (typeof translator !== 'undefined' && translator) {
+            return translator.t(key);
+        }
+        // Fallback: return key or a default English value
+        const keyMap = {
+            'train.nextStation': 'Next Station',
+            'train.delay': 'Delay',
+            'train.speed': 'Speed',
+            'train.kmh': 'km/h',
+            'train.updated': 'Updated',
+            'train.moving': 'Moving',
+            'train.stopped': 'Stopped',
+            'train.onTime': 'On Time',
+            'train.late': 'Late',
+            'train.early': 'Early',
+            'train.trainNumber': 'Train',
+            'train.origin': 'Origin',
+            'train.destination': 'Destination',
+            'train.departure': 'Departure',
+            'train.arrival': 'Arrival',
+            'train.status': 'Status',
+            'train.trainNotFound': 'Unknown',
+            'schedule.departureTime': 'Scheduled',
+            'schedule.scheduleInformation': 'Schedule Information',
+            'schedule.liveInformation': 'Live Information',
+            'schedule.trainsFound': 'trains found',
+            'schedule.live': 'live',
+            'schedule.schedule': 'Schedule',
+            'notifications.selectStation': 'Select Station',
+            'notifications.chooseStation': 'Choose a station',
+            'notifications.notifyBefore': 'Notify Before',
+            'notifications.addNotification': 'Add Notification',
+            'notifications.min5': '5 min',
+            'notifications.min15': '15 min',
+            'notifications.min30': '30 min',
+            'notifications.min45': '45 min',
+            'notifications.activeNotifications': 'Active Notifications',
+            'notifications.arrivalNotifications': 'Arrival Notifications',
+            'notifications.getNotifiedWhen': 'Get notified when the train is arriving at a station',
+            'time.minutes': 'minutes',
+            'time.min': 'min',
+            'time.before': 'before',
+            'time.date': 'Date',
+            'common.lastUpdated': 'Last updated',
+            'common.loading': 'Loading...',
+            'common.tapToSetup': 'Tap to set up notifications',
+            'errors.noRouteStations': 'No route stations available'
+        };
+        return keyMap[key] || key;
     }
 
     async requestLocationPermission() {
@@ -171,7 +419,8 @@ class MobileApp {
                         return true;
                     } else {
                         console.log('❌ Notification permission denied');
-                        this.showToast('Notification permission denied');
+                        const t = this.getTranslatedLabel;
+                        this.showToast(t('errors.notificationPermissionDenied'));
                         return false;
                     }
                 } else {
@@ -181,7 +430,8 @@ class MobileApp {
                 }
             } catch (error) {
                 console.error('❌ Error requesting notification permission:', error);
-                this.showToast('Error requesting notification permission');
+                const t = this.getTranslatedLabel;
+                this.showToast(t('errors.errorRequestingNotificationPermission'));
                 return false;
             }
         } else {
@@ -200,7 +450,8 @@ class MobileApp {
                             return true;
                         } else {
                             console.log('❌ Notification permission denied');
-                            this.showToast('Notification permission denied');
+                            const t = this.getTranslatedLabel;
+                            this.showToast(t('errors.notificationPermissionDenied'));
                             return false;
                         }
                     } else if (Notification.permission === 'granted') {
@@ -209,7 +460,8 @@ class MobileApp {
                         return true;
                     } else {
                         console.log('❌ Notification permission previously denied');
-                        this.showToast('Please enable notifications in Settings');
+                        const t = this.getTranslatedLabel;
+                        this.showToast(t('errors.pleaseEnableNotificationsInSettings'));
                         return false;
                     }
                 } catch (error) {
@@ -218,7 +470,8 @@ class MobileApp {
                 }
             } else {
                 console.log('⚠️ Notifications not supported');
-                this.showToast('Notifications not supported');
+                const t = this.getTranslatedLabel;
+                this.showToast(t('errors.notificationsNotSupported'));
                 return false;
             }
         }
@@ -253,9 +506,10 @@ class MobileApp {
                 console.log('🔙 CAPACITOR BACK BUTTON PRESSED');
                 console.log('🔙 ========================================');
                 console.log('🔙 Current screen:', this.currentScreen);
-                console.log('🔙 Can go back:', data.canGoBack);
+                console.log('🔙 Can go back:', data?.canGoBack);
                 
                 this.goBack();
+                return; // Explicit return to avoid undefined warning
             });
             
             console.log('✅ Back button listener registered');
@@ -770,6 +1024,31 @@ class MobileApp {
         this.initializeMap();
     }
 
+    // Enrich train data with TrainNameUR from metadata
+    enrichTrainsWithMetadata(trains) {
+        if (!this.trainsMetadata || !Array.isArray(this.trainsMetadata)) {
+            console.warn('⚠️ Train metadata not loaded, skipping TrainNameUR enrichment');
+            return trains;
+        }
+        
+        return trains.map(train => {
+            // Find matching train in metadata by TrainNumber
+            const metadataTrain = this.trainsMetadata.find(t => 
+                t.TrainNumber === train.TrainNumber || 
+                String(t.TrainNumber) === String(train.TrainNumber)
+            );
+            
+            if (metadataTrain && metadataTrain.TrainNameUR) {
+                // Add TrainNameUR if not already present
+                if (!train.TrainNameUR) {
+                    train.TrainNameUR = metadataTrain.TrainNameUR;
+                }
+            }
+            
+            return train;
+        });
+    }
+
     async loadLiveTrains() {
         // Always use REST API (direct socket doesn't work - no CORS, version mismatch)
         try {
@@ -792,8 +1071,11 @@ class MobileApp {
             console.log('✅ [LIVE DATA] Data size:', (JSON.stringify(data).length / 1024).toFixed(2), 'KB');
             
             if (data.success && data.data && data.data.length > 0) {
+                // Enrich train data with TrainNameUR from metadata
+                const enrichedTrains = this.enrichTrainsWithMetadata(data.data);
+                
                 // Filter to keep only recent instances per train
-                let filteredTrains = this.filterDuplicateTrains(data.data);
+                let filteredTrains = this.filterDuplicateTrains(enrichedTrains);
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
                 
@@ -1139,7 +1421,8 @@ class MobileApp {
         }
         
         if (!this.trainData.active || this.trainData.active.length === 0) {
-            container.innerHTML = '<div class="loading">No live trains available</div>';
+            const t = this.getTranslatedLabel;
+            container.innerHTML = `<div class="loading">${t('errors.noLiveTrainsAvailable')}</div>`;
             return;
         }
         
@@ -1150,14 +1433,16 @@ class MobileApp {
         this.trainData.active.slice(0, 10).forEach(train => {
             const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
             const trainNumber = String(train.TrainNumber);
-            const trainName = train.TrainName || `Train ${train.TrainNumber}`;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${train.TrainNumber}`);
             const speed = train.Speed || 0;
 
             // Calculate accurate delay from ETA
             const calculatedDelay = this.calculateDelayFromETA(train);
             const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
-            const location = train.NextStation || 'Location updating...';
+            // Get translated station name
+            const locationRaw = train.NextStation || 'Location updating...';
+            const location = this.getTranslatedStationName(locationRaw);
 
             let statusBadge = 'LIVE';
             let badgeColor = '#10B981';
@@ -1202,15 +1487,15 @@ class MobileApp {
                     <div class="train-info-grid">
                         <div class="info-row">
                             <span class="info-icon">📍</span>
-                            <span class="info-text">Next Station: ${location}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.nextStation')}: ${location}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
-                            <span class="info-text">Delay: ${delay > 0 ? this.formatDelayDisplay(delay) : 'On Time'}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.delay')}: ${delay > 0 ? this.formatDelayDisplay(delay, false) : this.getTranslatedLabel('train.onTime')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
@@ -1218,20 +1503,20 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">Speed: ${speed} km/h</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Train Date: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
-                            <span class="info-text">Updated: ${lastUpdated}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.updated')}: ${lastUpdated}</span>
                         </div>
                     </div>
                     <div class="train-status-row">
                         <div class="status-badge ${speed > 0 ? 'status-moving' : 'status-stopped'}">
-                            ${speed > 0 ? 'Moving' : 'Stopped'}
+                            ${speed > 0 ? this.getTranslatedLabel('train.moving') : this.getTranslatedLabel('train.stopped')}
                         </div>
                     </div>
                 </div>
@@ -1363,9 +1648,11 @@ class MobileApp {
             // Use InnerKey first as it's the unique identifier for each train instance
             const trainId = train.InnerKey || train.TrainID || train.trainId || train.TrainNumber || 'unknown';
             const trainNumber = String(train.TrainNumber);
-            const trainName = train.TrainName || 'Unknown Train';
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || 'Unknown Train');
             const speed = train.SpeedKmph || train.Speed || 0;
-            const location = train.Location || train.NextStation || 'Unknown Location';
+            // Get translated station name
+            const locationRaw = train.Location || train.NextStation || 'Unknown Location';
+            const location = this.getTranslatedStationName(locationRaw);
 
             // Calculate accurate delay from ETA
             const calculatedDelay = this.calculateDelayFromETA(train);
@@ -1403,15 +1690,15 @@ class MobileApp {
                     <div class="train-info-grid">
                         <div class="info-row">
                             <span class="info-icon">📍</span>
-                            <span class="info-text">Next Station: ${location}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.nextStation')}: ${location}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
-                            <span class="info-text">Delay: ${delay > 0 ? this.formatDelayDisplay(delay) : 'On Time'}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.delay')}: ${delay > 0 ? this.formatDelayDisplay(delay, false) : this.getTranslatedLabel('train.onTime')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
@@ -1419,20 +1706,20 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">Speed: ${speed} km/h</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Train Date: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
-                            <span class="info-text">Updated: ${lastUpdated}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.updated')}: ${lastUpdated}</span>
                         </div>
                     </div>
                     <div class="train-status-row">
                         <div class="status-badge ${speed > 0 ? 'status-moving' : 'status-stopped'}">
-                            ${speed > 0 ? 'Moving' : 'Stopped'}
+                            ${speed > 0 ? this.getTranslatedLabel('train.moving') : this.getTranslatedLabel('train.stopped')}
                         </div>
                     </div>
                 </div>
@@ -1445,14 +1732,21 @@ class MobileApp {
         const resultsCountEl = document.getElementById('liveTrackingResultsCount');
         if (resultsCountEl) {
             const liveTrains = filteredTrains.filter(t => t.Speed !== undefined).length;
-            resultsCountEl.textContent = `${filteredTrains.length} trains found (${liveTrains} live)`;
+            const t = this.getTranslatedLabel;
+            resultsCountEl.textContent = `${filteredTrains.length} ${t('schedule.trainsFound')} (${liveTrains} ${t('schedule.live')})`;
         }
     }
 
     updateLiveSearchResults(count, query) {
         const resultsElement = document.getElementById('liveTrackingSearchResults');
         if (resultsElement) {
-            resultsElement.textContent = `Found ${count} train${count !== 1 ? 's' : ''} matching "${query}"`;
+            const t = this.getTranslatedLabel;
+            const plural = count !== 1 ? 's' : '';
+            const foundText = t('train.foundTrainsMatching')
+                .replace('{count}', count)
+                .replace('{plural}', plural)
+                .replace('{query}', query);
+            resultsElement.textContent = foundText;
         }
     }
 
@@ -1778,15 +2072,37 @@ class MobileApp {
         const calculatedDelay = this.calculateDelayFromETA(train);
         const displayDelay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
+        const t = this.getTranslatedLabel;
         if (isOutOfCoverage) {
             speedEl.textContent = 'N/A';
-            delayEl.textContent = 'OUT OF COVERAGE';
-            nextStationEl.textContent = 'Location Unknown';
+            delayEl.textContent = t('train.outOfCoverage') || 'OUT OF COVERAGE';
+            nextStationEl.textContent = t('train.locationUnknown') || 'Location Unknown';
             console.log('🚫 Train out of coverage - metrics set to N/A');
         } else {
-            const speedText = `${train.Speed || 0} km/h`;
+            const speedText = `${train.Speed || 0} ${t('train.kmh')}`;
             const delayText = this.formatDelayDisplay(displayDelay);
-            const nextStationText = train.NextStation || 'Unknown';
+            // Get station name using translator (synchronous lookup)
+            const nextStationName = train.NextStation ? 
+                (typeof translator !== 'undefined' && translator ? 
+                    translator.getStationNameFromString(train.NextStation) :
+                    train.NextStation) : 
+                (t('train.trainNotFound') || 'Unknown');
+            
+            // For now, use NextStation directly but try to find station object
+            let nextStationText = train.NextStation || (t('train.trainNotFound') || 'Unknown');
+            // Try to find station in stations data if available
+            if (train.NextStation && window.stationsData) {
+                const station = window.stationsData.find(s => 
+                    s.StationName && (
+                        s.StationName.toLowerCase() === train.NextStation.toLowerCase() ||
+                        s.StationName.toLowerCase().includes(train.NextStation.toLowerCase()) ||
+                        train.NextStation.toLowerCase().includes(s.StationName.toLowerCase())
+                    )
+                );
+                if (station && typeof translator !== 'undefined' && translator) {
+                    nextStationText = translator.getStationName(station);
+                }
+            }
             
             speedEl.textContent = speedText;
             delayEl.textContent = delayText;
@@ -1810,7 +2126,8 @@ class MobileApp {
         const isOutOfCoverage = this.isTrainOutOfCoverage(train);
         
         // Update basic train info
-        document.getElementById('trainDetailName').textContent = train.TrainName || 'Unknown Train';
+        const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || 'Unknown Train');
+        document.getElementById('trainDetailName').textContent = trainName;
         document.getElementById('trainDetailNumber').textContent = train.TrainNumber || '000';
         
         // Add out of coverage indicator to header
@@ -1880,14 +2197,29 @@ class MobileApp {
         const displayDelay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
         // Update metrics
+        const t = this.getTranslatedLabel;
         if (isOutOfCoverage) {
             document.getElementById('trainSpeed').textContent = 'N/A';
-            document.getElementById('trainDelay').textContent = 'OUT OF COVERAGE';
-            document.getElementById('nextStation').textContent = 'Location Unknown';
+            document.getElementById('trainDelay').textContent = t('train.outOfCoverage') || 'OUT OF COVERAGE';
+            document.getElementById('nextStation').textContent = t('train.locationUnknown') || 'Location Unknown';
         } else {
-        document.getElementById('trainSpeed').textContent = `${train.Speed || 0} km/h`;
-        document.getElementById('trainDelay').textContent = this.formatDelayDisplay(displayDelay);
-        document.getElementById('nextStation').textContent = train.NextStation || 'Unknown';
+            document.getElementById('trainSpeed').textContent = `${train.Speed || 0} ${t('train.kmh')}`;
+            document.getElementById('trainDelay').textContent = this.formatDelayDisplay(displayDelay, false);
+            // Get station name using translator
+            let nextStationText = train.NextStation || (t('train.trainNotFound') || 'Unknown');
+            if (train.NextStation && window.stationsData) {
+                const station = window.stationsData.find(s => 
+                    s.StationName && (
+                        s.StationName.toLowerCase() === train.NextStation.toLowerCase() ||
+                        s.StationName.toLowerCase().includes(train.NextStation.toLowerCase()) ||
+                        train.NextStation.toLowerCase().includes(s.StationName.toLowerCase())
+                    )
+                );
+                if (station && typeof translator !== 'undefined' && translator) {
+                    nextStationText = translator.getStationName(station);
+                }
+            }
+            document.getElementById('nextStation').textContent = nextStationText;
         }
 
         // Update last updated time
@@ -2094,7 +2426,8 @@ class MobileApp {
         console.log(`📍 Container current content:`, container.innerHTML);
 
         if (stations.length === 0) {
-            container.innerHTML = '<div class="loading">No route stations available</div>';
+            const t = this.getTranslatedLabel;
+            container.innerHTML = `<div class="loading">${t('errors.noRouteStations')}</div>`;
             return;
         }
 
@@ -2187,7 +2520,28 @@ class MobileApp {
 
         stations.forEach((station, index) => {
             console.log(`🚉 Station ${index}:`, station);
-            const stationName = station.StationName || station.name || station.StationId || `Station ${index + 1}`;
+            // Get station name with translation
+            const stationNameStr = station.StationName || station.name || '';
+            let stationName = stationNameStr || station.StationId || `Station ${index + 1}`;
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                // Try getStationName first (handles station objects with StationNameUR)
+                const translatedFromObject = translator.getStationName(station);
+                // Try getStationNameFromString as well (does lookup from window.stationsData)
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                
+                // Use the translation if we're in Urdu mode and got a translated name
+                if (translator.getLanguage() === 'ur') {
+                    // Prefer translatedFromString if it's different from original, otherwise use translatedFromObject
+                    if (translatedFromString && translatedFromString !== stationNameStr) {
+                        stationName = translatedFromString;
+                    } else if (translatedFromObject && translatedFromObject !== stationNameStr && translatedFromObject !== stationName) {
+                        stationName = translatedFromObject;
+                    }
+                } else {
+                    // For English, use original or translated from object
+                    stationName = translatedFromObject || stationName;
+                }
+            }
             const scheduledTime = station.ArrivalTime || station.time || '--:--';
             const distance = station.DistanceFromOrigin || 0;
             console.log(`🚉 Using station name: "${stationName}", scheduled: "${scheduledTime}", distance: ${distance} km`);
@@ -2227,7 +2581,8 @@ class MobileApp {
 
             // Get ETA and status info for popover
             const etaTime = status !== 'completed' ? formattedTime : '--:--';
-            const statusText = status === 'completed' ? 'Completed' : status === 'current' ? 'Next Station' : 'Upcoming';
+            const t = this.getTranslatedLabel;
+            const statusText = status === 'completed' ? t('train.completed') : status === 'current' ? t('train.nextStation') : t('train.upcoming');
             const lastUpdated = train.LastUpdated ? this.formatLastUpdated(new Date(train.LastUpdated)) : '--:--';
             
             // Alternate station names between top and bottom
@@ -2236,6 +2591,7 @@ class MobileApp {
             html += `
                 <div class="station-point ${status} ${positionClass}" 
                      data-station="${stationName}" 
+                     data-station-index="${index}"
                      data-distance="${distance}" 
                      data-scheduled="${scheduledTime}"
                      data-eta="${etaTime}"
@@ -2333,9 +2689,10 @@ class MobileApp {
             const stationName = targetPoint.getAttribute('data-station') || 'Unknown';
             
             // Only show "Current:" label if train has reached the station
+            const t = this.getTranslatedLabel;
             const currentLabelHTML = hasReachedStation ? `
                 <div class="popover-row popover-station-name">
-                    <span class="popover-label">Current:</span>
+                    <span class="popover-label">${t('train.currentStation')}:</span>
                     <span class="popover-value">${stationName}</span>
                 </div>
             ` : '';
@@ -2346,19 +2703,19 @@ class MobileApp {
                 <div class="popover-content">
                     ${currentLabelHTML}
                     <div class="popover-row">
-                        <span class="popover-label">Next:</span>
+                        <span class="popover-label">${t('train.nextStation')}:</span>
                         <span class="popover-value">${stationName}</span>
                     </div>
                     <div class="popover-row">
-                        <span class="popover-label">ETA:</span>
+                        <span class="popover-label">${t('train.eta')}:</span>
                         <span class="popover-value">${eta}</span>
                     </div>
                     <div class="popover-row">
-                        <span class="popover-label">Status:</span>
+                        <span class="popover-label">${t('train.status')}:</span>
                         <span class="popover-value">${status}</span>
                     </div>
                     <div class="popover-row">
-                        <span class="popover-label">Updated:</span>
+                        <span class="popover-label">${t('train.updated')}:</span>
                         <span class="popover-value">${lastUpdated}</span>
                     </div>
                 </div>
@@ -2417,41 +2774,45 @@ class MobileApp {
     }
     
     showSpeedDetails(train) {
+        const t = this.getTranslatedLabel;
         if (!train) {
-            alert('Speed Details:\n\nTrain data not available');
+            alert(`${t('train.speed')} ${t('train.scheduleDetails')}:\n\n${t('errors.trainDataNotAvailable')}`);
             return;
         }
         
         const currentSpeed = train.Speed || 0;
         const maxSpeed = currentSpeed > 80 ? currentSpeed : 120;
         const speedPercentage = (currentSpeed / maxSpeed * 100).toFixed(0);
-        alert(`Speed Details:\n\nCurrent: ${currentSpeed} km/h\nMax Expected: ${maxSpeed} km/h\nPerformance: ${speedPercentage}%`);
+        alert(`${t('train.speed')} ${t('train.scheduleDetails')}:\n\n${t('train.speed')}: ${currentSpeed} ${t('train.kmh')}\nMax Expected: ${maxSpeed} ${t('train.kmh')}\nPerformance: ${speedPercentage}%`);
     }
     
     showDelayDetails(train) {
+        const t = this.getTranslatedLabel;
         if (!train) {
-            alert('Delay Information:\n\nTrain data not available');
+            alert(`${t('train.delay')} ${t('train.scheduleInformation')}:\n\n${t('errors.trainDataNotAvailable')}`);
             return;
         }
         
         // Use calculated delay from ETA for accuracy
         const calculatedDelay = this.calculateDelayFromETA(train);
         const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
-        const delayStatus = delay === 0 ? 'On Time' : delay > 0 ? 'Delayed' : 'Early';
-        const delayText = this.formatDelayDisplay(delay);
+        const delayStatus = delay === 0 ? t('train.onTime') : delay > 0 ? t('train.late') : t('train.early');
+        const delayText = this.formatDelayDisplay(delay, false);
         const lastUpdated = this.formatLastUpdated(train.LastUpdated);
-        alert(`Delay Information:\n\nStatus: ${delayStatus}\nDelay: ${delayText}\nLast Updated: ${lastUpdated}`);
+        alert(`${t('train.delay')} ${t('train.scheduleInformation')}:\n\n${t('train.status')}: ${delayStatus}\n${t('train.delay')}: ${delayText}\n${t('train.updated')}: ${lastUpdated}`);
     }
     
     showStationDetails(train) {
+        const t = this.getTranslatedLabel;
         if (!train) {
-            alert('Station Information:\n\nTrain data not available');
+            alert(`${t('stations.station')} ${t('train.scheduleInformation')}:\n\n${t('errors.trainDataNotAvailable')}`);
             return;
         }
         
         const eta = this.formatTimeAMPM(this.getTrainETA(train) || '--:--');
-        const status = train.Status === 'A' ? 'Active' : train.Status === 'D' ? 'Departed' : 'En Route';
-        alert(`Station Information:\n\nNext Station: ${train.NextStation || 'Unknown'}\nETA: ${eta}\nTrain Status: ${status}`);
+        const status = train.Status === 'A' ? t('common.active') : train.Status === 'D' ? t('train.departed') : t('train.enRoute');
+        const nextStation = train.NextStation ? this.getTranslatedStationName(train.NextStation) : t('train.trainNotFound');
+        alert(`${t('stations.station')} ${t('train.scheduleInformation')}:\n\n${t('train.nextStation')}: ${nextStation}\n${t('train.eta')}: ${eta}\n${t('train.status')}: ${status}`);
     }
     // NOTE: refreshTrainDetails() function is defined at line ~1522 - this old duplicate has been removed
 
@@ -2480,7 +2841,28 @@ class MobileApp {
         const trainDelay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
         stations.forEach((station, index) => {
-            const stationName = station.StationName || `Station ${index + 1}`;
+            // Get station name with translation
+            const stationNameStr = station.StationName || '';
+            let stationName = stationNameStr || `Station ${index + 1}`;
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                // Try getStationName first (handles station objects with StationNameUR)
+                const translatedFromObject = translator.getStationName(station);
+                // Try getStationNameFromString as well (does lookup from window.stationsData)
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                
+                // Use the translation if we're in Urdu mode and got a translated name
+                if (translator.getLanguage() === 'ur') {
+                    // Prefer translatedFromString if it's different from original, otherwise use translatedFromObject
+                    if (translatedFromString && translatedFromString !== stationNameStr) {
+                        stationName = translatedFromString;
+                    } else if (translatedFromObject && translatedFromObject !== stationNameStr && translatedFromObject !== stationName) {
+                        stationName = translatedFromObject;
+                    }
+                } else {
+                    // For English, use original or translated from object
+                    stationName = translatedFromObject || stationName;
+                }
+            }
             const isFirst = index === 0;
 
             // Get scheduled times
@@ -2510,23 +2892,24 @@ class MobileApp {
                 // First station - use departure time
                 scheduledArrival = scheduledDep || '--:--';
 
+                const t = this.getTranslatedLabel;
                 if (actualDep) {
                     expectedArrival = actualDep;
-                    stationDelay = 'Departed';
+                    stationDelay = t('train.departed');
                     delayClass = 'passed';
                 } else if (index <= currentStationIndex) {
                     expectedArrival = scheduledDep || '--:--';
-                    stationDelay = 'Departed';
+                    stationDelay = t('train.departed');
                     delayClass = 'passed';
                 } else {
                     if (scheduledDep) {
                         if (trainDelay !== 0) {
                             expectedArrival = this.adjustTimeForDelay(scheduledDep, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay);
+                            stationDelay = this.formatDelayDisplay(trainDelay, false);
                             delayClass = trainDelay > 0 ? 'late' : 'early';
                         } else {
                             expectedArrival = scheduledDep;
-                            stationDelay = 'On Time';
+                            stationDelay = t('train.onTime');
                             delayClass = 'on-time';
                         }
                     }
@@ -2535,15 +2918,16 @@ class MobileApp {
                 // All other stations - use arrival times
                 scheduledArrival = scheduledArr || '--:--';
 
+                const t = this.getTranslatedLabel;
                 if (index < currentStationIndex) {
                     // Passed stations
                     if (actualArr && scheduledArr) {
                         expectedArrival = actualArr;
-                        stationDelay = 'Passed';
+                        stationDelay = t('train.arrived');
                         delayClass = 'passed';
                     } else {
                         expectedArrival = scheduledArr || '--:--';
-                        stationDelay = 'Passed';
+                        stationDelay = t('train.arrived');
                         delayClass = 'passed';
                     }
                 } else if (index === currentStationIndex) {
@@ -2552,22 +2936,22 @@ class MobileApp {
                     if (stationTime) {
                         if (trainDelay !== 0) {
                             expectedArrival = this.adjustTimeForDelay(stationTime, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay);
+                            stationDelay = this.formatDelayDisplay(trainDelay, false);
                             delayClass = trainDelay > 0 ? 'late' : 'early';
                         } else {
                             expectedArrival = stationTime;
-                            stationDelay = 'On Time';
+                            stationDelay = t('train.onTime');
                             delayClass = 'current';
                         }
                     } else {
                         const etaFromFunc = this.getTrainETA(train);
                         if (etaFromFunc) {
                             expectedArrival = etaFromFunc;
-                            stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay) : 'Arriving';
+                            stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay, false) : t('train.enRoute');
                             delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
                         } else {
-                            expectedArrival = 'Arriving';
-                            stationDelay = 'Current';
+                            expectedArrival = t('train.enRoute');
+                            stationDelay = t('train.enRoute');
                             delayClass = 'current';
                         }
                     }
@@ -2576,11 +2960,11 @@ class MobileApp {
                     if (scheduledArr) {
                         if (trainDelay !== 0) {
                             expectedArrival = this.adjustTimeForDelay(scheduledArr, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay);
+                            stationDelay = this.formatDelayDisplay(trainDelay, false);
                             delayClass = trainDelay > 0 ? 'late' : 'early';
                         } else {
                             expectedArrival = scheduledArr;
-                            stationDelay = 'On Time';
+                            stationDelay = t('train.onTime');
                             delayClass = 'on-time';
                         }
                     }
@@ -2608,25 +2992,25 @@ class MobileApp {
                     <div class="station-timing-info">
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Scheduled:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('schedule.scheduled')}:</span>
                                 <span class="timing-value">${formattedScheduledArrival}</span>
                             </span>
                         </div>
                         <div class="timing-row eta-row-highlight">
                             <span class="timing-group">
-                                <span class="timing-label">ETA:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('train.eta')}:</span>
                                 <span class="eta-value-large">${formattedExpectedArrival}</span>
                             </span>
                         </div>
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Status:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('train.status')}:</span>
                                 <span class="delay-value ${delayClass}">${stationDelay}</span>
                             </span>
                         </div>
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Last Updated:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('train.updated')}:</span>
                                 <span class="timing-value">${lastUpdated}</span>
                             </span>
                         </div>
@@ -2638,19 +3022,19 @@ class MobileApp {
                     <div class="station-timing-info">
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Scheduled:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('schedule.scheduled')}:</span>
                                 <span class="timing-value">${formattedScheduledArrival}</span>
                             </span>
                         </div>
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Expected:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('train.eta')}:</span>
                                 <span class="eta-value">${formattedExpectedArrival}</span>
                             </span>
                         </div>
                         <div class="timing-row">
                             <span class="timing-group">
-                                <span class="timing-label">Status:</span>
+                                <span class="timing-label">${this.getTranslatedLabel('train.status')}:</span>
                                 <span class="delay-value ${delayClass}">${stationDelay}</span>
                             </span>
                         </div>
@@ -2713,14 +3097,40 @@ class MobileApp {
         const sourceStation = stations[0];
         const sourceStationEl = document.getElementById('sourceStation');
         if (sourceStation && sourceStationEl) {
-            sourceStationEl.textContent = sourceStation.StationName || 'Origin';
+            const stationNameStr = sourceStation.StationName || '';
+            let stationName = stationNameStr || 'Origin';
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                const translatedFromObject = translator.getStationName(sourceStation);
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                if (translator.getLanguage() === 'ur') {
+                    stationName = (translatedFromString && translatedFromString !== stationNameStr) 
+                        ? translatedFromString 
+                        : (translatedFromObject && translatedFromObject !== stationNameStr ? translatedFromObject : stationName);
+                } else {
+                    stationName = translatedFromObject || stationName;
+                }
+            }
+            sourceStationEl.textContent = stationName;
         }
 
         // Update destination station (only if element exists - for backward compatibility)
         const destinationStation = stations[stations.length - 1];
         const destinationStationEl = document.getElementById('destinationStation');
         if (destinationStation && destinationStationEl) {
-            destinationStationEl.textContent = destinationStation.StationName || 'Destination';
+            const stationNameStr = destinationStation.StationName || '';
+            let stationName = stationNameStr || 'Destination';
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                const translatedFromObject = translator.getStationName(destinationStation);
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                if (translator.getLanguage() === 'ur') {
+                    stationName = (translatedFromString && translatedFromString !== stationNameStr) 
+                        ? translatedFromString 
+                        : (translatedFromObject && translatedFromObject !== stationNameStr ? translatedFromObject : stationName);
+                } else {
+                    stationName = translatedFromObject || stationName;
+                }
+            }
+            destinationStationEl.textContent = stationName;
         }
     }
 
@@ -3093,12 +3503,25 @@ class MobileApp {
             locomotiveIcon.appendChild(popover);
         }
         
-        // Get next station from train API data
-        const nextStationName = train.NextStation || 'Unknown';
+        // Get translated station name
+        let nextStationName = train.NextStation || 'Unknown';
+        if (train.NextStation && window.stationsData) {
+            const station = window.stationsData.find(s => 
+                s.StationName && (
+                    s.StationName.toLowerCase() === train.NextStation.toLowerCase() ||
+                    s.StationName.toLowerCase().includes(train.NextStation.toLowerCase()) ||
+                    train.NextStation.toLowerCase().includes(s.StationName.toLowerCase())
+                )
+            );
+            if (station && typeof translator !== 'undefined' && translator) {
+                nextStationName = translator.getStationName(station);
+            }
+        }
         
         // Get train info
         const speed = train.Speed || 0;
-        const status = speed > 0 ? 'Moving' : 'Stopped';
+        const t = this.getTranslatedLabel;
+        const status = speed > 0 ? t('train.moving') : t('train.stopped');
         
         // Format ETA using the same logic as train cards (AM/PM format)
         const etaFromFunc = this.getTrainETA(train);
@@ -3120,14 +3543,14 @@ class MobileApp {
         // Clear and rebuild popover content
         popover.innerHTML = '';
         
-        // Build rows
+        // Build rows with translated labels
         const rows = [
-            { label: 'Next', value: nextStationName },
-            { label: 'ETA', value: etaTime },
-            { label: 'Speed', value: `${speed} km/h` },
-            { label: 'Status', value: status },
-            { label: 'Delay', value: delayText },
-            { label: 'Last Updated', value: lastUpdated }
+            { label: t('train.nextStation'), value: nextStationName },
+            { label: t('train.eta'), value: etaTime },
+            { label: t('train.speed'), value: `${speed} ${t('train.kmh')}` },
+            { label: t('train.status'), value: status },
+            { label: t('train.delay'), value: this.formatDelayDisplay(delay, false) },
+            { label: t('train.updated'), value: lastUpdated }
         ];
         
         rows.forEach(row => {
@@ -3145,14 +3568,40 @@ class MobileApp {
         const sourceStation = stations[0];
         const sourceStationEl = document.getElementById('sourceStation');
         if (sourceStation && sourceStationEl) {
-            sourceStationEl.textContent = sourceStation.StationName || 'Origin';
+            const stationNameStr = sourceStation.StationName || '';
+            let stationName = stationNameStr || 'Origin';
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                const translatedFromObject = translator.getStationName(sourceStation);
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                if (translator.getLanguage() === 'ur') {
+                    stationName = (translatedFromString && translatedFromString !== stationNameStr) 
+                        ? translatedFromString 
+                        : (translatedFromObject && translatedFromObject !== stationNameStr ? translatedFromObject : stationName);
+                } else {
+                    stationName = translatedFromObject || stationName;
+                }
+            }
+            sourceStationEl.textContent = stationName;
         }
 
         // Update destination station (only if element exists - for backward compatibility)
         const destinationStation = stations[stations.length - 1];
         const destinationStationEl = document.getElementById('destinationStation');
         if (destinationStation && destinationStationEl) {
-            destinationStationEl.textContent = destinationStation.StationName || 'Destination';
+            const stationNameStr = destinationStation.StationName || '';
+            let stationName = stationNameStr || 'Destination';
+            if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                const translatedFromObject = translator.getStationName(destinationStation);
+                const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                if (translator.getLanguage() === 'ur') {
+                    stationName = (translatedFromString && translatedFromString !== stationNameStr) 
+                        ? translatedFromString 
+                        : (translatedFromObject && translatedFromObject !== stationNameStr ? translatedFromObject : stationName);
+                } else {
+                    stationName = translatedFromObject || stationName;
+                }
+            }
+            destinationStationEl.textContent = stationName;
         }
 
         // Update current station in journey map
@@ -3162,7 +3611,21 @@ class MobileApp {
             const currentTimeEl = document.querySelector('.route-stations .station-point.active .station-time');
             
             if (currentStationNameEl) {
-                currentStationNameEl.textContent = currentStation.StationName || train.NextStation || 'Current';
+                // Use translator to get translated station name with enhanced lookup
+                const stationNameStr = currentStation.StationName || train.NextStation || '';
+                let stationName = stationNameStr || 'Current';
+                if (typeof translator !== 'undefined' && translator && stationNameStr) {
+                    const translatedFromObject = translator.getStationName(currentStation);
+                    const translatedFromString = translator.getStationNameFromString(stationNameStr);
+                    if (translator.getLanguage() === 'ur') {
+                        stationName = (translatedFromString && translatedFromString !== stationNameStr) 
+                            ? translatedFromString 
+                            : (translatedFromObject && translatedFromObject !== stationNameStr ? translatedFromObject : stationName);
+                    } else {
+                        stationName = translatedFromObject || stationName;
+                    }
+                }
+                currentStationNameEl.textContent = stationName;
             }
             if (currentTimeEl) {
                 // Use centralized getTrainETA function
@@ -3652,7 +4115,7 @@ class MobileApp {
             // Format as HH:MM
             const etaTime = `${String(etaHours).padStart(2, '0')}:${String(etaMinutes).padStart(2, '0')}`;
             
-            const trainName = train.TrainName || train.trainName || `Train ${train.TrainNumber}`;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || train.trainName || `Train ${train.TrainNumber}`);
             console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km [FROM ${distanceSourceForETA}] | Speed: ${speed}km/h | ETA: ${etaTime}`);
             
             return etaTime;
@@ -3905,25 +4368,40 @@ class MobileApp {
     }
 
     // Helper function to format delay in hours and minutes for display only
-    formatDelayDisplay(minutes) {
-        if (!minutes || minutes === 0) return 'On Time';
+    formatDelayDisplay(minutes, includeLabel = true) {
+        // Get translations if available (logic stays in English, only display translates)
+        const t = (typeof translator !== 'undefined' && translator) ? (key) => translator.t(key) : (key) => key;
+        
+        if (!minutes || minutes === 0) return t('train.onTime');
         
         const absMinutes = Math.abs(minutes);
         const hours = Math.floor(absMinutes / 60);
         const mins = absMinutes % 60;
         
+        // Check if language is Urdu to translate time units
+        const isUrdu = typeof translator !== 'undefined' && translator && translator.getLanguage() === 'ur';
+        const hourUnit = isUrdu ? 'گھنٹہ' : 'h';
+        const minuteUnit = isUrdu ? 'منٹ' : 'm';
+        
+        // Numbers stay in English format, but units are translated
         let timeStr = '';
         if (hours > 0) {
-            timeStr += `${hours}h`;
+            timeStr += `${hours}${hourUnit}`;
             if (mins > 0) {
-                timeStr += ` ${mins}m`;
+                timeStr += ` ${mins}${minuteUnit}`;
             }
         } else {
-            timeStr = `${mins}m`;
+            timeStr = `${mins}${minuteUnit}`;
         }
         
-        if (minutes > 0) return `${timeStr} Late`;
-        return `${timeStr} Early`;
+        // Only include label if requested (for standalone displays, not when used with delay label)
+        if (includeLabel) {
+            if (minutes > 0) return `${timeStr} ${t('train.late')}`;
+            return `${timeStr} ${t('train.early')}`;
+        } else {
+            // Return just the time without label (when used with "Delay:" label)
+            return timeStr;
+        }
     }
 
     // Helper function to format time to 12-hour AM/PM format
@@ -3938,11 +4416,31 @@ class MobileApp {
             const date = new Date();
             date.setHours(hours, minutes, 0, 0);
             
-            return date.toLocaleTimeString('en-US', {
+            // Format time and ensure AM/PM appears at the end
+            // Use a locale that guarantees "HH:MM AM/PM" format
+            const formatted = date.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
             });
+            
+            // Extract time and AM/PM separately to ensure correct order
+            // Format should be "H:MM AM" or "HH:MM PM"
+            const ampmMatch = formatted.match(/\b(AM|PM)\b/i);
+            const timeMatch = formatted.match(/(\d{1,2}:\d{2})/);
+            
+            if (ampmMatch && timeMatch) {
+                // Check if language is Urdu and translate AM/PM
+                const isUrdu = typeof translator !== 'undefined' && translator && translator.getLanguage() === 'ur';
+                let ampm = ampmMatch[1];
+                if (isUrdu) {
+                    ampm = ampm.toUpperCase() === 'AM' ? 'صبح' : 'شام';
+                }
+                // Ensure format is always "HH:MM AM/PM" (not "AM/PM HH:MM")
+                return `${timeMatch[1]} ${ampm}`;
+            }
+            
+            return formatted;
         } catch (error) {
             return timeStr;
         }
@@ -3967,12 +4465,31 @@ class MobileApp {
                 return 'N/A';
             }
             
-            return date.toLocaleTimeString('en-US', {
+            // Format time and ensure AM/PM appears at the end
+            const formatted = date.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: true
             });
+            
+            // Extract time and AM/PM separately to ensure correct order
+            // Format should be "H:MM:SS AM" or "HH:MM:SS PM"
+            const ampmMatch = formatted.match(/\b(AM|PM)\b/i);
+            const timeMatch = formatted.match(/(\d{1,2}:\d{2}:\d{2})/);
+            
+            if (ampmMatch && timeMatch) {
+                // Check if language is Urdu and translate AM/PM
+                const isUrdu = typeof translator !== 'undefined' && translator && translator.getLanguage() === 'ur';
+                let ampm = ampmMatch[1];
+                if (isUrdu) {
+                    ampm = ampm.toUpperCase() === 'AM' ? 'صبح' : 'شام';
+                }
+                // Ensure format is always "HH:MM:SS AM/PM" (not "AM/PM HH:MM:SS")
+                return `${timeMatch[1]} ${ampm}`;
+            }
+            
+            return formatted;
         } catch (error) {
             return 'N/A';
         }
@@ -4099,8 +4616,9 @@ class MobileApp {
     }
 
     showTrainDetailsError(message) {
-        document.getElementById('trainDetailName').textContent = 'Error Loading Train';
-        document.getElementById('stationRouteList').innerHTML = `<div class="loading">Error: ${message}</div>`;
+        const t = this.getTranslatedLabel;
+        document.getElementById('trainDetailName').textContent = t('errors.errorLoadingTrain');
+        document.getElementById('stationRouteList').innerHTML = `<div class="loading">${t('errors.error')}: ${message}</div>`;
     }
 
 
@@ -4161,7 +4679,7 @@ class MobileApp {
         
         this.trainData.active.forEach(train => {
             const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
-            const trainName = train.TrainName || `Train ${train.TrainNumber}`;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${train.TrainNumber}`);
             const speed = train.Speed || 0;
 
             // Check if train is out of coverage
@@ -4171,7 +4689,9 @@ class MobileApp {
             const calculatedDelay = this.calculateDelayFromETA(train);
             const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
 
-            const location = train.NextStation || 'Location updating...';
+            // Get translated station name
+            const locationRaw = train.NextStation || 'Location updating...';
+            const location = this.getTranslatedStationName(locationRaw);
 
             let statusBadge = 'LIVE';
             let badgeColor = '#10B981';
@@ -4226,15 +4746,15 @@ class MobileApp {
                     <div class="train-info-grid">
                         <div class="info-row">
                             <span class="info-icon">📍</span>
-                            <span class="info-text">Next Station: ${location}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.nextStation')}: ${location}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
-                            <span class="info-text">Delay: ${delay > 0 ? this.formatDelayDisplay(delay) : 'On Time'}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.delay')}: ${delay > 0 ? this.formatDelayDisplay(delay, false) : this.getTranslatedLabel('train.onTime')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
@@ -4242,23 +4762,23 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">Speed: ${speed} km/h</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Train Date: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
-                            <span class="info-text">Updated: ${lastUpdated}</span>
+                            <span class="info-text">${this.getTranslatedLabel('train.updated')}: ${lastUpdated}</span>
                         </div>
                     </div>
                     <div class="train-status-row">
                         <div class="status-badge ${speed > 0 ? 'status-moving' : 'status-stopped'}">
-                            ${speed > 0 ? 'Moving' : 'Stopped'}
+                            ${speed > 0 ? this.getTranslatedLabel('train.moving') : this.getTranslatedLabel('train.stopped')}
                         </div>
                         <div class="delay-badge ${delay > 15 ? 'delay-high' : delay > 5 ? 'delay-medium' : 'delay-none'}">
-                            ${delay > 0 ? this.formatDelayDisplay(delay) : 'On Time'}
+                            ${delay > 0 ? this.formatDelayDisplay(delay) : this.getTranslatedLabel('train.onTime')}
                         </div>
                     </div>
                 </div>
@@ -4272,9 +4792,10 @@ class MobileApp {
         // Update results count
         const resultsCountEl = document.getElementById('liveTrackingResultsCount');
         if (resultsCountEl) {
+            const t = this.getTranslatedLabel;
             const totalTrains = this.trainData.active.length;
             const liveTrains = this.trainData.active.filter(t => t.Speed !== undefined).length;
-            resultsCountEl.textContent = `${totalTrains} trains found (${liveTrains} live)`;
+            resultsCountEl.textContent = `${totalTrains} ${t('schedule.trainsFound')} (${liveTrains} ${t('schedule.live')})`;
         }
     }
 
@@ -4291,6 +4812,9 @@ class MobileApp {
             const schedules = schedulesData.Response || schedulesData;
             const trains = trainsData.Response || trainsData;
             const stations = stationsData.Response || stationsData;
+            
+            // Store stations globally for translator to use
+            window.stationsData = stations;
             
             // Build schedule data in the format expected by the app
             this.scheduleData = schedules.map(schedule => {
@@ -4358,6 +4882,10 @@ class MobileApp {
             const trainsData = await API_CONFIG.fetchStaticData('trains', true);
             const stationsData = await API_CONFIG.fetchStaticData('stations', true);
             
+            // Extract actual data and store globally
+            const stations = stationsData.Response || stationsData;
+            window.stationsData = stations;
+            
             // Cache in localStorage for next launch
             localStorage.setItem('cachedSchedules', JSON.stringify(schedulesData));
             localStorage.setItem('cachedTrains', JSON.stringify(trainsData));
@@ -4384,7 +4912,9 @@ class MobileApp {
         // Show first 10 scheduled trains
         schedule.slice(0, 10).forEach(train => {
             const trainId = train.trainId || train.trainNumber;
-            const trainName = train.trainName || `Train ${train.trainNumber}`;
+            // Get train name with translation
+            const trainObj = { TrainName: train.trainName, TrainNameUR: train.trainNameUrdu };
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(trainObj) : (train.trainName || `Train ${train.trainNumber}`);
             
             // Get first and last station for route info
             const firstStation = train.stations && train.stations.length > 0 ? train.stations[0] : null;
@@ -4392,7 +4922,11 @@ class MobileApp {
             
             const departureTime = firstStation && firstStation.DepartureTime ? this.formatTimeAMPM(firstStation.DepartureTime) : '--:--';
             const arrivalTime = lastStation && lastStation.ArrivalTime ? this.formatTimeAMPM(lastStation.ArrivalTime) : '--:--';
-            const route = firstStation && lastStation ? `${firstStation.StationName} → ${lastStation.StationName}` : 'Route not available';
+            
+            // Get station names with translation
+            const firstStationName = firstStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(firstStation) : firstStation.StationName) : (this.getTranslatedLabel('train.origin') || 'Origin');
+            const lastStationName = lastStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(lastStation) : lastStation.StationName) : (this.getTranslatedLabel('train.destination') || 'Destination');
+            const route = firstStation && lastStation ? `${firstStationName} → ${lastStationName}` : (this.getTranslatedLabel('train.routeNotAvailable') || 'Route not available');
             
             // Check if this train has live data matching direction
             const liveTrainData = this.findLiveTrainDataForSchedule(train.trainNumber, train.trainName, firstStation?.StationName, lastStation?.StationName);
@@ -4404,7 +4938,7 @@ class MobileApp {
                         <div class="route-badge">${train.trainNumber}</div>
                         <div class="route-actions">
                             <button class="favorite-btn" data-train-number="${train.trainNumber}" onclick="event.stopPropagation(); mobileApp.toggleFavorite('${train.trainNumber}')">☆</button>
-                            <div class="schedule-status-badge ${isLive ? 'live' : 'scheduled'}">${isLive ? 'LIVE' : 'SCHEDULED'}</div>
+                            <div class="schedule-status-badge ${isLive ? 'live' : 'scheduled'}">${isLive ? (this.getTranslatedLabel('train.live') || 'LIVE') : (this.getTranslatedLabel('schedule.scheduled') || 'SCHEDULED')}</div>
                         </div>
                     </div>
                     <h4>${trainName}</h4>
@@ -4414,7 +4948,7 @@ class MobileApp {
                     </div>
                     <div class="route-info">
                         <div class="next-departure">
-                            <div>🚉 ${firstStation ? firstStation.StationName : 'Origin'}</div>
+                            <div>🚉 ${firstStationName}</div>
                             <div>🕒 ${departureTime}</div>
                         </div>
                     </div>
@@ -4463,98 +4997,96 @@ class MobileApp {
 
     updateLastUpdatedTimestamps() {
         const now = new Date();
+        const t = this.getTranslatedLabel;
 
         // Update home last updated
-        const homeEl = document.getElementById('homeLastUpdated');
-        if (homeEl) {
+        const homeTimeEl = document.getElementById('homeLastUpdatedTime');
+        if (homeTimeEl) {
             if (this.homeLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.homeLastUpdatedTime);
-                homeEl.textContent = `Last updated: ${elapsed}`;
+                homeTimeEl.textContent = elapsed;
             } else {
-                homeEl.textContent = 'Last updated: Loading...';
+                homeTimeEl.textContent = t('common.loading');
             }
         }
 
         // Update live tracking last updated
-        const liveTrackingEl = document.getElementById('liveTrackingLastUpdated');
-        if (liveTrackingEl) {
+        const liveTrackingTimeEl = document.getElementById('liveTrackingLastUpdatedTime');
+        if (liveTrackingTimeEl) {
             if (this.liveTrackingLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.liveTrackingLastUpdatedTime);
-                liveTrackingEl.textContent = `Last updated: ${elapsed}`;
+                liveTrackingTimeEl.textContent = elapsed;
             } else {
-                liveTrackingEl.textContent = 'Last updated: Loading...';
+                liveTrackingTimeEl.textContent = t('common.loading');
             }
         }
 
         // Update schedule last updated
-        const scheduleEl = document.getElementById('scheduleLastUpdated');
-        if (scheduleEl) {
+        const scheduleTimeEl = document.getElementById('scheduleLastUpdatedTime');
+        if (scheduleTimeEl) {
             if (this.scheduleLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.scheduleLastUpdatedTime);
-                scheduleEl.textContent = `Last updated: ${elapsed}`;
+                scheduleTimeEl.textContent = elapsed;
             } else {
-                scheduleEl.textContent = 'Last updated: Loading...';
+                scheduleTimeEl.textContent = t('common.loading');
             }
         }
 
         // Update train detail last updated
-        const trainDetailEl = document.getElementById('trainDetailLastUpdated');
-        if (trainDetailEl) {
+        const trainDetailTimeEl = document.getElementById('trainDetailLastUpdatedTime');
+        if (trainDetailTimeEl) {
             if (this.trainDetailLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.trainDetailLastUpdatedTime);
-                trainDetailEl.textContent = `Last updated: ${elapsed}`;
+                trainDetailTimeEl.textContent = elapsed;
             } else {
-                trainDetailEl.textContent = 'Last updated: Loading...';
+                trainDetailTimeEl.textContent = t('common.loading');
             }
         }
 
         // Favorites
-        const favoritesEl = document.getElementById('favoritesLastUpdated');
-        if (favoritesEl) {
+        const favoritesTimeEl = document.getElementById('favoritesLastUpdatedTime');
+        if (favoritesTimeEl) {
             if (this.favoritesLastUpdatedTime) {
                 const elapsed = this.getTimeElapsed(now, this.favoritesLastUpdatedTime);
-                favoritesEl.textContent = `Last updated: ${elapsed}`;
+                favoritesTimeEl.textContent = elapsed;
             } else {
-                favoritesEl.textContent = 'Last updated: Loading...';
+                favoritesTimeEl.textContent = t('common.loading');
             }
         }
 
-        // Stations
-        const stationEl = document.getElementById('stationLastUpdated');
-        if (stationEl) {
-            if (this.stationLastUpdatedTime) {
-                const elapsed = this.getTimeElapsed(now, this.stationLastUpdatedTime);
-                stationEl.textContent = `Last updated: ${elapsed}`;
-            } else {
-                stationEl.textContent = 'Last updated: Loading...';
-            }
+        // Map last updated
+        const mapTimeEl = document.getElementById('mapLastUpdatedTime');
+        if (mapTimeEl && this.mapLastUpdatedTime) {
+            const elapsed = this.getTimeElapsed(now, this.mapLastUpdatedTime);
+            mapTimeEl.textContent = elapsed;
         }
 
-        // Map
-        const mapEl = document.getElementById('mapLastUpdated');
-        if (mapEl) {
-            if (this.mapLastUpdatedTime) {
-                const elapsed = this.getTimeElapsed(now, this.mapLastUpdatedTime);
-                mapEl.textContent = `Last updated: ${elapsed}`;
-            } else {
-                mapEl.textContent = 'Last updated: Loading...';
-            }
+        // Station last updated
+        const stationTimeEl = document.getElementById('stationLastUpdatedTime');
+        if (stationTimeEl && this.stationLastUpdatedTime) {
+            const elapsed = this.getTimeElapsed(now, this.stationLastUpdatedTime);
+            stationTimeEl.textContent = elapsed;
         }
+
     }
 
     getTimeElapsed(now, lastUpdated) {
+        const t = this.getTranslatedLabel;
         const diffSeconds = Math.floor((now - lastUpdated) / 1000);
 
         if (diffSeconds < 5) {
-            return 'Just now';
+            return t('common.justNow');
         } else if (diffSeconds < 60) {
-            return `${diffSeconds} seconds ago`;
+            // For seconds, always use plural form (no singular form in translations)
+            return `${diffSeconds} ${t('time.seconds')} ${t('time.ago')}`;
         } else if (diffSeconds < 3600) {
             const minutes = Math.floor(diffSeconds / 60);
-            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            return `${minutes} ${minutes === 1 ? t('time.minute') : t('time.minutes')} ${t('time.ago')}`;
         } else {
             const hours = Math.floor(diffSeconds / 3600);
-            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            // For hours, use singular form if 1 hour, otherwise plural
+            const hoursLabel = hours === 1 ? (t('time.hour') || t('time.hours')) : t('time.hours');
+            return `${hours} ${hoursLabel} ${t('time.ago')}`;
         }
     }
 
@@ -4571,11 +5103,13 @@ class MobileApp {
             if (data.success && data.data) {
                 this.populateSearchResults(data.data);
             } else {
-                this.showSearchError('No trains found');
+                const t = this.getTranslatedLabel;
+                this.showSearchError(t('train.trainNotFound'));
             }
         } catch (error) {
             console.error('❌ Search error:', error);
-            this.showSearchError('Search failed');
+            const t = this.getTranslatedLabel;
+            this.showSearchError(t('errors.networkError'));
         }
     }
 
@@ -4583,8 +5117,9 @@ class MobileApp {
         const container = document.getElementById('trainSearchResults');
         if (!container) return;
 
+        const t = this.getTranslatedLabel;
         if (trains.length === 0) {
-            container.innerHTML = '<div class="empty-state">No trains found</div>';
+            container.innerHTML = `<div class="empty-state">${t('train.trainNotFound')}</div>`;
             return;
         }
 
@@ -4624,7 +5159,8 @@ class MobileApp {
             // This would connect to a stations API endpoint
             const container = document.getElementById('stationResults');
             if (container) {
-                container.innerHTML = `<div class="loading">Searching stations for "${query}"...</div>`;
+                const t = this.getTranslatedLabel;
+                container.innerHTML = `<div class="loading">${t('common.search')} ${t('stations.stations')} "${query}"...</div>`;
             }
         } catch (error) {
             console.error('❌ Station search error:', error);
@@ -4650,11 +5186,12 @@ class MobileApp {
         }
 
         // Ensure we have train data loaded
+        const t = this.getTranslatedLabel;
         if (!this.trainData.active || this.trainData.active.length === 0) {
             console.log('⚠️ No train data loaded yet, loading now...');
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>Loading train data...</p>
+                    <p>${t('common.loading')} ${t('train.train')} ${t('common.loading')}...</p>
                 </div>
             `;
             // Load train data and schedule data, then reload favorites
@@ -4671,9 +5208,9 @@ class MobileApp {
             console.log('📭 No favorite trains marked');
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>⭐ No favorite trains yet</p>
-                    <p>Tap the star on any train to add it to favorites</p>
-                    <p>Available trains: ${this.trainData.active?.length || 0}</p>
+                    <p>⭐ ${t('favorites.noFavorites')}</p>
+                    <p>${t('favorites.addToFavorites')}</p>
+                    <p>${t('schedule.availableTrains')}: ${this.trainData.active?.length || 0}</p>
                 </div>
             `;
             return;
@@ -4748,16 +5285,43 @@ class MobileApp {
                 return; // Skip only if we have no data at all
             }
             
-            const trainName = liveTrainData?.TrainName || 
-                             liveTrainData?.trainName || 
-                             scheduleTrainData?.trainName ||
-                             scheduleTrainData?.TrainName ||
-                             `Train ${trainNumber}`;
+            // Get train name with translation
+            const trainObj = liveTrainData || scheduleTrainData || {};
+            trainObj.TrainName = liveTrainData?.TrainName || 
+                                 liveTrainData?.trainName || 
+                                 scheduleTrainData?.trainName ||
+                                 scheduleTrainData?.TrainName ||
+                                 `Train ${trainNumber}`;
+            // Include TrainNameUR if available
+            trainObj.TrainNameUR = liveTrainData?.TrainNameUR || 
+                                  scheduleTrainData?.trainNameUrdu ||
+                                  trainObj.TrainNameUR;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(trainObj) : trainObj.TrainName;
             
             const isLive = !!liveTrainData;
-            const currentStation = liveTrainData?.CurrentStation || 
+            
+            // Get station names with translation
+            const getStationNameFromString = (stationNameString) => {
+                if (!stationNameString) return null;
+                if (window.stationsData) {
+                    const station = window.stationsData.find(s => 
+                        s.StationName && (
+                            s.StationName.toLowerCase() === stationNameString.toLowerCase() ||
+                            s.StationName.toLowerCase().includes(stationNameString.toLowerCase()) ||
+                            stationNameString.toLowerCase().includes(s.StationName.toLowerCase())
+                        )
+                    );
+                    if (station && typeof translator !== 'undefined' && translator) {
+                        return translator.getStationName(station);
+                    }
+                }
+                return stationNameString;
+            };
+            
+            const currentStationRaw = liveTrainData?.CurrentStation || 
                                   liveTrainData?.NextStation || 
-                                  (isLive ? 'En route' : 'Schedule only');
+                                  (isLive ? (this.getTranslatedLabel('train.enRoute') || 'En route') : (this.getTranslatedLabel('schedule.scheduleOnly') || 'Schedule only'));
+            const currentStation = getStationNameFromString(currentStationRaw) || currentStationRaw;
             
             // Get train date from InnerKey
             const trainDate = liveTrainData ? this.getTrainDate(liveTrainData.LastUpdated, liveTrainData.InnerKey, liveTrainData.TrainNumber) : '';
@@ -4770,13 +5334,15 @@ class MobileApp {
             }
 
             // Extra details
-            const eta = isLive ? (this.calculateTrainETA(liveTrainData) || 'ETA N/A') : '';
-            const scheduledNext = isLive ? (this.getScheduledTimeForNextStation(liveTrainData) || 'Schedule N/A') : '';
-            const lastUpd = isLive ? (this.formatLastUpdated(liveTrainData.LastUpdated || liveTrainData.__last_updated || liveTrainData.last_updated) || 'Unknown') : '';
-            const nextStation = isLive ? (liveTrainData.NextStation || 'Next station N/A') : '';
-
+            const t = this.getTranslatedLabel;
+            const eta = isLive ? (this.calculateTrainETA(liveTrainData) || t('train.etaN/A')) : '';
+            const scheduledNext = isLive ? (this.getScheduledTimeForNextStation(liveTrainData) || t('schedule.scheduleN/A')) : '';
+            const lastUpd = isLive ? (this.formatLastUpdated(liveTrainData.LastUpdated || liveTrainData.__last_updated || liveTrainData.last_updated) || t('train.trainNotFound')) : '';
+            // Get next station with translation
+            const nextStationRaw = isLive ? (liveTrainData.NextStation || (this.getTranslatedLabel('train.nextStationN/A') || 'Next station N/A')) : '';
+            const nextStation = nextStationRaw && getStationNameFromString(nextStationRaw) ? getStationNameFromString(nextStationRaw) : nextStationRaw;
             let statusClass = 'on-time';
-            let statusText = isLive ? 'On Time' : 'Scheduled';
+            let statusText = isLive ? t('train.onTime') : t('schedule.scheduled');
 
             if (isLive && delay > 0) {
                 statusClass = delay > 15 ? 'delayed' : 'slightly-delayed';
@@ -4785,7 +5351,7 @@ class MobileApp {
             
             console.log(`⭐ Showing favorite: ${trainName} (${isLive ? 'LIVE' : 'SCHEDULED'}) - Date: ${trainDate}`);
             
-            const delayText = delay > 0 ? this.formatDelayDisplay(delay) : 'On Time';
+            const delayText = delay > 0 ? this.formatDelayDisplay(delay) : t('train.onTime');
             const scheduledAMPM = scheduledNext && scheduledNext !== 'Schedule N/A' ? this.formatTimeAMPM(scheduledNext.replace('📅 ', '')) : scheduledNext;
 
             html += `
@@ -4819,11 +5385,12 @@ class MobileApp {
 
         if (html === '') {
             console.log('⚠️ No HTML generated for favorite trains');
+            const t = this.getTranslatedLabel;
             html = `
                 <div class="empty-state">
-                    <p>💤 No favorite trains are live today</p>
-                    <p>Your favorite trains will appear here when they're running</p>
-                    <p>Favorites: ${this.favoriteTrains.join(', ')}</p>
+                    <p>💤 ${t('favorites.noFavorites')}</p>
+                    <p>${t('favorites.addToFavorites')}</p>
+                    <p>${t('favorites.favorites')}: ${this.favoriteTrains.join(', ')}</p>
                 </div>
             `;
         }
@@ -4974,7 +5541,8 @@ class MobileApp {
                 });
             } else {
                 // Fallback if no data has been fetched yet
-                lastUpdateEl.textContent = 'Loading...';
+                const t = this.getTranslatedLabel;
+                lastUpdateEl.textContent = t('common.loading');
             }
         }
     }
@@ -5092,13 +5660,20 @@ class MobileApp {
             
             const departureTime = firstStation && firstStation.DepartureTime ? this.formatTimeAMPM(firstStation.DepartureTime) : '--:--';
             const arrivalTime = lastStation && lastStation.ArrivalTime ? this.formatTimeAMPM(lastStation.ArrivalTime) : '--:--';
-            const route = firstStation && lastStation ? `${firstStation.StationName} → ${lastStation.StationName}` : 'Route not available';
+            
+            // Get translated station names for route
+            const firstStationName = firstStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(firstStation) : firstStation.StationName) : '';
+            const lastStationName = lastStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(lastStation) : lastStation.StationName) : '';
+            const route = firstStation && lastStation ? `${firstStationName} → ${lastStationName}` : (this.getTranslatedLabel('train.routeNotAvailable') || 'Route not available');
             
             // Find corresponding live train data matching direction
             const liveTrainData = this.findLiveTrainDataForSchedule(train.trainNumber, train.trainName, firstStation?.StationName, lastStation?.StationName);
             const isLive = !!liveTrainData;
             const trainId = train.trainId || train.trainNumber;
-            const trainName = train.trainName || `Train ${train.trainNumber}`;
+            // Get train name with translation
+            const trainNameUR = train.trainNameUrdu || train.TrainNameUR || null;
+            const trainObj = { TrainName: train.trainName || train.TrainName, TrainNameUR: trainNameUR };
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(trainObj) : (train.trainName || train.TrainName || `Train ${train.trainNumber}`);
             
             // Get live data if available
             const speed = liveTrainData?.Speed || 0;
@@ -5110,7 +5685,11 @@ class MobileApp {
                 delay = calculatedDelay !== null ? calculatedDelay : (liveTrainData.LateBy || 0);
             }
 
-            const currentStation = liveTrainData?.NextStation || firstStation?.StationName || 'Starting Station';
+            // Translate current station name
+            const currentStationRaw = liveTrainData?.NextStation || firstStation?.StationName || 'Starting Station';
+            const currentStation = (typeof translator !== 'undefined' && translator && currentStationRaw) 
+                ? translator.getStationNameFromString(currentStationRaw) 
+                : currentStationRaw;
             const lastUpdated = liveTrainData ? this.formatLastUpdated(liveTrainData.LastUpdated) : 'Scheduled';
             const trainDate = liveTrainData ? this.getTrainDate(liveTrainData.LastUpdated, liveTrainData.InnerKey, liveTrainData.TrainNumber) : new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'});
             
@@ -5124,8 +5703,8 @@ class MobileApp {
                             <button class="favorite-btn ${this.favoriteTrains.includes(train.trainNumber) ? 'favorited' : ''}" onclick="event.stopPropagation(); mobileApp.toggleFavorite('${train.trainNumber}')" title="${this.favoriteTrains.includes(train.trainNumber) ? 'Remove from favorites' : 'Add to favorites'}">
                                 <span>${this.favoriteTrains.includes(train.trainNumber) ? '⭐' : '☆'}</span>
                             </button>
-                            ${isLive ? `<button class="track-btn" onclick="event.stopPropagation(); mobileApp.openTrainDetails('${liveTrainData.InnerKey || liveTrainData.TrainId}')" title="Track Live">
-                                📍 Track
+                            ${isLive ? `<button class="track-btn" onclick="event.stopPropagation(); mobileApp.openTrainDetails('${liveTrainData.InnerKey || liveTrainData.TrainId}')" title="${this.getTranslatedLabel('train.trackTrain')}">
+                                📍 ${this.getTranslatedLabel('train.trackTrain')}
                             </button>` : ''}
                         </div>
                     </div>
@@ -5137,23 +5716,23 @@ class MobileApp {
                     
                     <!-- Schedule Information Section -->
                     <div class="info-section">
-                        <div class="section-header">📅 Schedule Information</div>
+                        <div class="section-header">📅 ${this.getTranslatedLabel('schedule.scheduleInformation')}</div>
                         <div class="train-info-grid">
                             <div class="info-row">
                                 <span class="info-icon">🚉</span>
-                                <span class="info-text">Origin: ${firstStation?.StationName || 'Unknown'}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.origin')}: ${firstStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(firstStation) : firstStation.StationName) : this.getTranslatedLabel('train.trainNotFound')}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">🕒</span>
-                                <span class="info-text">Departure: ${departureTime}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.departure')}: ${departureTime}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">🏁</span>
-                                <span class="info-text">Destination: ${lastStation?.StationName || 'Unknown'}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.destination')}: ${lastStation ? (typeof translator !== 'undefined' && translator ? translator.getStationName(lastStation) : lastStation.StationName) : this.getTranslatedLabel('train.trainNotFound')}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">⏰</span>
-                                <span class="info-text">Arrival: ${arrivalTime}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.arrival')}: ${arrivalTime}</span>
                             </div>
                         </div>
                     </div>
@@ -5161,34 +5740,34 @@ class MobileApp {
                     ${isLive ? `
                     <!-- Live Information Section -->
                     <div class="info-section live-section">
-                        <div class="section-header">🔴 Live Information (${trainDate})</div>
+                        <div class="section-header">🔴 ${this.getTranslatedLabel('schedule.liveInformation')} (${trainDate})</div>
                         <div class="train-info-grid">
                             <div class="info-row">
                                 <span class="info-icon">📍</span>
-                                <span class="info-text">Next Station: ${currentStation}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.nextStation')}: ${currentStation}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">⏱️</span>
-                                <span class="info-text">Delay: ${delay > 0 ? this.formatDelayDisplay(delay) : 'On Time'}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.delay')}: ${delay > 0 ? this.formatDelayDisplay(delay, false) : this.getTranslatedLabel('train.onTime')}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">⚡</span>
-                                <span class="info-text">Speed: ${speed} km/h</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.speed')}: ${speed} ${this.getTranslatedLabel('train.kmh')}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-icon">🔄</span>
-                                <span class="info-text">Updated: ${lastUpdated}</span>
+                                <span class="info-text">${this.getTranslatedLabel('train.updated')}: ${lastUpdated}</span>
                             </div>
                         </div>
                     </div>` : ''}
                     
                     <div class="train-status-row">
                         <div class="status-badge ${isLive ? (speed > 0 ? 'status-moving' : 'status-stopped') : 'status-scheduled'}">
-                            ${isLive ? (speed > 0 ? 'Moving' : 'Stopped') : 'Scheduled'}
+                            ${isLive ? (speed > 0 ? this.getTranslatedLabel('train.moving') : this.getTranslatedLabel('train.stopped')) : this.getTranslatedLabel('schedule.schedule')}
                         </div>
                         ${isLive ? `<div class="live-indicator">
                             <span class="live-dot"></span>
-                            LIVE
+                            ${this.getTranslatedLabel('train.live')}
                         </div>` : ''}
                     </div>
                 </div>
@@ -5454,8 +6033,13 @@ class MobileApp {
     }
 
     populateScheduleDetails(trainData) {
-        // Update train basic info
-        document.getElementById('scheduleTrainName').textContent = trainData.trainName || trainData.TrainName || 'Unknown Train';
+        const t = this.getTranslatedLabel;
+        // Update train basic info - use translated train name
+        const trainNameUR = trainData.TrainNameUR || trainData.trainNameUrdu || null;
+        const trainName = (typeof translator !== 'undefined' && translator) 
+            ? translator.getTrainName({ TrainName: trainData.TrainName || trainData.trainName, TrainNameUR: trainNameUR }) 
+            : (trainData.trainName || trainData.TrainName || t('train.trainNotFound'));
+        document.getElementById('scheduleTrainName').textContent = trainName;
         document.getElementById('scheduleTrainNumber').textContent = trainData.trainNumber || trainData.TrainNumber || '--';
 
         // Get first and last stations for route overview
@@ -5464,11 +6048,18 @@ class MobileApp {
             const firstStation = stations[0];
             const lastStation = stations[stations.length - 1];
 
-            document.getElementById('scheduleOrigin').textContent = firstStation.StationName || 'Origin';
+            // Use translated station names
+            const originName = (typeof translator !== 'undefined' && translator) 
+                ? translator.getStationName(firstStation) 
+                : (firstStation.StationName || t('train.origin'));
+            document.getElementById('scheduleOrigin').textContent = originName;
             const depTime = firstStation.DepartureTime || firstStation.ArrivalTime || '--:--';
             document.getElementById('scheduleDepartureTime').textContent = depTime !== '--:--' ? this.formatTimeAMPM(depTime) : depTime;
             
-            document.getElementById('scheduleDestination').textContent = lastStation.StationName || 'Destination';
+            const destName = (typeof translator !== 'undefined' && translator) 
+                ? translator.getStationName(lastStation) 
+                : (lastStation.StationName || t('train.destination'));
+            document.getElementById('scheduleDestination').textContent = destName;
             const arrTime = lastStation.ArrivalTime || lastStation.DepartureTime || '--:--';
             document.getElementById('scheduleArrivalTime').textContent = arrTime !== '--:--' ? this.formatTimeAMPM(arrTime) : arrTime;
 
@@ -5499,6 +6090,7 @@ class MobileApp {
         const container = document.getElementById('scheduleStationList');
         if (!container) return;
 
+        const t = this.getTranslatedLabel;
         let html = '';
         
         stations.forEach((station, index) => {
@@ -5520,24 +6112,29 @@ class MobileApp {
             const departureTime = station.DepartureTime ? this.formatTimeAMPM(station.DepartureTime) : '--:--';
             const platform = station.Platform;
 
+            // Use translated station name
+            const stationName = (typeof translator !== 'undefined' && translator) 
+                ? translator.getStationName(station) 
+                : (station.StationName || t('stations.station'));
+
             html += `
                 <div class="route-station-item ${statusClass}">
                     <div class="station-status-dot">${icon}</div>
                     <div class="station-main-info">
-                        <div class="station-name">${station.StationName || 'Station'}</div>
+                        <div class="station-name">${stationName}</div>
                         <div class="station-details-row">
                             ${isFirst ?
-                                (departureTime !== '--:--' ? `<span class="station-time">Dep: ${departureTime}</span>` : '') :
+                                (departureTime !== '--:--' ? `<span class="station-time">${t('train.departure')}: ${departureTime}</span>` : '') :
                                 isLast ?
-                                    (arrivalTime !== '--:--' ? `<span class="station-time">Arr: ${arrivalTime}</span>` : '') :
-                                    `${arrivalTime !== '--:--' ? `<span class="station-time">Arr: ${arrivalTime}</span>` : ''}
-                                     ${departureTime !== '--:--' ? `<span class="station-time">Dep: ${departureTime}</span>` : ''}`
+                                    (arrivalTime !== '--:--' ? `<span class="station-time">${t('train.arrival')}: ${arrivalTime}</span>` : '') :
+                                    `${arrivalTime !== '--:--' ? `<span class="station-time">${t('train.arrival')}: ${arrivalTime}</span>` : ''}
+                                     ${departureTime !== '--:--' ? `<span class="station-time">${t('train.departure')}: ${departureTime}</span>` : ''}`
                             }
                         </div>
                     </div>
                     <div class="station-meta-info">
                         ${station.DistanceFromOrigin ? `<div class="station-distance">${parseFloat(station.DistanceFromOrigin).toFixed(2)} km</div>` : ''}
-                        ${platform ? `<div class="station-platform">Platform ${platform}</div>` : ''}
+                        ${platform ? `<div class="station-platform">${t('stations.platform')} ${platform}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -5589,8 +6186,9 @@ class MobileApp {
     }
 
     showScheduleDetailsError(message) {
-        document.getElementById('scheduleTrainName').textContent = 'Error Loading Schedule';
-        document.getElementById('scheduleStationList').innerHTML = `<div class="loading">Error: ${message}</div>`;
+        const t = this.getTranslatedLabel;
+        document.getElementById('scheduleTrainName').textContent = t('errors.errorLoadingTrain');
+        document.getElementById('scheduleStationList').innerHTML = `<div class="loading">${t('errors.error')}: ${message}</div>`;
     }
 
     // Dark mode functionality
@@ -6277,7 +6875,8 @@ class MobileApp {
 
         if (!liveTrains || liveTrains.length === 0) {
             console.log('❌ No live trains data available');
-            container.innerHTML = '<div class="no-updates">No live trains available</div>';
+            const t = this.getTranslatedLabel;
+            container.innerHTML = `<div class="no-updates">${t('errors.noLiveTrainsAvailable')}</div>`;
             return;
         }
 
@@ -6299,8 +6898,9 @@ class MobileApp {
         console.log(`📊 Filtered to ${liveTrains.length} passenger trains`);
 
         if (liveTrains.length === 0) {
+            const t = this.getTranslatedLabel;
             console.log('❌ No passenger trains available');
-            container.innerHTML = '<div class="no-updates">No passenger trains available</div>';
+            container.innerHTML = `<div class="no-updates">${t('errors.noLiveTrainsAvailable')}</div>`;
             return;
         }
 
@@ -6386,22 +6986,45 @@ class MobileApp {
         console.log('🎯 Relevant trains found:', relevantTrains.length);
 
         if (relevantTrains.length === 0) {
-            container.innerHTML = '<div class="no-updates">No relevant trains near your location</div>';
+            const t = this.getTranslatedLabel;
+            container.innerHTML = `<div class="no-updates">${t('map.noTrainsOnMap')}</div>`;
             return;
         }
 
         // Show up to 5 most relevant trains
         const combinedTrains = relevantTrains.slice(0, 5);
 
+        const t = this.getTranslatedLabel;
         let html = '';
         combinedTrains.forEach(train => {
-            const trainName = train.TrainName || train.trainName || `Train ${train.TrainNumber}`;
+            // Get train name with translation
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || train.trainName || `Train ${train.TrainNumber}`);
             const trainNumber = String(train.TrainNumber || train.trainNumber);
+            
+            // Get station names with translation
+            const getStationNameFromString = (stationNameString) => {
+                if (!stationNameString) return null;
+                if (window.stationsData) {
+                    const station = window.stationsData.find(s => 
+                        s.StationName && (
+                            s.StationName.toLowerCase() === stationNameString.toLowerCase() ||
+                            s.StationName.toLowerCase().includes(stationNameString.toLowerCase()) ||
+                            stationNameString.toLowerCase().includes(s.StationName.toLowerCase())
+                        )
+                    );
+                    if (station && typeof translator !== 'undefined' && translator) {
+                        return translator.getStationName(station);
+                    }
+                }
+                return stationNameString;
+            };
+            
             // Try multiple fields for current station
-            const currentStation = train.CurrentStation || train.currentStation ||
+            const currentStationRaw = train.CurrentStation || train.currentStation ||
                                    train.NextStation || train.nextStation ||
                                    train.LastStation || train.lastStation ||
-                                   'En route';
+                                   (this.getTranslatedLabel('train.enRoute') || 'En route');
+            const currentStation = getStationNameFromString(currentStationRaw) || currentStationRaw;
 
             // Calculate accurate delay from ETA
             const calculatedDelay = this.calculateDelayFromETA(train);
@@ -6414,28 +7037,29 @@ class MobileApp {
 
             // Get meaningful train info - just show next station
             const currentLocation = currentStation;
-            const nextStation = train.NextStation || train.nextStation || currentLocation;
-            const routeInfo = `Next station - ${nextStation}`;
+            const nextStationRaw = train.NextStation || train.nextStation || currentLocation;
+            const nextStation = getStationNameFromString(nextStationRaw) || nextStationRaw;
+            const routeInfo = `${t('train.nextStation')} - ${nextStation}`;
             
             // Determine status class and message
             let statusClass = 'on-time';
-            let statusMessage = 'On time';
-            let actionText = 'Running on schedule';
+            let statusMessage = t('train.onTime');
+            let actionText = t('train.enRoute');
             
             if (delay > 0) {
                 statusClass = 'delayed';
-                statusMessage = this.formatDelayDisplay(delay); // Already includes 'Late'
-                actionText = `Running behind schedule`;
+                statusMessage = this.formatDelayDisplay(delay, false); // Already includes 'Late'
+                actionText = t('train.late');
             }
 
-            // Create update message
-            let updateMessage = `At ${currentStation}`;
+            // Create update message with translations
+            let updateMessage = `${t('common.at') || 'At'} ${currentStation}`;
             if (train.Status && train.Status.toLowerCase().includes('departed')) {
-                actionText = `Departed from ${currentLocation}`;
+                actionText = `${t('train.departed') || 'Departed'} ${t('common.from') || 'from'} ${currentLocation}`;
             } else if (train.Status && train.Status.toLowerCase().includes('arrived')) {
-                actionText = `Arrived at ${currentLocation}`;
+                actionText = `${t('train.arrived') || 'Arrived'} ${t('common.at') || 'at'} ${currentLocation}`;
             } else if (train.Speed > 5 && nextStation) {
-                actionText = `En route to ${nextStation}`;
+                actionText = `${t('train.enRoute') || 'En route'} ${t('common.to') || 'to'} ${nextStation}`;
             }
 
             const isFavorite = this.isFavorite(trainNumber);
@@ -6469,7 +7093,7 @@ class MobileApp {
                         </div>
                         <div class="update-details">${updateTime === 'Unknown' || updateTime === 'No recent update' ? routeInfo : actionText}</div>
                         <div class="update-meta">
-                            <div class="update-time">${updateTime === 'Unknown' || updateTime === 'No recent update' ? `Last updated: ${this.formatLastUpdated(train.LastUpdated)}` : updateTime}</div>
+                            <div class="update-time">${updateTime === 'Unknown' || updateTime === 'No recent update' ? `${t('common.lastUpdated')}: ${this.formatLastUpdated(train.LastUpdated)}` : updateTime}</div>
                             <div class="update-eta">${eta}</div>
                         </div>
                         ${delay > 0 ? `<div class="update-delay">${statusMessage}</div>` : ''}
@@ -6479,7 +7103,7 @@ class MobileApp {
         });
 
         if (html === '') {
-            html = '<div class="no-updates">No recent updates available</div>';
+            html = `<div class="no-updates">${t('errors.noDataAvailable')}</div>`;
         }
 
         container.innerHTML = html;
@@ -6698,6 +7322,7 @@ class MobileApp {
         const container = document.getElementById('liveUpdatesFeed');
         if (!container) return;
         
+        const t = this.getTranslatedLabel;
         console.log('🔄 Loading sample live updates as fallback');
         
         // Show sample updates
@@ -6706,24 +7331,24 @@ class MobileApp {
                 <div class="update-status on-time"></div>
                 <div class="update-content">
                     <div class="update-title">Karachi Express</div>
-                    <div class="update-details">Running on schedule</div>
-                    <div class="update-time">2 minutes ago</div>
+                    <div class="update-details">${t('train.onTime')}</div>
+                    <div class="update-time">2 ${t('time.minutes')} ${t('time.ago')}</div>
                 </div>
             </div>
             <div class="update-item">
                 <div class="update-status delayed"></div>
                 <div class="update-content">
                     <div class="update-title">Green Line Express</div>
-                    <div class="update-details">Running 15 minutes late</div>
-                    <div class="update-time">5 minutes ago</div>
+                    <div class="update-details">${t('train.late')}</div>
+                    <div class="update-time">5 ${t('time.minutes')} ${t('time.ago')}</div>
                 </div>
             </div>
             <div class="update-item">
                 <div class="update-status arrived"></div>
                 <div class="update-content">
                     <div class="update-title">Business Express</div>
-                    <div class="update-details">Arrived at destination</div>
-                    <div class="update-time">8 minutes ago</div>
+                    <div class="update-details">${t('train.arrived')} ${t('common.to')} ${t('train.destination')}</div>
+                    <div class="update-time">8 ${t('time.minutes')} ${t('time.ago')}</div>
                 </div>
             </div>
         `;
@@ -6737,23 +7362,33 @@ class MobileApp {
             const updateTime = new Date(timestamp);
             
             // Check if the date is invalid (epoch time or null)
+            const t = this.getTranslatedLabel;
+            
             if (isNaN(updateTime.getTime()) || updateTime.getTime() === 0 || updateTime.getFullYear() === 1970) {
-                return 'No recent update';
+                return t('errors.noRecentUpdate') || 'No recent update';
             }
             
             const diffMs = now - updateTime;
             const diffMins = Math.floor(diffMs / (1000 * 60));
             
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            if (diffMins < 1) return t('common.justNow') || 'Just now';
+            if (diffMins < 60) {
+                const minLabel = diffMins > 1 ? t('time.minutes') : t('time.minute');
+                return `${diffMins} ${minLabel} ${t('time.ago')}`;
+            }
             
             const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffHours < 24) {
+                const hourLabel = diffHours > 1 ? t('time.hours') : t('time.hours');
+                return `${diffHours} ${hourLabel} ${t('time.ago')}`;
+            }
             
             const diffDays = Math.floor(diffHours / 24);
-            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            const dayLabel = diffDays > 1 ? t('time.days') : t('time.days');
+            return `${diffDays} ${dayLabel} ${t('time.ago')}`;
         } catch (error) {
-            return 'No recent update';
+            const t = this.getTranslatedLabel;
+            return t('errors.noRecentUpdate') || 'No recent update';
         }
     }
 
@@ -7481,13 +8116,18 @@ class MobileApp {
             totalUpTrains += upcomingTrains.up.length;
             totalDownTrains += upcomingTrains.down.length;
             
+            // Translate station name
+            const translatedStationName = (typeof translator !== 'undefined' && translator && station.name)
+                ? translator.getStationNameFromString(station.name)
+                : station.name;
+            
             html += `
                 <div class="station-card-expandable">
                     <div class="station-header" onclick="mobileApp.toggleStationTrains('${station.name.replace(/'/g, "\\'")}')">
                     <div class="station-info">
-                            <div class="station-name">🚉 ${station.name}</div>
+                            <div class="station-name">🚉 ${translatedStationName}</div>
                     <div class="station-meta">
-                                ${upcomingTrains.up.length} UP • ${upcomingTrains.down.length} DN
+                                ${upcomingTrains.up.length} ${this.getTranslatedLabel('stations.upTrains')} • ${upcomingTrains.down.length} ${this.getTranslatedLabel('stations.downTrains')}
                             </div>
                         </div>
                         <div class="expand-icon" id="expand-${this.sanitizeId(station.name)}">▼</div>
@@ -7568,6 +8208,7 @@ class MobileApp {
             const trainInfo = {
                 trainNumber: liveTrain.TrainNumber,
                 trainName: liveTrain.TrainName,
+                trainNameUR: liveTrain.TrainNameUR || null, // Include TrainNameUR for translation
                 innerKey: liveTrain.InnerKey,
                 nextStation: liveTrain.NextStation,
                 stationName: stationInRoute.StationName, // Actual station name from route
@@ -7622,15 +8263,16 @@ class MobileApp {
             .trim();
     }
     generateStationTrainsHTML(upcomingTrains) {
+        const t = this.getTranslatedLabel;
         let html = '';
         
         if (upcomingTrains.up.length === 0 && upcomingTrains.down.length === 0) {
-            return '<div class="empty-state-small">No upcoming trains at this station</div>';
+            return `<div class="empty-state-small">${t('stations.noUpcomingTrains')}</div>`;
         }
         
         // UP Trains Section
         if (upcomingTrains.up.length > 0) {
-            html += '<div class="direction-section"><div class="direction-header">⬆️ UP Trains</div>';
+            html += `<div class="direction-section"><div class="direction-header">⬆️ ${t('stations.upTrains')}</div>`;
             upcomingTrains.up.forEach(train => {
                 html += this.generateStationTrainCard(train);
             });
@@ -7639,7 +8281,7 @@ class MobileApp {
         
         // DOWN Trains Section
         if (upcomingTrains.down.length > 0) {
-            html += '<div class="direction-section"><div class="direction-header">⬇️ DOWN Trains</div>';
+            html += `<div class="direction-section"><div class="direction-header">⬇️ ${t('stations.downTrains')}</div>`;
             upcomingTrains.down.forEach(train => {
                 html += this.generateStationTrainCard(train);
             });
@@ -7650,54 +8292,63 @@ class MobileApp {
     }
 
     generateStationTrainCard(train) {
+        const t = this.getTranslatedLabel;
         const delayClass = train.delay > 15 ? 'delayed' : (train.delay > 0 ? 'slightly-delayed' : 'on-time');
-        const delayText = train.delay > 0 ? `${this.formatDelayDisplay(train.delay)}` : 'On Time';
+        const delayText = train.delay > 0 ? this.formatDelayDisplay(train.delay, false) : t('train.onTime');
         const statusClass = train.speed > 0 ? 'status-moving' : 'status-stopped';
         const headerClass = train.delay > 0 ? 'header-delayed' : 'header-ontime';
+        
+        // Translate train name and station name (synchronous lookup)
+        const translatedTrainName = (typeof translator !== 'undefined' && translator && train.trainName) 
+            ? translator.getTrainName({ TrainName: train.trainName, TrainNameUR: train.trainNameUR || null })
+            : train.trainName;
+        const translatedStationName = (typeof translator !== 'undefined' && translator && train.stationName)
+            ? translator.getStationNameFromString(train.stationName)
+            : train.stationName;
         
         return `
             <div class="train-card station-train-item" onclick="mobileApp.openTrainDetails('${train.innerKey}')">
                 <div class="train-card-header ${headerClass}">
                     <div class="train-header-content">
-                        <div class="train-name">${train.trainName}</div>
+                        <div class="train-name">${translatedTrainName}</div>
                     </div>
                 </div>
                 <div class="train-route">
                     <div class="train-number">#${train.trainNumber}</div>
                     <div class="train-route-arrow">→</div>
-                    <div class="next-station">${train.stationName}</div>
+                    <div class="next-station">${translatedStationName}</div>
                 </div>
                 <div class="train-info-grid">
                     ${train.isNextStation ? `
                     <div class="info-row">
                         <span class="info-icon">🔴</span>
-                        <span class="info-text">LIVE - Arriving Next</span>
+                        <span class="info-text">${t('train.live')} - ${t('train.arriving')}</span>
                     </div>
                     ` : ''}
                     <div class="info-row">
                         <span class="info-icon">🕐</span>
-                        <span class="info-text">ETA: ${train.eta || '--:--'}</span>
+                        <span class="info-text">${t('train.eta')}: ${train.eta || '--:--'}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">📍</span>
-                        <span class="info-text">Arriving at: ${train.stationName}</span>
+                        <span class="info-text">${t('schedule.departureTime')}: ${translatedStationName}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">⏱️</span>
-                        <span class="info-text">Delay: ${delayText}</span>
+                        <span class="info-text">${t('train.delay')}: ${delayText}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">⚡</span>
-                        <span class="info-text">Speed: ${train.speed} km/h</span>
+                        <span class="info-text">${t('train.speed')}: ${train.speed} ${t('train.kmh')}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">📅</span>
-                        <span class="info-text">Train Date: ${train.trainDate}</span>
+                        <span class="info-text">${t('train.trainNumber')} ${t('time.date')}: ${train.trainDate}</span>
                     </div>
                 </div>
                 <div class="train-status-row">
                     <div class="status-badge ${statusClass}">
-                        ${train.speed > 0 ? 'Moving' : 'Stopped'}
+                        ${train.speed > 0 ? t('train.moving') : t('train.stopped')}
                     </div>
                 </div>
             </div>
@@ -7986,11 +8637,16 @@ class MobileApp {
         }
 
         let html = '';
+        const t = this.getTranslatedLabel;
         this.trainData.active.forEach(train => {
             const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
-            const trainName = train.TrainName || `Train ${trainNumber}`;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${trainNumber}`);
             const speed = train.Speed || 0;
-            const nextStation = train.NextStation || 'Unknown';
+            const nextStationRaw = train.NextStation || 'Unknown';
+            
+            // Translate station name
+            const nextStation = this.getTranslatedStationName(nextStationRaw);
+            
             const eta = this.getTrainETA(train) || '--:--';
             
             // Calculate delay
@@ -8000,7 +8656,7 @@ class MobileApp {
             const headerClass = delayMinutes > 0 ? 'header-delayed' : 'header-ontime';
             
             // Movement status
-            const movementStatus = speed > 0 ? 'Moving' : 'Stopped';
+            const movementStatus = speed > 0 ? t('train.moving') : t('train.stopped');
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
@@ -8010,11 +8666,14 @@ class MobileApp {
             const updatedTime = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated) || 'Unknown';
             
             // Scheduled time
-            const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
+            const scheduledTime = this.getScheduledTimeForStation(train, nextStationRaw);
             const scheduledTimeAMPM = scheduledTime ? this.formatTimeAMPM(scheduledTime) : '--:--';
             
             // Check if out of coverage
             const isOutOfCoverage = this.isTrainOutOfCoverage(train);
+            
+            // Format ETA
+            const formattedETA = eta !== '--:--' ? this.formatTimeAMPM(eta) : eta;
             
             html += `
                 <div class="train-card" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
@@ -8023,7 +8682,7 @@ class MobileApp {
                             <div class="train-name">${trainName}</div>
                             <div class="status-indicator">
                                 <span class="live-dot ${isOutOfCoverage ? 'out-of-coverage' : ''}"></span>
-                                ${isOutOfCoverage ? 'OFFLINE' : 'LIVE'}
+                                ${isOutOfCoverage ? t('train.outOfCoverage') : t('train.live')}
                             </div>
                         </div>
                     </div>
@@ -8035,31 +8694,31 @@ class MobileApp {
                     <div class="train-info-grid">
                         <div class="info-row">
                             <span class="info-icon">📍</span>
-                            <span class="info-text">Next Station: ${nextStation}</span>
+                            <span class="info-text">${t('train.nextStation')}: ${nextStation}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${t('schedule.scheduled')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
-                            <span class="info-text">Delay: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes) : 'On Time'}</span>
+                            <span class="info-text">${t('train.delay')}: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes, false) : t('train.onTime')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
-                            <span class="info-text">${eta}</span>
+                            <span class="info-text">${t('train.eta')}: ${formattedETA}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">Speed: ${speed} km/h</span>
+                            <span class="info-text">${t('train.speed')}: ${speed} ${t('train.kmh')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Train Date: ${trainDate}</span>
+                            <span class="info-text">${t('train.trainNumber')} ${t('time.date')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
-                            <span class="info-text">Updated: ${updatedTime}</span>
+                            <span class="info-text">${t('train.updated')}: ${updatedTime}</span>
                         </div>
                     </div>
                 </div>
@@ -8126,11 +8785,16 @@ class MobileApp {
         }
 
         let html = '';
+        const t = this.getTranslatedLabel;
         filteredTrains.forEach(train => {
             const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
-            const trainName = train.TrainName || `Train ${trainNumber}`;
+            const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${trainNumber}`);
             const speed = train.Speed || 0;
-            const nextStation = train.NextStation || 'Unknown';
+            const nextStationRaw = train.NextStation || 'Unknown';
+            
+            // Translate station name
+            const nextStation = this.getTranslatedStationName(nextStationRaw);
+            
             const eta = this.getTrainETA(train) || '--:--';
             
             // Calculate delay
@@ -8140,7 +8804,7 @@ class MobileApp {
             const headerClass = delayMinutes > 0 ? 'header-delayed' : 'header-ontime';
             
             // Movement status
-            const movementStatus = speed > 0 ? 'Moving' : 'Stopped';
+            const movementStatus = speed > 0 ? t('train.moving') : t('train.stopped');
             const statusClass = speed > 0 ? 'status-moving' : 'status-stopped';
             
             // Train date
@@ -8150,11 +8814,14 @@ class MobileApp {
             const updatedTime = this.formatLastUpdated(train.LastUpdated || train.__last_updated || train.last_updated) || 'Unknown';
             
             // Scheduled time
-            const scheduledTime = this.getScheduledTimeForStation(train, nextStation);
+            const scheduledTime = this.getScheduledTimeForStation(train, nextStationRaw);
             const scheduledTimeAMPM = scheduledTime ? this.formatTimeAMPM(scheduledTime) : '--:--';
             
             // Check if out of coverage
             const isOutOfCoverage = this.isTrainOutOfCoverage(train);
+            
+            // Format ETA
+            const formattedETA = eta !== '--:--' ? this.formatTimeAMPM(eta) : eta;
             
             html += `
                 <div class="train-card" onclick="mobileApp.selectTrain('${train.InnerKey || train.TrainId}')">
@@ -8163,7 +8830,7 @@ class MobileApp {
                             <div class="train-name">${trainName}</div>
                             <div class="status-indicator">
                                 <span class="live-dot ${isOutOfCoverage ? 'out-of-coverage' : ''}"></span>
-                                ${isOutOfCoverage ? 'OFFLINE' : 'LIVE'}
+                                ${isOutOfCoverage ? t('train.outOfCoverage') : t('train.live')}
                             </div>
                         </div>
                     </div>
@@ -8175,31 +8842,31 @@ class MobileApp {
                     <div class="train-info-grid">
                         <div class="info-row">
                             <span class="info-icon">📍</span>
-                            <span class="info-text">Next Station: ${nextStation}</span>
+                            <span class="info-text">${t('train.nextStation')}: ${nextStation}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Scheduled: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${t('schedule.scheduled')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
-                            <span class="info-text">Delay: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes) : 'On Time'}</span>
+                            <span class="info-text">${t('train.delay')}: ${delayMinutes > 0 ? this.formatDelayDisplay(delayMinutes, false) : t('train.onTime')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
-                            <span class="info-text">${eta}</span>
+                            <span class="info-text">${t('train.eta')}: ${formattedETA}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
-                            <span class="info-text">Speed: ${speed} km/h</span>
+                            <span class="info-text">${t('train.speed')}: ${speed} ${t('train.kmh')}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">Train Date: ${trainDate}</span>
+                            <span class="info-text">${t('train.trainNumber')} ${t('time.date')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
-                            <span class="info-text">Updated: ${updatedTime}</span>
+                            <span class="info-text">${t('train.updated')}: ${updatedTime}</span>
                         </div>
                     </div>
                 </div>
@@ -8274,10 +8941,11 @@ class MobileApp {
     addTrainMarker(train, isSelected = false) {
         if (!this.map) return;
 
+        const t = this.getTranslatedLabel;
         const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
-        const trainName = train.TrainName || `Train ${trainNumber}`;
+        const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${trainNumber}`);
         const speed = train.Speed || 0;
-        const status = speed > 0 ? 'Moving' : 'Stopped';
+        const status = speed > 0 ? t('train.moving') : t('train.stopped');
         
         // Create train icon
         const trainIcon = L.divIcon({
@@ -8309,14 +8977,16 @@ class MobileApp {
             icon: trainIcon
         }).addTo(this.map);
 
-        // Add popup
-        const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
-        const nextStation = train.NextStation || 'Unknown';
+        // Add popup - translate station names and labels
+        const currentLocationRaw = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
+        const nextStationRaw = train.NextStation || 'Unknown';
+        const currentLocation = this.getTranslatedStationName(currentLocationRaw);
+        const nextStation = this.getTranslatedStationName(nextStationRaw);
         
         // Calculate delay using utility function (like rest of app)
         const calculatedDelay = this.calculateDelayFromETA(train);
         const delay = calculatedDelay !== null ? calculatedDelay : (train.LateBy || 0);
-        const delayText = delay !== 0 ? this.formatDelayDisplay(delay) : 'On Time';
+        const delayText = delay !== 0 ? this.formatDelayDisplay(delay, false) : t('train.onTime');
         
         // Format ETA using utility function (like rest of app)
         const etaFromFunc = this.getTrainETA(train);
@@ -8338,44 +9008,51 @@ class MobileApp {
         }
         
         // Improved direction detection logic
-        const trainNameUp = String(trainName).toUpperCase();
+        const trainNameUp = String(train.TrainName || trainName).toUpperCase();
         const trainNumberUp = String(trainNumber).toUpperCase();
-        let direction = train.Direction || 'Unknown';
+        let directionKey = 'Unknown';
         
-        if (direction === 'Unknown') {
+        if (train.Direction) {
+            directionKey = train.Direction;
+        } else {
             // Check both train name and train number for UP/DOWN indicators
             if (trainNameUp.includes('UP') || trainNumberUp.includes('UP')) {
-                direction = 'UP';
+                directionKey = 'UP';
             } else if (trainNameUp.includes('DOWN') || trainNameUp.includes('DN') || 
                        trainNumberUp.includes('DOWN') || trainNumberUp.includes('DN')) {
-                direction = 'DOWN';
+                directionKey = 'DOWN';
             } else {
                 // Fallback to train number parity only if no text indicators
                 const numericPart = parseInt(String(trainNumber).replace(/\D/g, ''));
                 if (!isNaN(numericPart)) {
-                    direction = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
+                    directionKey = (numericPart % 2 === 0) ? 'UP' : 'DOWN';
                 }
             }
         }
+        
+        // Translate direction
+        const direction = directionKey === 'UP' ? t('stations.upTrains').replace(' ٹرینیں', '') : 
+                         directionKey === 'DOWN' ? t('stations.downTrains').replace(' ٹرینیں', '') : 
+                         directionKey;
         
         // Get the correct train ID for the View Details button
         const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
         
         // Only show "Current:" label if train has reached the station
-        const currentLabel = hasReachedStation ? `<p style="margin: 5px 0; font-weight: bold; color: #059669;">Current: ${currentLocation}</p>` : '';
+        const currentLabel = hasReachedStation ? `<p style="margin: 5px 0; font-weight: bold; color: #059669;">${t('train.currentStation')}: ${currentLocation}</p>` : '';
         
         const popupContent = `
             <div style="text-align: center; min-width: 200px;">
                 <h3 style="margin: 0 0 10px 0; color: #1f2937;">${trainName}</h3>
-                <p style="margin: 5px 0; font-weight: bold; color: #059669;">Train #${trainNumber}</p>
-                <p style="margin: 5px 0;">Speed: ${speed} km/h</p>
-                <p style="margin: 5px 0;">Status: ${status}</p>
-                <p style="margin: 5px 0; color: ${delay > 15 ? '#EF4444' : delay > 5 ? '#F59E0B' : '#10B981'}; font-weight: ${delay > 0 ? 'bold' : 'normal'};">Delay: ${delayText}</p>
-                <p style="margin: 5px 0;">Direction: ${direction}</p>
+                <p style="margin: 5px 0; font-weight: bold; color: #059669;">${t('train.trainNumber')} #${trainNumber}</p>
+                <p style="margin: 5px 0;">${t('train.speed')}: ${speed} ${t('train.kmh')}</p>
+                <p style="margin: 5px 0;">${t('train.status')}: ${status}</p>
+                <p style="margin: 5px 0; color: ${delay > 15 ? '#EF4444' : delay > 5 ? '#F59E0B' : '#10B981'}; font-weight: ${delay > 0 ? 'bold' : 'normal'};">${t('train.delay')}: ${delayText}</p>
+                <p style="margin: 5px 0;">${t('schedule.from')}: ${direction}</p>
                 ${currentLabel}
-                <p style="margin: 5px 0;">Next: ${nextStation}</p>
-                <p style="margin: 5px 0;">ETA: ${etaTime}</p>
-                ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">View Details</button>` : ''}
+                <p style="margin: 5px 0;">${t('train.nextStation')}: ${nextStation}</p>
+                <p style="margin: 5px 0;">${t('train.eta')}: ${etaTime}</p>
+                ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">${t('train.trainDetails')}</button>` : ''}
             </div>
         `;
         
@@ -8509,11 +9186,17 @@ class MobileApp {
 
         const train = this.selectedTrain;
         const trainNumber = train.TrainNumber || train.InnerKey || 'Unknown';
-        const trainName = train.TrainName || `Train ${trainNumber}`;
+        const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || `Train ${trainNumber}`);
         const speed = train.Speed || 0;
-        const status = speed > 0 ? 'Moving' : 'Stopped';
-        const currentLocation = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
-        const nextStation = train.NextStation || 'Unknown';
+        const t = this.getTranslatedLabel;
+        const status = speed > 0 ? t('train.moving') : t('train.stopped');
+        const currentLocationRaw = train.CurrentStation || train.NextStation || train.LastStation || 'Unknown';
+        const nextStationRaw = train.NextStation || 'Unknown';
+        
+        // Translate station names
+        const currentLocation = this.getTranslatedStationName(currentLocationRaw);
+        const nextStation = this.getTranslatedStationName(nextStationRaw);
+        
         const eta = this.getTrainETA(train) || '--:--';
         
         // Check if train has reached the station (within 2 minutes of ETA)
@@ -8529,7 +9212,7 @@ class MobileApp {
         }
         
         // Improved direction detection logic
-        const trainNameUp = String(trainName).toUpperCase();
+        const trainNameUp = String(train.TrainName || '').toUpperCase();
         const trainNumberUp = String(trainNumber).toUpperCase();
         let direction = train.Direction || 'Unknown';
         
@@ -8557,7 +9240,7 @@ class MobileApp {
 
         // Update stats
         const speedElement = document.getElementById('trainSpeed');
-        if (speedElement) speedElement.textContent = `${speed} km/h`;
+        if (speedElement) speedElement.textContent = `${speed} ${t('train.kmh')}`;
 
         const statusElement = document.getElementById('trainStatus');
         if (statusElement) statusElement.textContent = `${status} (${direction})`;
@@ -8566,14 +9249,17 @@ class MobileApp {
         // Only show "Current: " prefix if train has reached the station
         if (nextStationElement) {
             if (hasReachedStation) {
-                nextStationElement.textContent = `Current: ${currentLocation} → ${nextStation}`;
+                nextStationElement.textContent = `${t('train.currentStation')}: ${currentLocation} → ${nextStation}`;
             } else {
-                nextStationElement.textContent = `${nextStation}`;
+                nextStationElement.textContent = nextStation;
             }
         }
 
         const etaElement = document.getElementById('trainETA');
-        if (etaElement) etaElement.textContent = eta;
+        if (etaElement) {
+            const formattedETA = eta !== '--:--' ? this.formatTimeAMPM(eta) : eta;
+            etaElement.textContent = formattedETA;
+        }
     }
 
     startMapAutoRefresh() {
@@ -8819,21 +9505,26 @@ class MobileApp {
                 
                 // Listen for notification taps
                 await LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-                    console.log('🔔 Notification tapped:', notification);
-                    
-                    // Get the train ID from notification data (this is InnerKey, not TrainNumber)
-                    const trainId = notification.notification?.extra?.trainId;
-                    const trainName = notification.notification?.extra?.trainName;
-                    
-                    if (trainId) {
-                        console.log(`📱 Opening train details for: ${trainName} (InnerKey: ${trainId})`);
+                    try {
+                        console.log('🔔 Notification tapped:', notification);
                         
-                        // trainId is actually InnerKey (e.g., 127109900 for specific train instance)
-                        // openTrainDetails will find the train by InnerKey from active trains
-                        this.openTrainDetails(trainId);
-                    } else {
-                        console.warn('⚠️ No trainId (InnerKey) found in notification data');
+                        // Get the train ID from notification data (this is InnerKey, not TrainNumber)
+                        const trainId = notification?.notification?.extra?.trainId;
+                        const trainName = notification?.notification?.extra?.trainName;
+                        
+                        if (trainId) {
+                            console.log(`📱 Opening train details for: ${trainName} (InnerKey: ${trainId})`);
+                            
+                            // trainId is actually InnerKey (e.g., 127109900 for specific train instance)
+                            // openTrainDetails will find the train by InnerKey from active trains
+                            this.openTrainDetails(trainId);
+                        } else {
+                            console.warn('⚠️ No trainId (InnerKey) found in notification data');
+                        }
+                    } catch (error) {
+                        console.error('❌ Error handling notification tap:', error);
                     }
+                    return; // Explicit return to avoid undefined warning
                 });
                 
                 console.log('✅ Notification action listener set up');
@@ -9401,12 +10092,12 @@ class MobileApp {
         let headerSummary = '';
         if (existingNotifications.length > 0) {
             if (existingNotifications.length === 1) {
-                headerSummary = `<span class="notification-count">${existingNotifications[0].stationName} (${existingNotifications[0].minutesBefore} min)</span>`;
+                headerSummary = `<span class="notification-count">${existingNotifications[0].stationName} (${existingNotifications[0].minutesBefore} ${this.getTranslatedLabel('time.min')})</span>`;
             } else {
-                headerSummary = `<span class="notification-count">${existingNotifications.length} active notifications</span>`;
+                headerSummary = `<span class="notification-count">${existingNotifications.length} ${this.getTranslatedLabel('notifications.activeNotifications').toLowerCase()}</span>`;
             }
         } else {
-            headerSummary = `<span class="notification-subtitle">Tap to set up notifications</span>`;
+            headerSummary = `<span class="notification-subtitle">${this.getTranslatedLabel('common.tapToSetup')}</span>`;
         }
         
         let html = `
@@ -9415,7 +10106,7 @@ class MobileApp {
                     <div class="notification-header-content">
                         <div class="notification-title">
                             <span class="notification-icon">🔔</span>
-                            <span>Arrival Notifications</span>
+                            <span>${this.getTranslatedLabel('notifications.arrivalNotifications')}</span>
                         </div>
                         ${headerSummary}
                     </div>
@@ -9427,45 +10118,48 @@ class MobileApp {
                 </div>
                 
                 <div class="notification-body">
-                    <p class="notification-description">Get notified when the train is arriving at a station</p>
+                    <p class="notification-description">${this.getTranslatedLabel('notifications.getNotifiedWhen')}</p>
                     
                     <div class="notification-form">
                         <div class="form-group">
-                            <label>Select Station</label>
+                            <label>${this.getTranslatedLabel('notifications.selectStation')}</label>
                             <select id="notificationStation" class="form-select">
-                                <option value="">Choose a station...</option>
-                                ${upcomingStations.map(station => `
+                                <option value="">${this.getTranslatedLabel('notifications.chooseStation')}</option>
+                                ${upcomingStations.map(station => {
+                                    const stationName = (typeof translator !== 'undefined' && translator) ? translator.getStationName(station) : station.StationName;
+                                    return `
                                     <option value="${station.StationId}" data-name="${station.StationName}">
-                                        ${station.StationName}
+                                        ${stationName}
                                     </option>
-                                `).join('')}
+                                `;
+                                }).join('')}
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <label>Notify Before</label>
+                            <label>${this.getTranslatedLabel('notifications.notifyBefore')}</label>
                             <div class="time-options">
-                                <button class="time-option" data-minutes="5">5 min</button>
-                                <button class="time-option" data-minutes="15">15 min</button>
-                                <button class="time-option" data-minutes="30">30 min</button>
-                                <button class="time-option" data-minutes="45">45 min</button>
+                                <button class="time-option" data-minutes="5">${this.getTranslatedLabel('notifications.min5')}</button>
+                                <button class="time-option" data-minutes="15">${this.getTranslatedLabel('notifications.min15')}</button>
+                                <button class="time-option" data-minutes="30">${this.getTranslatedLabel('notifications.min30')}</button>
+                                <button class="time-option" data-minutes="45">${this.getTranslatedLabel('notifications.min45')}</button>
                             </div>
                         </div>
                         
                         <button class="btn-primary btn-add-notification" disabled>
-                            <span class="icon">➕</span> Add Notification
+                            <span class="icon">➕</span> ${this.getTranslatedLabel('notifications.addNotification')}
                         </button>
                     </div>
                     
                     ${existingNotifications.length > 0 ? `
                         <div class="active-notifications">
-                            <h4>Active Notifications</h4>
+                            <h4>${this.getTranslatedLabel('notifications.activeNotifications')}</h4>
                             <div class="notification-list">
                                 ${existingNotifications.map(notif => `
                                     <div class="notification-item" data-id="${notif.id}">
                                         <div class="notification-info">
                                             <div class="notification-station">${notif.stationName}</div>
-                                            <div class="notification-time">${notif.minutesBefore} minutes before</div>
+                                            <div class="notification-time">${notif.minutesBefore} ${this.getTranslatedLabel('time.minutes')} ${this.getTranslatedLabel('time.before')}</div>
                                         </div>
                                         <button class="btn-remove-notification" data-id="${notif.id}">
                                             <span class="icon">🗑️</span>

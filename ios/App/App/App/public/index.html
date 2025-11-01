@@ -42,6 +42,12 @@
     
     <link rel="stylesheet" href="mobile-styles.css?v=1729607000">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Jameel Nastaleeq Font for Urdu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Translation Script -->
+    <script src="translations.js" defer></script>
 </head>
 <body class="mobile-app">
     <div class="mobile-app">
@@ -51,8 +57,8 @@
                 <div class="app-logo-sticky">
                     <div class="logo-circle-sticky">🚂</div>
                     <div class="app-info-sticky">
-                        <h1>Pak-Rail</h1>
-                        <div class="tagline-sticky">Live Train Tracking</div>
+                        <h1 data-i18n="app.name">Pak-Rail</h1>
+                        <div class="tagline-sticky" data-i18n="app.tagline">Live Train Tracking</div>
                     </div>
                 </div>
                 <div class="header-right-actions">
@@ -76,7 +82,7 @@
         <div class="main-content">
             <!-- Last Updated Header for Home -->
             <div class="last-updated-header home-last-updated">
-                <span id="homeLastUpdated">Last updated: Just now</span>
+                <span id="homeLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="homeLastUpdatedTime">Just now</span>
             </div>
 
             <!-- Stats Overview -->
@@ -86,7 +92,7 @@
                         <img src="/locomotive_1f682.png" alt="Train" class="stat-locomotive-icon" />
                     </div>
                     <div class="stat-number" id="activeTrainsCount">--</div>
-                    <div class="stat-label">Active</div>
+                    <div class="stat-label" data-i18n="common.active">Active</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -97,7 +103,7 @@
                         </svg>
                     </div>
                     <div class="stat-number" id="onTimeTrains">--</div>
-                    <div class="stat-label">On Time</div>
+                    <div class="stat-label" data-i18n="common.onTime">On Time</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -108,7 +114,7 @@
                         </svg>
                     </div>
                     <div class="stat-number" id="delayedTrains">--</div>
-                    <div class="stat-label">Delayed</div>
+                    <div class="stat-label" data-i18n="common.delayed">Delayed</div>
                 </div>
             </div>
 
@@ -117,41 +123,41 @@
                 <div class="feature-tile primary" onclick="mobileApp.navigateToScreen('liveTracking')">
                     <div class="tile-header">
                         <div class="tile-icon">🚂</div>
-                        <div class="live-indicator">LIVE</div>
+                        <div class="live-indicator" data-i18n="train.live">LIVE</div>
                     </div>
-                    <h3>Live Tracking</h3>
-                    <p>Track trains in real-time with live positions and updates</p>
+                    <h3 data-i18n="features.liveTracking">Live Tracking</h3>
+                    <p data-i18n="features.descriptionLiveTracking">Track trains in real-time with live positions and updates</p>
                 </div>
                 <div class="feature-tile secondary" onclick="mobileApp.navigateToScreen('scheduleScreen')">
                     <div class="tile-header">
                         <div class="tile-icon">📅</div>
                     </div>
-                    <h3>Schedules</h3>
-                    <p>Browse train schedules and departure times</p>
+                    <h3 data-i18n="features.schedules">Schedules</h3>
+                    <p data-i18n="features.descriptionSchedules">Browse train schedules and departure times</p>
                 </div>
                 <div class="feature-tile tertiary" onclick="mobileApp.navigateToScreen('stationScreen')">
                     <div class="tile-header">
                         <div class="tile-icon">🚉</div>
                     </div>
-                    <h3>Stations</h3>
-                    <p>Find station information and train arrivals</p>
+                    <h3 data-i18n="features.stations">Stations</h3>
+                    <p data-i18n="features.descriptionStations">Find station information and train arrivals</p>
                 </div>
                 <div class="feature-tile quaternary" onclick="mobileApp.navigateToScreen('mapScreen')">
                     <div class="tile-header">
                         <div class="tile-icon">🗺️</div>
                     </div>
-                    <h3>Live Map</h3>
-                    <p>View trains on interactive map</p>
+                    <h3 data-i18n="features.liveMap">Live Map</h3>
+                    <p data-i18n="features.descriptionLiveMap">View trains on interactive map</p>
                 </div>
             </div>
             <!-- Quick Train Access -->
             <div class="quick-train-access">
                 <div class="section-header">
-                    <h3>Live Trains</h3>
-                    <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
+                    <h3 data-i18n="features.liveTrains">Live Trains</h3>
+                    <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')" data-i18n="common.viewAll">View All</button>
                 </div>
                 <div class="train-carousel" id="liveTrainsList">
-                    <div class="loading">Loading live trains...</div>
+                    <div class="loading" data-i18n="common.loadingLiveTrains">Loading live trains...</div>
                 </div>
                 <div class="carousel-dots" id="carouselDots"></div>
             </div>
@@ -160,14 +166,14 @@
             <!-- Live Updates -->
             <div class="live-updates">
                 <div class="section-header">
-                    <h3>Live Updates</h3>
+                    <h3 data-i18n="features.liveUpdates">Live Updates</h3>
                     <div class="update-indicator">
                         <div class="pulse-dot"></div>
-                        <span>Real-time</span>
+                        <span data-i18n="common.realtime">Real-time</span>
                     </div>
                 </div>
                 <div class="updates-feed" id="liveUpdatesFeed">
-                    <div class="loading">Loading live updates...</div>
+                    <div class="loading" data-i18n="common.loadingLiveUpdates">Loading live updates...</div>
                 </div>
             </div>
         </div>
@@ -183,7 +189,7 @@
             <div id="dashboard" class="screen hidden">
                 <div class="screen-header">
                     <button class="back-btn" onclick="mobileApp.goBack()">←</button>
-                    <h2>Dashboard</h2>
+                    <h2 data-i18n="dashboard.dashboard">Dashboard</h2>
                     <button class="refresh-btn" onclick="mobileApp.loadDashboardData()">🔄</button>
                 </div>
 
@@ -194,62 +200,62 @@
                             <div class="stat-icon">🚂</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="dashboardActiveTrains">0</div>
-                                <div class="stat-label">Active Trains</div>
+                                <div class="stat-label" data-i18n="stats.activeTrains">Active Trains</div>
                             </div>
                         </div>
                         <div class="stat-card success">
                             <div class="stat-icon">✅</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="dashboardOnTime">0</div>
-                                <div class="stat-label">On Time</div>
+                                <div class="stat-label" data-i18n="common.onTime">On Time</div>
                             </div>
                         </div>
                         <div class="stat-card warning">
                             <div class="stat-icon">⏰</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="dashboardDelayed">0</div>
-                                <div class="stat-label">Delayed</div>
+                                <div class="stat-label" data-i18n="common.delayed">Delayed</div>
                             </div>
                         </div>
                         <div class="stat-card info">
                             <div class="stat-icon">🚉</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="dashboardStations">0</div>
-                                <div class="stat-label">Stations</div>
+                                <div class="stat-label" data-i18n="stations.stations">Stations</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Quick Actions -->
                     <div class="section-header">
-                        <h3>Quick Actions</h3>
+                        <h3 data-i18n="dashboard.quickActions">Quick Actions</h3>
                     </div>
                     <div class="quick-actions-grid">
                         <div class="action-card" onclick="mobileApp.navigateToScreen('liveTracking')">
                             <div class="action-icon">🚂</div>
-                            <div class="action-text">Live Trains</div>
+                            <div class="action-text" data-i18n="features.liveTrains">Live Trains</div>
                         </div>
                         <div class="action-card" onclick="mobileApp.navigateToScreen('scheduleScreen')">
                             <div class="action-icon">📅</div>
-                            <div class="action-text">Schedules</div>
+                            <div class="action-text" data-i18n="features.schedules">Schedules</div>
                         </div>
                         <div class="action-card" onclick="mobileApp.navigateToScreen('stationScreen')">
                             <div class="action-icon">🚉</div>
-                            <div class="action-text">Stations</div>
+                            <div class="action-text" data-i18n="features.stations">Stations</div>
                         </div>
                         <div class="action-card" onclick="mobileApp.navigateToScreen('mapScreen')">
                             <div class="action-icon">🗺️</div>
-                            <div class="action-text">Live Map</div>
+                            <div class="action-text" data-i18n="features.liveMap">Live Map</div>
                         </div>
                     </div>
 
                     <!-- Recent Trains -->
                     <div class="section-header">
-                        <h3>Recent Trains</h3>
-                        <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')">View All</button>
+                        <h3 data-i18n="dashboard.recentTrains">Recent Trains</h3>
+                        <button class="view-all-btn" onclick="mobileApp.navigateToScreen('liveTracking')" data-i18n="common.viewAll">View All</button>
                     </div>
                     <div class="recent-trains" id="dashboardRecentTrains">
-                        <div class="loading">Loading recent trains...</div>
+                        <div class="loading" data-i18n="common.loadingRecentTrains">Loading recent trains...</div>
                     </div>
                 </div>
             </div>
@@ -264,7 +270,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Live Tracking</h2>
+                            <h2 data-i18n="train.liveTracking">Live Tracking</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn refresh-btn" onclick="mobileApp.loadLiveTrains()">
@@ -288,14 +294,14 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="liveTrackingLastUpdated">Last updated: Just now</span>
+                    <span id="liveTrackingLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="liveTrackingLastUpdatedTime">Just now</span>
                 </div>
 
                 <div class="search-panel">
                     <div class="search-container">
                         <div class="search-input-wrapper">
                             <span class="search-icon">🔍</span>
-                            <input type="text" id="liveTrackingSearchInput" placeholder="Search live trains by number, name, or location..." class="search-input" style="font-size: 16px;">
+                            <input type="text" id="liveTrackingSearchInput" data-i18n-placeholder="train.searchLiveTrainsPlaceholder" placeholder="Search live trains by number, name, or location..." class="search-input" style="font-size: 16px;">
                             <button class="clear-search-btn" id="clearLiveTrackingSearch" onclick="mobileApp.clearLiveTrackingSearch()" style="display: none;">✕</button>
                         </div>
                     </div>
@@ -304,11 +310,11 @@
                 <div class="screen-content">
                     <div class="schedule-results">
                         <div class="results-header">
-                            <h3>Live Trains</h3>
-                            <div class="results-count" id="liveTrackingResultsCount">Loading...</div>
+                            <h3 data-i18n="features.liveTrains">Live Trains</h3>
+                            <div class="results-count" id="liveTrackingResultsCount" data-i18n="common.loading">Loading...</div>
                         </div>
                         <div class="live-trains-list" id="liveTrainsListDetail">
-                            <div class="loading">Loading live trains...</div>
+                            <div class="loading" data-i18n="common.loadingLiveTrains">Loading live trains...</div>
                         </div>
                     </div>
                 </div>
@@ -324,7 +330,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Train Details</h2>
+                            <h2 data-i18n="train.trainDetails">Train Details</h2>
                             <div class="header-clock" id="trainDetailClock">--:--:-- --</div>
                         </div>
                         <div class="header-right-actions">
@@ -349,7 +355,7 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="trainDetailLastUpdated">Last updated: Just now</span>
+                    <span id="trainDetailLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="trainDetailLastUpdatedTime">Just now</span>
                 </div>
 
                 <div class="train-detail-content">
@@ -361,7 +367,7 @@
                         </div>
                         <div class="status-indicator">
                             <div class="status-dot"></div>
-                            <span class="live-indicator">LIVE</span>
+                            <span class="live-indicator" data-i18n="train.live">LIVE</span>
                         </div>
                     </div>
 
@@ -373,17 +379,17 @@
                         <div class="metric-card">
                             <div class="metric-icon">⚡</div>
                             <div class="metric-value" id="trainSpeed">-- km/h</div>
-                            <div class="metric-label">Speed</div>
+                            <div class="metric-label" data-i18n="train.speed">Speed</div>
                         </div>
                         <div class="metric-card">
                             <div class="metric-icon">⏰</div>
                             <div class="metric-value" id="trainDelay">--</div>
-                            <div class="metric-label">Delay</div>
+                            <div class="metric-label" data-i18n="train.delay">Delay</div>
                         </div>
                         <div class="metric-card">
                             <div class="metric-icon">📍</div>
                             <div class="metric-value" id="nextStation">--</div>
-                            <div class="metric-label">Next Station</div>
+                            <div class="metric-label" data-i18n="train.nextStation">Next Station</div>
                         </div>
                     </div>
 
@@ -392,16 +398,16 @@
                         <div class="route-progress" id="routeProgress">
                             <div class="route-stations" id="routeStations">
                                 <!-- Stations and route line will be populated dynamically -->
-                                <div class="loading">Loading route stations...</div>
+                                <div class="loading" data-i18n="common.loadingRouteStations">Loading route stations...</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Station Route Section -->
                     <div class="station-route-section">
-                        <h3>🚉 Route Stations</h3>
+                        <h3 data-i18n="schedule.routeStations">🚉 Route Stations</h3>
                         <div class="station-route-list" id="stationRouteList">
-                            <div class="loading">Loading route stations...</div>
+                            <div class="loading" data-i18n="common.loadingRouteStations">Loading route stations...</div>
                         </div>
                     </div>
                 </div>
@@ -417,7 +423,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Live Map</h2>
+                            <h2 data-i18n="map.liveMap">Live Map</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -437,7 +443,7 @@
                 </div>
                 
                 <div class="last-updated-header">
-                    <span id="mapLastUpdated">Last updated: Just now</span>
+                    <span id="mapLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="mapLastUpdatedTime">Just now</span>
                 </div>
 
                 <div class="map-container">
@@ -447,7 +453,7 @@
                 <!-- Train Selection Panel -->
                 <div class="train-selection-panel" id="trainSelectionPanel">
                     <div class="panel-header" id="panelHeader" onclick="if(document.getElementById('trainSelectionPanel').classList.contains('minimized')) mobileApp.expandTrainSelection()">
-                        <h3>Select Train to Track</h3>
+                        <h3 data-i18n="map.selectTrainToTrack">Select Train to Track</h3>
                         <div class="panel-header-buttons">
                             <button class="minimize-panel-btn" onclick="event.stopPropagation(); mobileApp.minimizeTrainSelection()" title="Minimize">−</button>
                             <button class="expand-panel-btn" onclick="event.stopPropagation(); mobileApp.expandTrainSelection()" title="Expand">⌃</button>
@@ -458,7 +464,7 @@
                         <div class="handle-drag-bar"></div>
                         <div class="handle-content">
                             <div class="handle-icon">⌃</div>
-                            <span>Tap to expand</span>
+                            <span data-i18n="map.tapToExpand">Tap to expand</span>
                         </div>
                     </div>
                     
@@ -466,49 +472,49 @@
                     <div class="map-search-container">
                         <div class="search-input-wrapper">
                             <span class="search-icon">🔍</span>
-                            <input type="text" id="mapSearchInput" placeholder="Search trains by number or name..." class="search-input" style="font-size: 16px;">
+                            <input type="text" id="mapSearchInput" data-i18n-placeholder="train.searchTrainsPlaceholder" placeholder="Search trains by number or name..." class="search-input" style="font-size: 16px;">
                             <button class="clear-search-btn" id="clearMapSearch" onclick="mobileApp.clearMapSearch()" style="display: none;">✕</button>
                         </div>
                     </div>
                     
                     <div class="train-list" id="trainList">
-                        <div class="loading">Loading active trains...</div>
+                        <div class="loading" data-i18n="common.loading">Loading...</div>
                     </div>
                 </div>
                 
                 <!-- Train Info Panel -->
                 <div class="train-info-panel" id="trainInfoPanel" style="display: none;">
                     <div class="panel-header">
-                        <h3 id="selectedTrainName">Train Information</h3>
+                        <h3 id="selectedTrainName" data-i18n="map.trainInformation">Train Information</h3>
                         <button class="close-panel-btn" onclick="mobileApp.closeTrainInfo()">×</button>
                     </div>
                     <div class="train-stats-grid">
                         <div class="stat-item">
-                            <div class="stat-label">Speed</div>
+                            <div class="stat-label" data-i18n="train.speed">Speed</div>
                             <div class="stat-value" id="trainSpeed">-- km/h</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Status</div>
+                            <div class="stat-label" data-i18n="train.status">Status</div>
                             <div class="stat-value" id="trainStatus">--</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Next Station</div>
+                            <div class="stat-label" data-i18n="train.nextStation">Next Station</div>
                             <div class="stat-value" id="nextStation">--</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">ETA</div>
+                            <div class="stat-label" data-i18n="train.eta">ETA</div>
                             <div class="stat-value" id="trainETA">--</div>
                         </div>
                     </div>
                     <div class="route-progress">
                         <div class="progress-header">
-                            <span id="originStation">Origin</span>
+                            <span id="originStation" data-i18n="map.origin">Origin</span>
                             <span id="progressPercent">0%</span>
-                            <span id="destinationStation">Destination</span>
+                            <span id="destinationStation" data-i18n="map.destination">Destination</span>
                         </div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressBar" style="width: 0%">
-                                <span id="progressText">0% Complete</span>
+                                <span id="progressText">0% <span data-i18n="map.progressComplete">Complete</span></span>
                             </div>
                             <div class="train-icon" id="trainIcon" style="left: 0%">🚂</div>
                         </div>
@@ -526,7 +532,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Stations</h2>
+                            <h2 data-i18n="stations.stations">Stations</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -546,14 +552,14 @@
                 </div>
                 
                 <div class="last-updated-header">
-                    <span id="stationLastUpdated">Last updated: Just now</span>
+                    <span id="stationLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="stationLastUpdatedTime">Just now</span>
                 </div>
 
                 <div class="search-panel">
                     <div class="search-container">
                         <div class="search-input-wrapper">
                             <span class="search-icon">🔍</span>
-                            <input type="text" id="stationSearchInput" placeholder="Search stations..." class="search-input" style="font-size: 16px;">
+                            <input type="text" id="stationSearchInput" data-i18n-placeholder="stations.searchStationsPlaceholder" placeholder="Search stations..." class="search-input" style="font-size: 16px;">
                             <button class="clear-search-btn" id="clearStationSearch" onclick="mobileApp.clearStationSearch()" style="display: none;">✕</button>
                         </div>
                     </div>
@@ -562,11 +568,11 @@
                 <div class="screen-content">
                     <div class="schedule-results">
                         <div class="results-header">
-                            <h3>All Stations</h3>
-                            <div class="results-count" id="stationsResultsCount">Loading...</div>
+                            <h3 data-i18n="stations.allStations">All Stations</h3>
+                            <div class="results-count" id="stationsResultsCount" data-i18n="common.loading">Loading...</div>
                         </div>
                         <div class="stations-list" id="stationsList">
-                            <div class="loading">Loading stations...</div>
+                            <div class="loading" data-i18n="stations.loadingStations">Loading stations...</div>
                         </div>
                     </div>
                 </div>
@@ -582,7 +588,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Train Search</h2>
+                            <h2 data-i18n="train.trainSearch">Train Search</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -604,7 +610,7 @@
                 <div class="search-section">
                     <div class="route-selector">
                         <div class="input-group">
-                            <input type="text" id="trainSearchInput" class="station-input" placeholder="Search by train number or name..." style="font-size: 16px;">
+                            <input type="text" id="trainSearchInput" class="station-input" data-i18n-placeholder="train.enterTrainNumberOrName" placeholder="Search by train number or name..." style="font-size: 16px;">
                             <button class="search-btn" onclick="mobileApp.searchTrains()">🔍</button>
                         </div>
                     </div>
@@ -613,8 +619,8 @@
                 <div class="screen-content">
                     <div class="search-results" id="trainSearchResults">
                         <div class="empty-state">
-                            <p>🚂 Enter train number or name to search</p>
-                            <p>Find schedules, routes, and live tracking</p>
+                            <p data-i18n="train.enterTrainNumberOrName">🚂 Enter train number or name to search</p>
+                            <p data-i18n="train.findSchedules">Find schedules, routes, and live tracking</p>
                         </div>
                     </div>
                 </div>
@@ -630,7 +636,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Train Schedule</h2>
+                            <h2 data-i18n="schedule.schedule">Train Schedule</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -649,14 +655,14 @@
                     </div>
                 </div>
                 <div class="last-updated-header">
-                    <span id="scheduleLastUpdated">Last updated: Just now</span>
+                    <span id="scheduleLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="scheduleLastUpdatedTime">Just now</span>
                 </div>
 
                 <div class="search-panel">
                     <div class="search-container">
                         <div class="search-input-wrapper">
                             <span class="search-icon">🔍</span>
-                            <input type="text" id="scheduleSearchInput" placeholder="Search trains by number, name, or route..." class="search-input" style="font-size: 16px;">
+                            <input type="text" id="scheduleSearchInput" data-i18n-placeholder="train.searchTrainsByNumberNameRoute" placeholder="Search trains by number, name, or route..." class="search-input" style="font-size: 16px;">
                             <button class="clear-search-btn" id="clearSearchBtn" onclick="mobileApp.clearScheduleSearch()" style="display: none;">✕</button>
                         </div>
                     </div>
@@ -665,11 +671,11 @@
                 <div class="screen-content">
                     <div class="schedule-results">
                         <div class="results-header">
-                            <h3>Available Trains</h3>
-                            <div class="results-count">Loading...</div>
+                            <h3 data-i18n="schedule.availableTrains">Available Trains</h3>
+                            <div class="results-count" data-i18n="common.loading">Loading...</div>
                         </div>
                         <div class="schedule-train-list" id="scheduleList">
-                            <div class="loading">Loading schedule...</div>
+                            <div class="loading" data-i18n="schedule.loadingSchedule">Loading schedule...</div>
                         </div>
                     </div>
 
@@ -686,7 +692,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Schedule Details</h2>
+                            <h2 data-i18n="schedule.scheduleDetails">Schedule Details</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -715,7 +721,7 @@
                                     <div class="train-number" id="scheduleTrainNumber">--</div>
                                     <div class="status-indicator">
                                         <div class="status-dot"></div>
-                                        <span class="schedule-indicator">SCHEDULE</span>
+                                        <span class="schedule-indicator" data-i18n="schedule.scheduled">SCHEDULE</span>
                                     </div>
                                 </div>
                             </div>
@@ -724,23 +730,23 @@
                         <div class="route-info-section">
                             <div class="route-info">
                                 <div class="route-station origin">
-                                    <span class="station-text">Origin: <span id="scheduleOrigin">Loading...</span> <span id="scheduleDepartureTime">--:--</span></span>
+                                    <span class="station-text"><span data-i18n="schedule.originLabel">Origin: </span><span id="scheduleOrigin" data-i18n="common.loading">Loading...</span> <span id="scheduleDepartureTime">--:--</span></span>
                                 </div>
                                 <div class="route-station destination">
-                                    <span class="station-text">Destination: <span id="scheduleDestination">Loading...</span> <span id="scheduleArrivalTime">--:--</span></span>
+                                    <span class="station-text"><span data-i18n="schedule.destinationLabel">Destination: </span><span id="scheduleDestination" data-i18n="common.loading">Loading...</span> <span id="scheduleArrivalTime">--:--</span></span>
                                 </div>
                             </div>
                             <div class="journey-duration">
-                                <span>Journey Duration: <span id="journeyDuration">31h 0m</span></span>
+                                <span data-i18n="schedule.journeyDurationLabel">Journey Duration: </span><span id="journeyDuration">31h 0m</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Station Route Section -->
                     <div class="station-route-section">
-                        <h3>🚉 All Stations</h3>
+                        <h3 data-i18n="schedule.allStations">🚉 All Stations</h3>
                         <div class="station-route-list" id="scheduleStationList">
-                            <div class="loading">Loading station schedule...</div>
+                            <div class="loading" data-i18n="schedule.loadingStationSchedule">Loading station schedule...</div>
                         </div>
                     </div>
 
@@ -757,7 +763,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Settings</h2>
+                            <h2 data-i18n="settings.settings">Settings</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -779,19 +785,19 @@
                 <div class="screen-content">
                     <div class="station-info-card">
                         <div class="station-header">
-                            <h3>🚂 Train Tracker</h3>
+                            <h3 data-i18n="common.trainTracker">🚂 Train Tracker</h3>
                             <div class="station-status">
                                 <div class="status-dot"></div>
-                                <span>Active</span>
+                                <span data-i18n="common.active">Active</span>
                             </div>
                         </div>
                         <div class="station-details">
                             <div class="detail-item">
-                                <div class="detail-label">Version</div>
+                                <div class="detail-label" data-i18n="common.version">Version</div>
                                 <div class="detail-value" id="appVersion">--</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">Last Refreshed</div>
+                                <div class="detail-label" data-i18n="settings.lastRefreshed">Last Refreshed</div>
                                 <div class="detail-value" id="appLastUpdate">--</div>
                             </div>
                         </div>
@@ -799,11 +805,11 @@
 
                     <div class="station-info-card">
                         <div class="station-header">
-                            <h3>⚙️ Settings</h3>
+                            <h3 data-i18n="settings.settings">⚙️ Settings</h3>
                         </div>
                         <div class="station-details">
                             <div class="detail-item">
-                                <div class="detail-label">Auto Refresh</div>
+                                <div class="detail-label" data-i18n="settings.autoRefresh">Auto Refresh</div>
                                 <div class="detail-value">
                                     <label class="toggle">
                                         <input type="checkbox" id="autoRefreshToggle" checked>
@@ -812,7 +818,7 @@
                                 </div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">Push Notifications</div>
+                                <div class="detail-label" data-i18n="settings.pushNotifications">Push Notifications</div>
                                 <div class="detail-value">
                                     <label class="toggle">
                                         <input type="checkbox" id="notificationsToggle">
@@ -820,8 +826,17 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="detail-item">
+                                <div class="detail-label" data-i18n="settings.language">Language</div>
+                                <div class="detail-value">
+                                    <select id="languageSelector" class="language-select" onchange="mobileApp.changeLanguage(this.value)">
+                                        <option value="en" data-i18n="settings.english">English</option>
+                                        <option value="ur" data-i18n="settings.urdu">Urdu</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="detail-item" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
-                                <button class="track-btn" onclick="mobileApp.clearAllCachesAndReload()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                                <button class="track-btn" onclick="mobileApp.clearAllCachesAndReload()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;" data-i18n="settings.clearCache">
                                     🗑️ Clear Cache & Reload Data
                                 </button>
                             </div>
@@ -830,9 +845,9 @@
 
                     <div class="station-info-card">
                         <div class="station-header">
-                            <h3>ℹ️ About</h3>
+                            <h3 data-i18n="about.about">ℹ️ About</h3>
                         </div>
-                        <p class="detail-label">
+                        <p class="detail-label" data-i18n="about.description">
                             Pakistan Train Tracker provides real-time train tracking and schedule information for Pakistan Railways. 
                             Track trains live, view schedules, and get station information.
                         </p>
@@ -850,7 +865,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Favorite Trains</h2>
+                            <h2 data-i18n="favorites.favoriteTrains">Favorite Trains</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -868,7 +883,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="last-updated-header"><span id="favoritesLastUpdated">Last updated: Loading...</span></div>
+                <div class="last-updated-header"><span id="favoritesLastUpdated" data-i18n="common.lastUpdated">Last updated: </span><span id="favoritesLastUpdatedTime" data-i18n="common.loading">Loading...</span></div>
                 <div class="screen-content">
                     <div id="favoritesList" class="favorites-list"></div>
                 </div>
@@ -884,7 +899,7 @@
                             </svg>
                         </button>
                         <div class="header-title-section">
-                            <h2>Route Details</h2>
+                            <h2 data-i18n="route.routeDetails">Route Details</h2>
                         </div>
                         <div class="header-right-actions">
                             <button class="header-icon-btn notification-btn">
@@ -906,7 +921,7 @@
                 <div class="screen-content">
                     <div class="route-detail-content">
                         <div class="route-details" id="routeDetails">
-                            <div class="loading">Loading route details...</div>
+                            <div class="loading" data-i18n="common.loadingRouteDetails">Loading route details...</div>
                         </div>
                     </div>
                 </div>
@@ -917,19 +932,19 @@
         <div class="bottom-nav">
             <div class="nav-item active" onclick="mobileApp.navigateToScreen('home')" data-nav="home">
                 <span class="nav-icon">🏠</span>
-                <span class="nav-label">Home</span>
+                <span class="nav-label" data-i18n="navigation.home">Home</span>
             </div>
             <div class="nav-item" onclick="mobileApp.navigateToScreen('liveTracking')" data-nav="track">
                 <span class="nav-icon">🚂</span>
-                <span class="nav-label">Track</span>
+                <span class="nav-label" data-i18n="navigation.track">Track</span>
             </div>
             <div class="nav-item" onclick="mobileApp.navigateToScreen('favoritesScreen')" data-nav="favorites">
                 <span class="nav-icon">⭐</span>
-                <span class="nav-label">Favorites</span>
+                <span class="nav-label" data-i18n="navigation.favorites">Favorites</span>
             </div>
             <div class="nav-item" onclick="mobileApp.navigateToScreen('profileScreen')" data-nav="profile">
                 <span class="nav-icon">⚙️</span>
-                <span class="nav-label">Settings</span>
+                <span class="nav-label" data-i18n="navigation.settings">Settings</span>
             </div>
         </div>
 

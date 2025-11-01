@@ -58,6 +58,25 @@ body.mobile-app {
     transition: all 0.3s ease;
     -webkit-overflow-scrolling: touch;
     position: relative;
+}
+
+/* Urdu Language Support - LTR (no RTL) */
+.lang-urdu {
+    font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Nafees Web Naskh', 'Al Qalam Taj Nastaleeq', 'Mehr Nastaliq Web', serif !important;
+    direction: ltr; /* Keep LTR for Urdu text */
+}
+
+.lang-urdu .stat-number,
+.lang-urdu .train-number,
+.lang-urdu .delay-badge,
+.lang-urdu .time-display,
+.lang-urdu input[type="number"],
+.lang-urdu .numeric {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    direction: ltr;
+}
+
+html {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -859,21 +878,32 @@ body.mobile-app.dark-mode .station-route-section {
     margin: 0;
     position: relative;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #667eea;
+    font-weight: 500;
+}
+
+.last-updated-header::before {
+    content: '🕐';
+    font-size: 1em;
+    animation: clockPulse 2s ease-in-out infinite;
 }
 
 .last-updated-header span {
-    font-size: 0.9em;
+    font-size: 0.85em;
     color: #667eea;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    font-weight: 500;
+    display: inline;
 }
 
-.last-updated-header span::before {
-    content: '🕐';
-    font-size: 1.1em;
-    animation: clockPulse 2s ease-in-out infinite;
+.last-updated-header span:last-child {
+    /* Time span - dynamically updated */
+    font-weight: 600;
+    color: #667eea;
 }
 
 @keyframes clockPulse {
@@ -890,6 +920,13 @@ body.mobile-app.dark-mode .station-route-section {
     margin-bottom: 15px;
     position: relative;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #667eea;
+    font-weight: 500;
 }
 
 /* Android-specific: Add safe padding to last-updated-header to ensure visibility below taller header */
@@ -4944,6 +4981,53 @@ body.mobile-app.dark-mode .logo-icon {
 .detail-value {
     color: #2c3e50;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.language-select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #1e293b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 200px;
+}
+
+.language-select:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+body.mobile-app.dark-mode .language-select {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+body.mobile-app.dark-mode .language-select:hover {
+    background: rgba(15, 23, 42, 0.9);
+}
+
+body.mobile-app.dark-mode .language-select:focus {
+    border-color: #667eea;
+    background: rgba(15, 23, 42, 1);
+}
+
+.lang-urdu .language-select {
+    direction: ltr;
+    text-align: left;
 }
 
 /* Toggle Switch */
