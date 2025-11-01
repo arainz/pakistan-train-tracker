@@ -109,6 +109,11 @@ body.mobile-app {
     direction: rtl !important;
 }
 
+/* Force ETA to display on right in Urdu train cards */
+.lang-urdu .eta-display {
+    direction: rtl !important;
+}
+
 /* Ensure English version stays LTR for last updated banners */
 .lang-english #homeLastUpdatedTime,
 .lang-english #liveTrackingLastUpdatedTime,

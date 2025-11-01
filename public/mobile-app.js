@@ -1724,7 +1724,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
-                            <span class="info-text">${eta}</span>
+                            <span class="info-text eta-display">${eta}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
@@ -1927,7 +1927,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
-                            <span class="info-text">${eta}</span>
+                            <span class="info-text eta-display">${eta}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
@@ -3155,7 +3155,7 @@ class MobileApp {
                     if (scheduledDep) {
                         if (trainDelay !== 0) {
                             expectedArrival = this.adjustTimeForDelay(scheduledDep, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay, false);
+                            stationDelay = this.formatDelayDisplay(trainDelay, true);
                             delayClass = trainDelay > 0 ? 'late' : 'early';
                         } else {
                             expectedArrival = scheduledDep;
@@ -3185,7 +3185,7 @@ class MobileApp {
                     const etaFromFunc = this.getTrainETA(train);
                     if (etaFromFunc && etaFromFunc !== '--:--') {
                         expectedArrival = etaFromFunc;
-                        stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay, false) : t('train.enRoute');
+                        stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay, true) : t('train.enRoute');
                         delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
                     } else {
                         expectedArrival = t('train.enRoute');
@@ -3197,13 +3197,18 @@ class MobileApp {
                     if (scheduledArr) {
                         if (trainDelay !== 0) {
                             expectedArrival = this.adjustTimeForDelay(scheduledArr, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay, false);
+                            stationDelay = this.formatDelayDisplay(trainDelay, true);
                             delayClass = trainDelay > 0 ? 'late' : 'early';
                         } else {
                             expectedArrival = scheduledArr;
                             stationDelay = t('train.onTime');
                             delayClass = 'on-time';
                         }
+                    } else {
+                        // No scheduled arrival time available
+                        expectedArrival = '--:--';
+                        stationDelay = 'N/A';
+                        delayClass = 'on-time';
                     }
                 }
             }
@@ -3771,19 +3776,26 @@ class MobileApp {
             delay = train.LateBy || 0;
         }
 
+        // Add delay status to ETA if train is late or early
+        let etaWithStatus = etaTime;
+        if (delay !== 0 && etaTime !== '--:--') {
+            const delayStatus = delay > 0 ? t('train.late') : t('train.early');
+            etaWithStatus = `${etaTime} (${delayStatus})`;
+        }
+
         // Use the calculated delay for display
         const delayText = this.formatDelayDisplay(delay);
-        
+
         // Get last updated
         const lastUpdated = train.LastUpdated ? this.formatLastUpdated(train.LastUpdated) : 'Unknown';
-        
+
         // Clear and rebuild popover content
         popover.innerHTML = '';
-        
+
         // Build rows with translated labels
         const rows = [
             { label: t('train.nextStation'), value: nextStationName },
-            { label: t('train.eta'), value: etaTime },
+            { label: t('train.eta'), value: etaWithStatus },
             { label: t('train.speed'), value: this.formatSpeedDisplay(speed) },
             { label: t('train.status'), value: status },
             { label: t('train.delay'), value: this.formatDelayDisplay(delay, false) },
@@ -4146,10 +4158,17 @@ class MobileApp {
     calculateTrainETA(train) {
         // Use the centralized getTrainETA function
         const etaTime = this.getTrainETA(train);
-        
-        // Return formatted ETA
+
+        // Return formatted ETA with delay status
         if (etaTime) {
-            return `ETA ${this.formatTimeAMPM(etaTime)}`;
+            const formattedETA = this.formatTimeAMPM(etaTime);
+            // Add delay status if train is late or early
+            const delay = this.calculateDelayFromETA(train);
+            if (delay !== null && delay !== 0) {
+                const delayStatus = delay > 0 ? this.getTranslatedLabel('train.late') : this.getTranslatedLabel('train.early');
+                return `ETA ${formattedETA} (${delayStatus})`;
+            }
+            return `ETA ${formattedETA}`;
         }
 
         // Fallback: Calculate from scheduled time + delay if API ETA not available
@@ -5026,7 +5045,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏰</span>
-                            <span class="info-text">${eta}</span>
+                            <span class="info-text eta-display">${eta}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⚡</span>
