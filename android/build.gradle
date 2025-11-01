@@ -7,7 +7,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.2'
+        classpath 'com.android.tools.build:gradle:8.5.0'
         classpath 'com.google.gms:google-services:4.4.2'
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -23,6 +23,44 @@ allprojects {
         mavenCentral()
     }
 }
+
+// Force all subprojects to use Java 17 (override Capacitor modules that may have Java 21)
+subprojects {
+    afterEvaluate { project ->
+        // Configure Java compilation
+        if (project.hasProperty('android')) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+        
+        // Configure all Kotlin compile tasks to use JVM target 17
+        project.tasks.all { task ->
+            if (task.class.simpleName.contains('KotlinCompile')) {
+                try {
+                    task.kotlinOptions.jvmTarget = "17"
+                } catch (Exception e) {
+                    // Task doesn't have kotlinOptions, skip
+                }
+            }
+        }
+        
+        // Also try direct configuration using class name
+        try {
+            def kotlinCompileClass = Class.forName('org.jetbrains.kotlin.gradle.tasks.KotlinCompile')
+            project.tasks.withType(kotlinCompileClass).configureEach { task ->
+                task.kotlinOptions.jvmTarget = "17"
+            }
+        } catch (ClassNotFoundException e) {
+            // Kotlin plugin not applied, skip
+        }
+    }
+}
+
+
 
 task clean(type: Delete) {
     delete rootProject.buildDir

@@ -1,0 +1,2135 @@
+{
+  "travelDate": "2025-11-01",
+  "completedAt": "2025-11-01T03:20:52.236559",
+  "totalRoutes": 77,
+  "successfulSearches": 77,
+  "failedSearches": 0,
+  "totalTrainsFound": 179,
+  "results": [
+    {
+      "trainId": 1,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "PSC",
+      "stationCount": 43,
+      "trainCount": 3,
+      "trains": [
+        {
+          "trainDirDayId": 102449.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109847.0,
+          "trainCode": "47UP",
+          "trainId": "T01-47UP-10",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100508.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 2,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "PSC",
+      "destinationStationCode": "KCT",
+      "stationCount": 42,
+      "trainCount": 3,
+      "trains": [
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110025.0,
+          "trainCode": "48DN",
+          "trainId": "T01-48DN-9",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100690.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 3,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Jacobabad Jn",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "JCD",
+      "stationCount": 16,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 109123.0,
+          "trainCode": "145UP",
+          "trainId": "T01-145UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 4,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jacobabad Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "JCD",
+      "destinationStationCode": "KYC",
+      "stationCount": 16,
+      "trainCount": 3,
+      "trains": [
+        {
+          "trainDirDayId": 103590.0,
+          "trainCode": "20DN.",
+          "trainId": "T01-20DN.-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109305.0,
+          "trainCode": "146DN",
+          "trainId": "T01-146DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100921.0,
+          "trainCode": "4DN",
+          "trainId": "T01-4DN-4",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 5,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Margala",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "MGLA",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 100993.0,
+          "trainCode": "5UP",
+          "trainId": "T01-5UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 6,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "MGLA",
+      "destinationStationCode": "KCT",
+      "stationCount": 10,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 101175.0,
+          "trainCode": "6DN",
+          "trainId": "T01-6DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 7,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "RWP",
+      "stationCount": 29,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102449.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109847.0,
+          "trainCode": "47UP",
+          "trainId": "T01-47UP-10",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106211.0,
+          "trainCode": "45UP",
+          "trainId": "T01-45UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101357.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100993.0,
+          "trainCode": "5UP",
+          "trainId": "T01-5UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100508.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 8,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "RWP",
+      "destinationStationCode": "KCT",
+      "stationCount": 31,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106575.0,
+          "trainCode": "46DN",
+          "trainId": "T01-46DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110025.0,
+          "trainCode": "48DN",
+          "trainId": "T01-48DN-9",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101175.0,
+          "trainCode": "6DN",
+          "trainId": "T01-6DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 9,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "SLK",
+      "stationCount": 38,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 106393.0,
+          "trainCode": "9UP",
+          "trainId": "T01-9UP-7",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 10,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "SLK",
+      "destinationStationCode": "KCT",
+      "stationCount": 37,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 101903.0,
+          "trainCode": "10DN",
+          "trainId": "T01-10DN-5",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 11,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Havelian",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "HVN",
+      "stationCount": 53,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 12,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Havelian",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "HVN",
+      "destinationStationCode": "KYC",
+      "stationCount": 54,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 15,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "LHR",
+      "stationCount": 12,
+      "trainCount": 10,
+      "trains": [
+        {
+          "trainDirDayId": 104027.0,
+          "trainCode": "27UP",
+          "trainId": "T01-27UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102449.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105483.0,
+          "trainCode": "41UP",
+          "trainId": "T01-41UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106393.0,
+          "trainCode": "9UP",
+          "trainId": "T01-9UP-7",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104391.0,
+          "trainCode": "33UP",
+          "trainId": "T01-33UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101357.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102813.0,
+          "trainCode": "15UP",
+          "trainId": "T01-15UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104755.0,
+          "trainCode": "37UP",
+          "trainId": "T01-37UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100993.0,
+          "trainCode": "5UP",
+          "trainId": "T01-5UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100508.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 16,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "KCT",
+      "stationCount": 13,
+      "trainCount": 10,
+      "trains": [
+        {
+          "trainDirDayId": 104937.0,
+          "trainCode": "38DN",
+          "trainId": "T01-38DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104209.0,
+          "trainCode": "28DN",
+          "trainId": "T01-28DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101903.0,
+          "trainCode": "10DN",
+          "trainId": "T01-10DN-5",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105665.0,
+          "trainCode": "42DN",
+          "trainId": "T01-42DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104573.0,
+          "trainCode": "34DN",
+          "trainId": "T01-34DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102995.0,
+          "trainCode": "16DN",
+          "trainId": "T01-16DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101175.0,
+          "trainCode": "6DN",
+          "trainId": "T01-6DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 17,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lala Musa Jn.",
+      "direction": "UP",
+      "originStationCode": "KCT",
+      "destinationStationCode": "LLM",
+      "stationCount": 35,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102449.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109847.0,
+          "trainCode": "47UP",
+          "trainId": "T01-47UP-10",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106211.0,
+          "trainCode": "45UP",
+          "trainId": "T01-45UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103177.0,
+          "trainCode": "17UP",
+          "trainId": "T01-17UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101357.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100508.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 18,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lala Musa Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "originStationCode": "LLM",
+      "destinationStationCode": "KCT",
+      "stationCount": 36,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106575.0,
+          "trainCode": "46DN",
+          "trainId": "T01-46DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103359.0,
+          "trainCode": "18DN",
+          "trainId": "T01-18DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110025.0,
+          "trainCode": "48DN",
+          "trainId": "T01-48DN-9",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 25,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Multan Cantt",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "MUL",
+      "stationCount": 26,
+      "trainCount": 2,
+      "trains": [
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103663.0,
+          "trainCode": "25UP",
+          "trainId": "T01-25UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 26,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "MUL",
+      "destinationStationCode": "KYC",
+      "stationCount": 26,
+      "trainCount": 2,
+      "trains": [
+        {
+          "trainDirDayId": 102266.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103845.0,
+          "trainCode": "26DN",
+          "trainId": "T01-26DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 37,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "LHR",
+      "stationCount": 45,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 104755.0,
+          "trainCode": "37UP",
+          "trainId": "T01-37UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 38,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "KYC",
+      "stationCount": 46,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 104937.0,
+          "trainCode": "38DN",
+          "trainId": "T01-38DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 39,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Quetta",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "originStationCode": "QTC",
+      "destinationStationCode": "PSC",
+      "stationCount": 44,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 40,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Quetta",
+      "direction": "DN",
+      "originStationCode": "PSC",
+      "destinationStationCode": "QTC",
+      "stationCount": 43,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 101,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "originStationCode": "LHR",
+      "destinationStationCode": "RWP",
+      "stationCount": 9,
+      "trainCount": 9,
+      "trains": [
+        {
+          "trainDirDayId": 108031.0,
+          "trainCode": "105UP",
+          "trainId": "T01-105UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107303.0,
+          "trainCode": "101UP",
+          "trainId": "T01-101UP-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102448.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105118.0,
+          "trainCode": "39UP",
+          "trainId": "T01-39UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101356.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100992.0,
+          "trainCode": "5UP",
+          "trainId": "T01-5UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107667.0,
+          "trainCode": "103UP",
+          "trainId": "T01-103UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 108395.0,
+          "trainCode": "107UP",
+          "trainId": "T01-107UP-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100507.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 102,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "originStationCode": "RWP",
+      "destinationStationCode": "LHR",
+      "stationCount": 8,
+      "trainCount": 9,
+      "trains": [
+        {
+          "trainDirDayId": 108213.0,
+          "trainCode": "106DN",
+          "trainId": "T01-106DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107485.0,
+          "trainCode": "102DN",
+          "trainId": "T01-102DN-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105301.0,
+          "trainCode": "40DN",
+          "trainId": "T01-40DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101175.0,
+          "trainCode": "6DN",
+          "trainId": "T01-6DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107849.0,
+          "trainCode": "104DN",
+          "trainId": "T01-104DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 108577.0,
+          "trainCode": "108DN",
+          "trainId": "T01-108DN-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 108,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "originStationCode": "MGLA",
+      "destinationStationCode": "LHR",
+      "stationCount": 4,
+      "trainCount": 2,
+      "trains": [
+        {
+          "trainDirDayId": 101175.0,
+          "trainCode": "6DN",
+          "trainId": "T01-6DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 108577.0,
+          "trainCode": "108DN",
+          "trainId": "T01-108DN-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 111,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Faisalabad",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "FSLD",
+      "destinationStationCode": "LHR",
+      "stationCount": 8,
+      "trainCount": 4,
+      "trains": [
+        {
+          "trainDirDayId": 110202.0,
+          "trainCode": "111UP",
+          "trainId": "T01-111UP-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105482.0,
+          "trainCode": "41UP",
+          "trainId": "T01-41UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110348.0,
+          "trainCode": "113UP",
+          "trainId": "T01-113UP-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104027.0,
+          "trainCode": "27UP",
+          "trainId": "T01-27UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 112,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Faisalabad",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "FSLD",
+      "stationCount": 8,
+      "trainCount": 4,
+      "trains": [
+        {
+          "trainDirDayId": 104209.0,
+          "trainCode": "28DN",
+          "trainId": "T01-28DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110275.0,
+          "trainCode": "112DN",
+          "trainId": "T01-112DN-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105665.0,
+          "trainCode": "42DN",
+          "trainId": "T01-42DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110421.0,
+          "trainCode": "114DN",
+          "trainId": "T01-114DN-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 115,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "MUL",
+      "destinationStationCode": "LHR",
+      "stationCount": 10,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 102448.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105118.0,
+          "trainCode": "39UP",
+          "trainId": "T01-39UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102812.0,
+          "trainCode": "15UP",
+          "trainId": "T01-15UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101356.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100507.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100326.0,
+          "trainCode": "115UP",
+          "trainId": "T01-115UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104027.0,
+          "trainCode": "27UP",
+          "trainId": "T01-27UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 116,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "MUL",
+      "stationCount": 6,
+      "trainCount": 7,
+      "trains": [
+        {
+          "trainDirDayId": 107121.0,
+          "trainCode": "116DN",
+          "trainId": "T01-116DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104209.0,
+          "trainCode": "28DN",
+          "trainId": "T01-28DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105301.0,
+          "trainCode": "40DN",
+          "trainId": "T01-40DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102995.0,
+          "trainCode": "16DN",
+          "trainId": "T01-16DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 121,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Shorkot Cantt Jn",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "SKO",
+      "destinationStationCode": "LHR",
+      "stationCount": 15,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 110494.0,
+          "trainCode": "121UP",
+          "trainId": "T01-121UP-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 122,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Shorkot Cantt Jn",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "SKO",
+      "stationCount": 15,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 110567.0,
+          "trainCode": "122DN",
+          "trainId": "T01-122DN-0",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 125,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "originStationCode": "LHR",
+      "destinationStationCode": "SLK",
+      "stationCount": 15,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 106392.0,
+          "trainCode": "9UP",
+          "trainId": "T01-9UP-7",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 126,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "originStationCode": "SLK",
+      "destinationStationCode": "LHR",
+      "stationCount": 15,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 101903.0,
+          "trainCode": "10DN",
+          "trainId": "T01-10DN-5",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 127,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "originStationCode": "MUL",
+      "destinationStationCode": "RWP",
+      "stationCount": 37,
+      "trainCount": 8,
+      "trains": [
+        {
+          "trainDirDayId": 102448.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109846.0,
+          "trainCode": "47UP",
+          "trainId": "T01-47UP-10",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105118.0,
+          "trainCode": "39UP",
+          "trainId": "T01-39UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106210.0,
+          "trainCode": "45UP",
+          "trainId": "T01-45UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109487.0,
+          "trainCode": "129UP",
+          "trainId": "T01-129UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101356.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100507.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 128,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "originStationCode": "RWP",
+      "destinationStationCode": "MUL",
+      "stationCount": 37,
+      "trainCount": 8,
+      "trains": [
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106575.0,
+          "trainCode": "46DN",
+          "trainId": "T01-46DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109669.0,
+          "trainCode": "130DN",
+          "trainId": "T01-130DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105301.0,
+          "trainCode": "40DN",
+          "trainId": "T01-40DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110025.0,
+          "trainCode": "48DN",
+          "trainId": "T01-48DN-9",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 133,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Kohat Cantt",
+      "direction": "UP",
+      "originStationCode": "RWP",
+      "destinationStationCode": "KHCT",
+      "stationCount": 11,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 134,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kohat Cantt",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "originStationCode": "KHCT",
+      "destinationStationCode": "RWP",
+      "stationCount": 11,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 135,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sargodha Jn",
+      "destination": "Lala Musa Jn.",
+      "direction": "UP",
+      "originStationCode": "SRQ",
+      "destinationStationCode": "LLM",
+      "stationCount": 18,
+      "trainCount": 2,
+      "trains": [
+        {
+          "trainDirDayId": 102084.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103176.0,
+          "trainCode": "17UP",
+          "trainId": "T01-17UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 136,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lala Musa Jn.",
+      "destination": "Sargodha Jn",
+      "direction": "DN",
+      "originStationCode": "LLM",
+      "destinationStationCode": "SRQ",
+      "stationCount": 18,
+      "trainCount": 2,
+      "trains": [
+        {
+          "trainDirDayId": 103359.0,
+          "trainCode": "18DN",
+          "trainId": "T01-18DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 147,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mari Indus",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "originStationCode": "MAT",
+      "destinationStationCode": "LHR",
+      "stationCount": 15,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 148,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Mari Indus",
+      "direction": "DN",
+      "originStationCode": "LHR",
+      "destinationStationCode": "MAT",
+      "stationCount": 15,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 149,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "MPS",
+      "stationCount": 11,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 150,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "MPS",
+      "destinationStationCode": "KYC",
+      "stationCount": 11,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 155,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Hyderabad Jn",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "originStationCode": "HDR",
+      "destinationStationCode": "MPS",
+      "stationCount": 4,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 156,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Hyderabad Jn",
+      "direction": "DN",
+      "originStationCode": "MPS",
+      "destinationStationCode": "HDR",
+      "stationCount": 4,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 201,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mari Indus",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "originStationCode": "MAT",
+      "destinationStationCode": "ATCY",
+      "stationCount": 18,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 202,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Mari Indus",
+      "direction": "DN",
+      "originStationCode": "ATCY",
+      "destinationStationCode": "MAT",
+      "stationCount": 18,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 203,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jand Jn",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "originStationCode": "JAD",
+      "destinationStationCode": "ATCY",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 109487.0,
+          "trainCode": "129UP",
+          "trainId": "T01-129UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 204,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Jand Jn",
+      "direction": "DN",
+      "originStationCode": "ATCY",
+      "destinationStationCode": "JAD",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 109669.0,
+          "trainCode": "130DN",
+          "trainId": "T01-130DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 209,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Narowal Jn",
+      "direction": "UP",
+      "originStationCode": "LHR",
+      "destinationStationCode": "NWL",
+      "stationCount": 11,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 106392.0,
+          "trainCode": "9UP",
+          "trainId": "T01-9UP-7",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 210,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Narowal Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "originStationCode": "NWL",
+      "destinationStationCode": "LHR",
+      "stationCount": 11,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 101903.0,
+          "trainCode": "10DN",
+          "trainId": "T01-10DN-5",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 213,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kotri Jn",
+      "destination": "Rohri Jn.",
+      "direction": "UP",
+      "originStationCode": "KOT",
+      "destinationStationCode": "ROH",
+      "stationCount": 24,
+      "trainCount": 6,
+      "trains": [
+        {
+          "trainDirDayId": 109122.0,
+          "trainCode": "145UP",
+          "trainId": "T01-145UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102085.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102449.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 106393.0,
+          "trainCode": "9UP",
+          "trainId": "T01-9UP-7",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103663.0,
+          "trainCode": "25UP",
+          "trainId": "T01-25UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104755.0,
+          "trainCode": "37UP",
+          "trainId": "T01-37UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 214,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rohri Jn.",
+      "destination": "Kotri Jn",
+      "direction": "DN",
+      "originStationCode": "ROH",
+      "destinationStationCode": "KOT",
+      "stationCount": 24,
+      "trainCount": 6,
+      "trains": [
+        {
+          "trainDirDayId": 101902.0,
+          "trainCode": "10DN",
+          "trainId": "T01-10DN-5",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102630.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102266.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109305.0,
+          "trainCode": "146DN",
+          "trainId": "T01-146DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 104937.0,
+          "trainCode": "38DN",
+          "trainId": "T01-38DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 103845.0,
+          "trainCode": "26DN",
+          "trainId": "T01-26DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 225,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazirabad Jn",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "originStationCode": "WZD",
+      "destinationStationCode": "SLK",
+      "stationCount": 5,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 226,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Wazirabad Jn",
+      "direction": "DN",
+      "originStationCode": "SLK",
+      "destinationStationCode": "WZD",
+      "stationCount": 5,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 227,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Dabheji",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "DBJ",
+      "stationCount": 14,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 267,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Havelian",
+      "direction": "UP",
+      "originStationCode": "RWP",
+      "destinationStationCode": "HVN",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 102084.0,
+          "trainCode": "11UP",
+          "trainId": "T01-11UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 268,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Havelian",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "originStationCode": "HVN",
+      "destinationStationCode": "RWP",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 102267.0,
+          "trainCode": "12DN",
+          "trainId": "T01-12DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 274,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Malakwal Jn",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "DN",
+      "originStationCode": "MKW",
+      "destinationStationCode": "PDK",
+      "stationCount": 3,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 275,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "originStationCode": "RWP",
+      "destinationStationCode": "ATCY",
+      "stationCount": 4,
+      "trainCount": 5,
+      "trains": [
+        {
+          "trainDirDayId": 100506.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-10-30T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109669.0,
+          "trainCode": "130DN",
+          "trainId": "T01-130DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102448.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109846.0,
+          "trainCode": "47UP",
+          "trainId": "T01-47UP-10",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105118.0,
+          "trainCode": "39UP",
+          "trainId": "T01-39UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 276,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "originStationCode": "ATCY",
+      "destinationStationCode": "RWP",
+      "stationCount": 3,
+      "trainCount": 5,
+      "trains": [
+        {
+          "trainDirDayId": 105301.0,
+          "trainCode": "40DN",
+          "trainId": "T01-40DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 110025.0,
+          "trainCode": "48DN",
+          "trainId": "T01-48DN-9",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 109487.0,
+          "trainCode": "129UP",
+          "trainId": "T01-129UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100690.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 277,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Pind Dadan Khan Railway Station",
+      "destination": "Malakwal Jn",
+      "direction": "UP",
+      "originStationCode": "PDK",
+      "destinationStationCode": "MKW",
+      "stationCount": 3,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 347,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "PDK",
+      "stationCount": 30,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 354,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "RINR",
+      "destinationStationCode": "KYC",
+      "stationCount": 9,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 103590.0,
+          "trainCode": "20DN.",
+          "trainId": "T01-20DN.-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 356,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "LRC",
+      "destinationStationCode": "KYC",
+      "stationCount": 9,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 501,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Badami Bagh",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "BBG",
+      "stationCount": 10,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 502,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Badami Bagh",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "BBG",
+      "destinationStationCode": "KYC",
+      "stationCount": 10,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 551,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "RINR",
+      "stationCount": 9,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 1133,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jacobabad Jn",
+      "destination": "Margala",
+      "direction": "UP",
+      "originStationCode": "JCD",
+      "destinationStationCode": "MGLA",
+      "stationCount": 9,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 1134,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Jacobabad Jn",
+      "direction": "DN",
+      "originStationCode": "MGLA",
+      "destinationStationCode": "JCD",
+      "stationCount": 9,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 9042,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Faisalabad",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "FSLD",
+      "stationCount": 10,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 9052,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "originStationCode": "KYC",
+      "destinationStationCode": "PSC",
+      "stationCount": 43,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 9053,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "originStationCode": "PSC",
+      "destinationStationCode": "KYC",
+      "stationCount": 44,
+      "trainCount": 0,
+      "trains": []
+    },
+    {
+      "trainId": 9054,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Dera Ghazi Khan",
+      "direction": "DN",
+      "originStationCode": "MUL",
+      "destinationStationCode": "DGK",
+      "stationCount": 6,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 106757.0,
+          "trainCode": "227DN",
+          "trainId": "T01-227DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 9055,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Dera Ghazi Khan",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "originStationCode": "DGK",
+      "destinationStationCode": "MUL",
+      "stationCount": 7,
+      "trainCount": 1,
+      "trains": [
+        {
+          "trainDirDayId": 106939.0,
+          "trainCode": "228UP",
+          "trainId": "T01-228UP-4",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 10052,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Wazirabad Jn",
+      "direction": "UP",
+      "originStationCode": "LHR",
+      "destinationStationCode": "WZD",
+      "stationCount": 12,
+      "trainCount": 6,
+      "trains": [
+        {
+          "trainDirDayId": 107303.0,
+          "trainCode": "101UP",
+          "trainId": "T01-101UP-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102448.0,
+          "trainCode": "13UP",
+          "trainId": "T01-13UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105118.0,
+          "trainCode": "39UP",
+          "trainId": "T01-39UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101356.0,
+          "trainCode": "7UP",
+          "trainId": "T01-7UP-3",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107667.0,
+          "trainCode": "103UP",
+          "trainId": "T01-103UP-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 100507.0,
+          "trainCode": "1UP",
+          "trainId": "T01-1UP-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        }
+      ]
+    },
+    {
+      "trainId": 10053,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazirabad Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "originStationCode": "WZD",
+      "destinationStationCode": "LHR",
+      "stationCount": 12,
+      "trainCount": 6,
+      "trains": [
+        {
+          "trainDirDayId": 100689.0,
+          "trainCode": "2DN",
+          "trainId": "T01-2DN-1",
+          "startTrainDate": "2025-10-31T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107485.0,
+          "trainCode": "102DN",
+          "trainId": "T01-102DN-2",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 101539.0,
+          "trainCode": "8DN",
+          "trainId": "T01-8DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 105301.0,
+          "trainCode": "40DN",
+          "trainId": "T01-40DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 102631.0,
+          "trainCode": "14DN",
+          "trainId": "T01-14DN-3",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        },
+        {
+          "trainDirDayId": 107849.0,
+          "trainCode": "104DN",
+          "trainId": "T01-104DN-1",
+          "startTrainDate": "2025-11-01T00:00:00.000+05:00"
+        }
+      ]
+    }
+  ]
+}

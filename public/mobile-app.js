@@ -77,6 +77,18 @@ class MobileApp {
         document.body.classList.remove('screen-active');
         this.currentScreen = 'home';
         
+        // Detect Android platform and add class for Android-specific styling
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            const platform = window.Capacitor.getPlatform();
+            if (platform === 'android') {
+                document.body.classList.add('platform-android');
+                document.documentElement.classList.add('platform-android');
+            } else if (platform === 'ios') {
+                document.body.classList.add('platform-ios');
+                document.documentElement.classList.add('platform-ios');
+            }
+        }
+        
         // Make sure main content is visible (shows loading state, then updates)
         this.showMainContent();
         
@@ -5699,6 +5711,10 @@ class MobileApp {
             const stickyHeader = banner.closest('.screen')?.querySelector('.sticky-header') ||
                                 document.querySelector('.sticky-header');
             
+            // Check if Android platform (for increased header height)
+            const isAndroid = document.body.classList.contains('platform-android') ||
+                             document.documentElement.classList.contains('platform-android');
+            
             if (stickyHeader) {
                 const headerRect = stickyHeader.getBoundingClientRect();
                 headerBottom = headerRect.bottom;
@@ -5711,15 +5727,27 @@ class MobileApp {
                     
                     // Check if this is Train Details screen with clock (taller header)
                     const hasClock = stickyHeader.querySelector('.header-clock');
-                    const baseHeaderHeight = hasClock ? 90 : 70; // Clock adds ~20px
+                    // Android header is taller: 84px base (vs 70px) or 104px with clock (vs 90px)
+                    let baseHeaderHeight;
+                    if (isAndroid) {
+                        baseHeaderHeight = hasClock ? 104 : 84; // Android: 84px base, 104px with clock
+                    } else {
+                        baseHeaderHeight = hasClock ? 90 : 70; // iOS/Web: 70px base, 90px with clock
+                    }
                     
                     headerBottom = safeAreaTop + baseHeaderHeight;
                 }
             } else {
                 // Fallback: assume header is ~70px + safe area (or ~90px for Train Details)
+                // On Android: ~84px base or ~104px for Train Details
                 const safeAreaTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0;
                 const isTrainDetail = this.currentScreen === 'liveTrainDetail';
-                const baseHeaderHeight = isTrainDetail ? 90 : 70;
+                let baseHeaderHeight;
+                if (isAndroid) {
+                    baseHeaderHeight = isTrainDetail ? 104 : 84; // Android: 84px base, 104px for Train Details
+                } else {
+                    baseHeaderHeight = isTrainDetail ? 90 : 70; // iOS/Web: 70px base, 90px for Train Details
+                }
                 headerBottom = safeAreaTop + baseHeaderHeight;
             }
             

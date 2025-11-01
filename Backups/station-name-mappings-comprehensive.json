@@ -1,0 +1,1406 @@
+{
+  "generatedAt": "2025-11-01T03:18:15.358546",
+  "source": "stations-dropdown.json vs schedules.json",
+  "totalScheduleStations": 331,
+  "successfulMatches": 266,
+  "unmatchedStations": 65,
+  "mappings": {
+    "Ab-i-gum": {
+      "stationCode": "ABG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Abdul Hakim": {
+      "stationCode": "ABK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Ahsan Pur Ahp": {
+      "stationCode": "AHP",
+      "confidence": 0.8333333333333334,
+      "matchType": "fuzzy"
+    },
+    "Ajnala": {
+      "stationCode": "AAJ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Akhter Karana": {
+      "stationCode": "AKTR",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Alipur Chatha": {
+      "stationCode": "ACHH",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Alluwali": {
+      "stationCode": "AWI",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Amri": {
+      "stationCode": "AMR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Arif Wala": {
+      "stationCode": "ARF",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Attock City Jn": {
+      "stationCode": "ATCY",
+      "confidence": 0.9285714285714286,
+      "matchType": "fuzzy"
+    },
+    "Babari Banda": {
+      "stationCode": "BBJ",
+      "confidence": 0.9565217391304348,
+      "matchType": "fuzzy"
+    },
+    "Badah": {
+      "stationCode": "BDR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Badal Nala": {
+      "stationCode": "BDNL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Badami Bagh": {
+      "stationCode": "BBG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Baddomalhi": {
+      "stationCode": "BDML",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bahalike": {
+      "stationCode": "BKZ",
+      "confidence": 0.9333333333333333,
+      "matchType": "fuzzy"
+    },
+    "Bahawalpur": {
+      "stationCode": "BWPR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bakhtiarabad Domki": {
+      "stationCode": "BKDK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bakrani Road": {
+      "stationCode": "BKR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Baldher": {
+      "stationCode": "BZD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bali Shah": {
+      "stationCode": "BSF",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bandhi": {
+      "stationCode": "BHE",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Banna Mian Wala": {
+      "stationCode": "BMWL",
+      "confidence": 0.8148148148148148,
+      "matchType": "fuzzy"
+    },
+    "Basal Sharif": {
+      "stationCode": "BOSS",
+      "confidence": 0.9166666666666666,
+      "matchType": "fuzzy"
+    },
+    "Basirpur": {
+      "stationCode": "BSU",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Behal": {
+      "stationCode": "BEL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bhakkar": {
+      "stationCode": "BHKR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bhalwal": {
+      "stationCode": "BWQ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bhan Sayadabad": {
+      "stationCode": "BAN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bhiria Road": {
+      "stationCode": "BRO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bin Qasim": {
+      "stationCode": "BQM",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Braudabad": {
+      "stationCode": "BKB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Bucheri": {
+      "stationCode": "UHI",
+      "confidence": 0.7692307692307693,
+      "matchType": "fuzzy"
+    },
+    "Budh": {
+      "stationCode": "BVD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Cadet College Petaro": {
+      "stationCode": "CCQ",
+      "confidence": 0.95,
+      "matchType": "fuzzy"
+    },
+    "Chak Jhumra Jn": {
+      "stationCode": "CKJ",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Chak Sher Muhammad": {
+      "stationCode": "CSMD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Chaklala": {
+      "stationCode": "CKL",
+      "confidence": 0.9411764705882353,
+      "matchType": "fuzzy"
+    },
+    "Chanab Nagar": {
+      "stationCode": "CNR",
+      "confidence": 0.9166666666666666,
+      "matchType": "fuzzy"
+    },
+    "Chawinda": {
+      "stationCode": "CWD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Chhab": {
+      "stationCode": "CBB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Chhor": {
+      "stationCode": "UHI",
+      "confidence": 0.7272727272727273,
+      "matchType": "fuzzy"
+    },
+    "Chichawatni": {
+      "stationCode": "CCE",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Chichoki Mallian": {
+      "stationCode": "CCM",
+      "confidence": 0.967741935483871,
+      "matchType": "fuzzy"
+    },
+    "Chilian Wala": {
+      "stationCode": "CHW",
+      "confidence": 0.9565217391304348,
+      "matchType": "fuzzy"
+    },
+    "Chiniot": {
+      "stationCode": "CHOT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Chur Sharif": {
+      "stationCode": "CHSF",
+      "confidence": 0.9565217391304348,
+      "matchType": "fuzzy"
+    },
+    "Dabheji": {
+      "stationCode": "DBJ",
+      "confidence": 0.8571428571428571,
+      "matchType": "fuzzy"
+    },
+    "Dadu": {
+      "stationCode": "DDU",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Daharki": {
+      "stationCode": "DRK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Darya Khan": {
+      "stationCode": "DYN",
+      "confidence": 0.9473684210526315,
+      "matchType": "fuzzy"
+    },
+    "Daud Khel Jn": {
+      "stationCode": "DKL",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Daur": {
+      "stationCode": "DOU",
+      "confidence": 0.75,
+      "matchType": "fuzzy"
+    },
+    "Dera Allahyar": {
+      "stationCode": "DAHR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dera Dinpanah": {
+      "stationCode": "DNP",
+      "confidence": 0.96,
+      "matchType": "fuzzy"
+    },
+    "Dera Ghazi Khan": {
+      "stationCode": "DGK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dera Murad Jamali": {
+      "stationCode": "DMJJ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dera Nawab Sahib": {
+      "stationCode": "DWBS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dina": {
+      "stationCode": "DNA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dinga": {
+      "stationCode": "DGH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Domala": {
+      "stationCode": "DMLA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Domel": {
+      "stationCode": "DOME",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Doratta": {
+      "stationCode": "DTA",
+      "confidence": 0.9230769230769231,
+      "matchType": "fuzzy"
+    },
+    "Drigh Road": {
+      "stationCode": "DID",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Dunyapur": {
+      "stationCode": "DYR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Faisalabad": {
+      "stationCode": "FSLD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Faqirabad": {
+      "stationCode": "FQB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Farooqabad": {
+      "stationCode": "FRQD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Fateh Jang": {
+      "stationCode": "FJG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Firoza": {
+      "stationCode": "FRA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gagoo": {
+      "stationCode": "GOO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gambat": {
+      "stationCode": "GBT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Ghotki": {
+      "stationCode": "GHK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gilawala": {
+      "stationCode": "GLW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gojra": {
+      "stationCode": "GJA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Golra Sharif": {
+      "stationCode": "GLRS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gujar Khan": {
+      "stationCode": "GKN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gujranwala": {
+      "stationCode": "GRW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gujrat": {
+      "stationCode": "GRT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Gurmani": {
+      "stationCode": "GUI",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Habib Kot Jn.": {
+      "stationCode": "HBKT",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Hafizabad": {
+      "stationCode": "HFD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Haibat Shaheed": {
+      "stationCode": "HTS",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Haran Pur": {
+      "stationCode": "HNP",
+      "confidence": 0.9411764705882353,
+      "matchType": "fuzzy"
+    },
+    "Hariah": {
+      "stationCode": "HRA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Haripur Hazara": {
+      "stationCode": "HRU",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Hasan Abdal": {
+      "stationCode": "HSN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Haveli Wasawewala": {
+      "stationCode": "HWSW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Havelian": {
+      "stationCode": "HVN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Hyderabad Jn": {
+      "stationCode": "HDR",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Injra": {
+      "stationCode": "IJA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jacobabad Jn": {
+      "stationCode": "JCD",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Jahangira Road": {
+      "stationCode": "JHR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jahania": {
+      "stationCode": "JAI",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jam Pur": {
+      "stationCode": "JMPR",
+      "confidence": 0.9230769230769231,
+      "matchType": "fuzzy"
+    },
+    "Jaman Shah": {
+      "stationCode": "JNS",
+      "confidence": 0.9473684210526315,
+      "matchType": "fuzzy"
+    },
+    "Jamraniwah": {
+      "stationCode": "JMH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jand Jn": {
+      "stationCode": "JAD",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Jaranwala": {
+      "stationCode": "JNW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jaurah Karana": {
+      "stationCode": "JRH",
+      "confidence": 0.9230769230769231,
+      "matchType": "fuzzy"
+    },
+    "Jhalar": {
+      "stationCode": "JRN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jhammat": {
+      "stationCode": "JHMT",
+      "confidence": 0.9230769230769231,
+      "matchType": "fuzzy"
+    },
+    "Jhampir": {
+      "stationCode": "JHP",
+      "confidence": 0.8571428571428571,
+      "matchType": "fuzzy"
+    },
+    "Jhang Sadar": {
+      "stationCode": "JGH",
+      "confidence": 0.9523809523809523,
+      "matchType": "fuzzy"
+    },
+    "Jhelum": {
+      "stationCode": "JMR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Jungshahi": {
+      "stationCode": "JGS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kahal": {
+      "stationCode": "KHL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kahror Pakka": {
+      "stationCode": "KOP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kala Khatai": {
+      "stationCode": "KLKT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kalur Kot": {
+      "stationCode": "KLO",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Kamalia": {
+      "stationCode": "KZM",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kandhkot": {
+      "stationCode": "KFZ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kanganpur": {
+      "stationCode": "KZN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kanjwani": {
+      "stationCode": "KJX",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Karachi Cantt": {
+      "stationCode": "KCT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Karachi City": {
+      "stationCode": "KYC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kashmor Colony": {
+      "stationCode": "KZLC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kasur Jn": {
+      "stationCode": "KUS",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Kemari": {
+      "stationCode": "KMR",
+      "confidence": 0.8333333333333334,
+      "matchType": "fuzzy"
+    },
+    "Khairpur": {
+      "stationCode": "KHP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Khanewal Jn": {
+      "stationCode": "KWL",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Khanpur Jn": {
+      "stationCode": "KPR",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Khanpur Jn.": {
+      "stationCode": "KPR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kharian Cantt": {
+      "stationCode": "KRNC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Khatakbad": {
+      "stationCode": "KTBD",
+      "confidence": 0.9473684210526315,
+      "matchType": "fuzzy"
+    },
+    "Khatian Road": {
+      "stationCode": "LKRO",
+      "confidence": 0.7272727272727273,
+      "matchType": "fuzzy"
+    },
+    "Khudian": {
+      "stationCode": "KHUK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kohat Cantt": {
+      "stationCode": "KHCT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kolpur": {
+      "stationCode": "KLR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kot Addu": {
+      "stationCode": "ADK",
+      "confidence": 0.7058823529411765,
+      "matchType": "fuzzy"
+    },
+    "Kot Lakhpat": {
+      "stationCode": "LKP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kot Laloo": {
+      "stationCode": "KQO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Kot Najib Ullah": {
+      "stationCode": "KJQ",
+      "confidence": 0.9655172413793104,
+      "matchType": "fuzzy"
+    },
+    "Kot Radha Kishan": {
+      "stationCode": "KRK",
+      "confidence": 0.9375,
+      "matchType": "fuzzy"
+    },
+    "Kot Sultan": {
+      "stationCode": "KTS",
+      "confidence": 0.9473684210526315,
+      "matchType": "fuzzy"
+    },
+    "Kotri Jn": {
+      "stationCode": "KOT",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Kundian Jn": {
+      "stationCode": "KDA",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Lahore Cantt": {
+      "stationCode": "LRC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Lahore Jn.": {
+      "stationCode": "LHR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Lakha Road": {
+      "stationCode": "LKRO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Lakhi Shah Saddar": {
+      "stationCode": "LSS",
+      "confidence": 0.9696969696969697,
+      "matchType": "fuzzy"
+    },
+    "Lala Musa Jn.": {
+      "stationCode": "LLM",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Landhi Jn.": {
+      "stationCode": "LND",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Langar": {
+      "stationCode": "LGR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Larkana Jn.": {
+      "stationCode": "LRK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Liaquatpur": {
+      "stationCode": "LQP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Lodhran Jn": {
+      "stationCode": "LON",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Mach": {
+      "stationCode": "MCH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Machhianwala": {
+      "stationCode": "MCW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Madeji Road": {
+      "stationCode": "MJJ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mailsi": {
+      "stationCode": "MSX",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Malakwal Jn": {
+      "stationCode": "MKW",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Malir": {
+      "stationCode": "MSX",
+      "confidence": 0.7272727272727273,
+      "matchType": "fuzzy"
+    },
+    "Mamu Kanjan": {
+      "stationCode": "MMX",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mandi Ahmadabad": {
+      "stationCode": "MADD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mandi Bahauddin": {
+      "stationCode": "MBDN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mandi Buchiana": {
+      "stationCode": "BCX",
+      "confidence": 0.7272727272727273,
+      "matchType": "fuzzy"
+    },
+    "Mandi Burewala": {
+      "stationCode": "MBWL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Margala": {
+      "stationCode": "MGLA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mari Indus": {
+      "stationCode": "MAT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mehmood Kot": {
+      "stationCode": "MHK",
+      "confidence": 0.7,
+      "matchType": "fuzzy"
+    },
+    "Mehrabpur": {
+      "stationCode": "MHR",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Mehta Suja": {
+      "stationCode": "MSJ",
+      "confidence": 0.9,
+      "matchType": "fuzzy"
+    },
+    "Mian Channu": {
+      "stationCode": "MYH",
+      "confidence": 0.9565217391304348,
+      "matchType": "fuzzy"
+    },
+    "Mian Wali": {
+      "stationCode": "MWI",
+      "confidence": 0.9411764705882353,
+      "matchType": "fuzzy"
+    },
+    "Mirpur Khas Jn": {
+      "stationCode": "MPS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mirpur Mathelo": {
+      "stationCode": "MRP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mithan Kot": {
+      "stationCode": "KMTN",
+      "confidence": 0.9523809523809523,
+      "matchType": "fuzzy"
+    },
+    "Mohinjo Daro": {
+      "stationCode": "MNJO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mona": {
+      "stationCode": "MOV",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mubarakpur": {
+      "stationCode": "MBK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Mukhad Road": {
+      "stationCode": "MBR",
+      "confidence": 0.9090909090909091,
+      "matchType": "fuzzy"
+    },
+    "Multan Cantt": {
+      "stationCode": "MUL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Murad Chishti": {
+      "stationCode": "MRCH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Muzaffargarh": {
+      "stationCode": "MZG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Nammal": {
+      "stationCode": "NML",
+      "confidence": 0.9090909090909091,
+      "matchType": "fuzzy"
+    },
+    "Nankana Sahab": {
+      "stationCode": "NNS",
+      "confidence": 0.8695652173913043,
+      "matchType": "fuzzy"
+    },
+    "Narang": {
+      "stationCode": "NRNG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Narowal Jn": {
+      "stationCode": "NWL",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Nawabshah Jn.": {
+      "stationCode": "NWS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Nowshera Jn": {
+      "stationCode": "NSR",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Nur Shah": {
+      "stationCode": "NSH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Okara": {
+      "stationCode": "OKR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pabbi": {
+      "stationCode": "PBI",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Padidan": {
+      "stationCode": "PDN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pai Khel": {
+      "stationCode": "PIK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pakpattan": {
+      "stationCode": "PPX",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pano Akil": {
+      "stationCode": "PNL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pasrur": {
+      "stationCode": "PSW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pattoki": {
+      "stationCode": "PTO",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pejo Wali": {
+      "stationCode": "PJWL",
+      "confidence": 0.9411764705882353,
+      "matchType": "fuzzy"
+    },
+    "Peshawar Cantt": {
+      "stationCode": "PSC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Peshawar City": {
+      "stationCode": "PSH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Phularwan": {
+      "stationCode": "PHW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Phulji": {
+      "stationCode": "PHJ",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Piaro Goth (Halt)": {
+      "stationCode": "PRX",
+      "confidence": 0.7407407407407407,
+      "matchType": "fuzzy"
+    },
+    "Pind Dadan Khan Railway Station": {
+      "stationCode": "PDK",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Pind Mukku": {
+      "stationCode": "PIM",
+      "confidence": 0.8571428571428571,
+      "matchType": "fuzzy"
+    },
+    "Piplan": {
+      "stationCode": "PPL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Pir Mahal": {
+      "stationCode": "PMX",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Prem Nagar": {
+      "stationCode": "RINR",
+      "confidence": 0.782608695652174,
+      "matchType": "fuzzy"
+    },
+    "Qaidabad": {
+      "stationCode": "HFD",
+      "confidence": 0.7058823529411765,
+      "matchType": "fuzzy"
+    },
+    "Qila Sheikhupura": {
+      "stationCode": "QSP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Qila Sobha Singh": {
+      "stationCode": "QSB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Quetta": {
+      "stationCode": "QTC",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Radhan": {
+      "stationCode": "RDH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rahim Yar Khan": {
+      "stationCode": "RYK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Raiwind Jn.": {
+      "stationCode": "RND",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rajanpur": {
+      "stationCode": "RJPR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Ranpathani": {
+      "stationCode": "RPN",
+      "confidence": 0.8571428571428571,
+      "matchType": "fuzzy"
+    },
+    "Ratto Kala": {
+      "stationCode": "RTK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rawalpindi": {
+      "stationCode": "RWP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Raya Khas": {
+      "stationCode": "RKHS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rehmani Nagar": {
+      "stationCode": "RINR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rohri Jn.": {
+      "stationCode": "ROH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Ruk": {
+      "stationCode": "RUK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Rurala Road": {
+      "stationCode": "RRLN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sadiqabad": {
+      "stationCode": "SDK",
+      "confidence": 0.8888888888888888,
+      "matchType": "fuzzy"
+    },
+    "Safdarabad": {
+      "stationCode": "SFRD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sahiwal": {
+      "stationCode": "SWAL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Samasata Jn": {
+      "stationCode": "SMA",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Sambrial": {
+      "stationCode": "SMB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sanawan": {
+      "stationCode": "SNW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sangla Hill": {
+      "stationCode": "SLL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sargodha Jn": {
+      "stationCode": "SRQ",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Sarhari": {
+      "stationCode": "SRH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sehwan Sharif": {
+      "stationCode": "SWN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Setharja": {
+      "stationCode": "STJ",
+      "confidence": 0.875,
+      "matchType": "fuzzy"
+    },
+    "Shadan Lund": {
+      "stationCode": "SHDL",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Shah Alam": {
+      "stationCode": "SAM",
+      "confidence": 0.9411764705882353,
+      "matchType": "fuzzy"
+    },
+    "Shahdadpur": {
+      "stationCode": "SDU",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Shahdara Bagh Jn": {
+      "stationCode": "SDR",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Shaheenabad Jn": {
+      "stationCode": "SHND",
+      "confidence": 0.8571428571428571,
+      "matchType": "fuzzy"
+    },
+    "Shahnawaz Bhutto": {
+      "stationCode": "SNBT",
+      "confidence": 0.9696969696969697,
+      "matchType": "fuzzy"
+    },
+    "Sher Shah Jn": {
+      "stationCode": "SSH",
+      "confidence": 0.8695652173913043,
+      "matchType": "fuzzy"
+    },
+    "Shikarpur": {
+      "stationCode": "SHP",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Shorkot Cantt Jn": {
+      "stationCode": "SKO",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Shujabad": {
+      "stationCode": "SJB",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sialkot Jn": {
+      "stationCode": "SLK",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Sibi Jn": {
+      "stationCode": "SIB",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Sihar": {
+      "stationCode": "SHS",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sillanwali": {
+      "stationCode": "SWY",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sindh University": {
+      "stationCode": "SDUT",
+      "confidence": 0.967741935483871,
+      "matchType": "fuzzy"
+    },
+    "Sodhra Kopra": {
+      "stationCode": "SDA",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sriram Pura": {
+      "stationCode": "SRPA",
+      "confidence": 0.9523809523809523,
+      "matchType": "fuzzy"
+    },
+    "Sukheke": {
+      "stationCode": "SKE",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sukkur": {
+      "stationCode": "SUK",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Sulaimanbad": {
+      "stationCode": "SLMA",
+      "confidence": 0.8181818181818182,
+      "matchType": "fuzzy"
+    },
+    "Sulemanbad": {
+      "stationCode": "SLMA",
+      "confidence": 0.9523809523809523,
+      "matchType": "fuzzy"
+    },
+    "Tandlianwala": {
+      "stationCode": "TLW",
+      "confidence": 0.9565217391304348,
+      "matchType": "fuzzy"
+    },
+    "Tando Adam": {
+      "stationCode": "TDM",
+      "confidence": 0.9473684210526315,
+      "matchType": "fuzzy"
+    },
+    "Tandu Allah Yar": {
+      "stationCode": "DAHR",
+      "confidence": 0.7142857142857143,
+      "matchType": "fuzzy"
+    },
+    "Tarnoul": {
+      "stationCode": "TNL",
+      "confidence": 0.9230769230769231,
+      "matchType": "fuzzy"
+    },
+    "Taunsa Barrage": {
+      "stationCode": "TBQ",
+      "confidence": 0.9629629629629629,
+      "matchType": "fuzzy"
+    },
+    "Taxila Cantt": {
+      "stationCode": "TXLC",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Toba Tek Singh": {
+      "stationCode": "TTSG",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Uchhri": {
+      "stationCode": "UHI",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Ugoke": {
+      "stationCode": "UGE",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Usman Khattar": {
+      "stationCode": "UKT",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Usmanwala": {
+      "stationCode": "UMW",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Vihari": {
+      "stationCode": "VHR",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Wah": {
+      "stationCode": "WAH",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Walton": {
+      "stationCode": "WTN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Warburton": {
+      "stationCode": "WRN",
+      "confidence": 1.0,
+      "matchType": "exact"
+    },
+    "Wazirabad Jn": {
+      "stationCode": "WZD",
+      "confidence": 0.95,
+      "matchType": "suffix_removed"
+    },
+    "Zarif Shahid": {
+      "stationCode": "ZRSD",
+      "confidence": 1.0,
+      "matchType": "exact"
+    }
+  },
+  "unmatched": [
+    "Abdullahbad (Halt)",
+    "Air Port",
+    "Allah Dino Sandh",
+    "Baldia Railway Station",
+    "Balochabad",
+    "Basal Jn",
+    "Begmanji",
+    "Chack Pirana",
+    "Changa Manga",
+    "Departure Yard",
+    "Detha",
+    "Dheer Umeed Ali",
+    "Dhoro Naro",
+    "Drigh Colony",
+    "Faisalabad Dry Port",
+    "Faqir Turko Mangrio",
+    "Fazil Pur",
+    "Ghaddar  Railway Station",
+    "Gunna Kalan",
+    "Jalal Mari",
+    "Jalo Jo Chaunro",
+    "Jamrao Jn",
+    "Jia Bagga Railway Station",
+    "Jumma Goth",
+    "Karor Lal Esan",
+    "Khokhrapar",
+    "Khushab",
+    "Laal Pir Railway Station",
+    "Layyah",
+    "Liyari",
+    "Lundo",
+    "Malir Colony",
+    "Mando Dairo Railway Station",
+    "Manghopir",
+    "Marshalling Yard Pipri (Myp)",
+    "Masan Railway Station",
+    "Meting",
+    "Mughalpura Railway Station",
+    "New Chhor",
+    "Oderolal",
+    "Orangi",
+    "Pakhowal (Halt)",
+    "Pallijani",
+    "Parch Ji Veri",
+    "Pitharo Jn",
+    "Port Qasim",
+    "Qila Sttar Shah",
+    "Ranipur Riyasat",
+    "Reti",
+    "Rohri Goods Yard (Rgy) Staion",
+    "Sadhar (Halt)",
+    "Saindad",
+    "Samrasar",
+    "Serai Saleh",
+    "Shah Abdul Latif",
+    "Shahdi Palli",
+    "Site Station",
+    "Tando Masti Khan",
+    "Tandu Jam",
+    "Vasar Bah",
+    "Wahab Shah",
+    "Walhar",
+    "Wan Bhachran",
+    "Wazir Mansion",
+    "Yousuf Wala Railway Station"
+  ]
+}

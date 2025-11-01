@@ -1,0 +1,1790 @@
+{
+  "totalTrains": 164,
+  "totalUniqueRoutes": 105,
+  "totalStationPairs": 58,
+  "directionBreakdown": {
+    "UP": 83,
+    "DN": 81,
+    "UNKNOWN": 0
+  },
+  "topRoutes": [
+    {
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "trainCount": 7
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "trainCount": 5
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 5
+    },
+    {
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "trainCount": 5
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "trainCount": 4
+    },
+    {
+      "origin": "Wazir Mansion",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "trainCount": 4
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "trainCount": 3
+    },
+    {
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 3
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "trainCount": 3
+    },
+    {
+      "origin": "Rawalpindi",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 3
+    },
+    {
+      "origin": "Rawalpindi",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "trainCount": 3
+    },
+    {
+      "origin": "Kemari",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "trainCount": 3
+    },
+    {
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Nowshera Jn",
+      "direction": "UP",
+      "trainCount": 3
+    },
+    {
+      "origin": "Nowshera Jn",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "DN",
+      "trainCount": 3
+    },
+    {
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Daud Khel Jn",
+      "direction": "UP",
+      "trainCount": 3
+    },
+    {
+      "origin": "Prem Nagar",
+      "destination": "Wazir Mansion",
+      "direction": "DN",
+      "trainCount": 3
+    },
+    {
+      "origin": "Karachi City",
+      "destination": "Jacobabad Jn",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Jacobabad Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Karachi City",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Faisalabad",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Faisalabad",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Multan Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Rawalpindi",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Karachi City",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Mirpur Khas Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Narowal Jn",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Narowal Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Malakwal Jn",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Prem Nagar",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Faisalabad Dry Port",
+      "direction": "UP",
+      "trainCount": 2
+    },
+    {
+      "origin": "Daud Khel Jn",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "trainCount": 2
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Margala",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Margala",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Sialkot Jn",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Karachi City",
+      "destination": "Havelian",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Havelian",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Karachi Cantt",
+      "destination": "Lala Musa Jn.",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Lala Musa Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Karachi City",
+      "destination": "Multan Cantt",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Multan Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Quetta",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Peshawar Cantt",
+      "destination": "Quetta",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Margala",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Multan Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Shorkot Cantt Jn",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "trainCount": 1
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Shorkot Cantt Jn",
+      "direction": "DN",
+      "trainCount": 1
+    },
+    {
+      "origin": "Lahore Jn.",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "trainCount": 1
+    }
+  ],
+  "allRoutes": [
+    {
+      "trainId": 1,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "stationCount": 43
+    },
+    {
+      "trainId": 2,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 42
+    },
+    {
+      "trainId": 3,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Jacobabad Jn",
+      "direction": "UP",
+      "stationCount": 16
+    },
+    {
+      "trainId": 4,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jacobabad Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 16
+    },
+    {
+      "trainId": 5,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Margala",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 6,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 7,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 29
+    },
+    {
+      "trainId": 8,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 31
+    },
+    {
+      "trainId": 9,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "stationCount": 38
+    },
+    {
+      "trainId": 10,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 37
+    },
+    {
+      "trainId": 11,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Havelian",
+      "direction": "UP",
+      "stationCount": 53
+    },
+    {
+      "trainId": 12,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Havelian",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 54
+    },
+    {
+      "trainId": 13,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "stationCount": 62
+    },
+    {
+      "trainId": 14,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 62
+    },
+    {
+      "trainId": 15,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 12
+    },
+    {
+      "trainId": 16,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 13
+    },
+    {
+      "trainId": 17,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lala Musa Jn.",
+      "direction": "UP",
+      "stationCount": 35
+    },
+    {
+      "trainId": 18,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lala Musa Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 36
+    },
+    {
+      "trainId": 25,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Multan Cantt",
+      "direction": "UP",
+      "stationCount": 26
+    },
+    {
+      "trainId": 26,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 26
+    },
+    {
+      "trainId": 27,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 14
+    },
+    {
+      "trainId": 28,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 14
+    },
+    {
+      "trainId": 33,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 12
+    },
+    {
+      "trainId": 34,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 14
+    },
+    {
+      "trainId": 35,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 13
+    },
+    {
+      "trainId": 36,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 14
+    },
+    {
+      "trainId": 37,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 45
+    },
+    {
+      "trainId": 38,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 46
+    },
+    {
+      "trainId": 39,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Quetta",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "stationCount": 44
+    },
+    {
+      "trainId": 40,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Quetta",
+      "direction": "DN",
+      "stationCount": 43
+    },
+    {
+      "trainId": 41,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 8
+    },
+    {
+      "trainId": 42,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 45,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 33
+    },
+    {
+      "trainId": 46,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 32
+    },
+    {
+      "trainId": 47,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "stationCount": 36
+    },
+    {
+      "trainId": 48,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 36
+    },
+    {
+      "trainId": 101,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 102,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 8
+    },
+    {
+      "trainId": 103,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 8
+    },
+    {
+      "trainId": 104,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 105,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 3
+    },
+    {
+      "trainId": 106,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 2
+    },
+    {
+      "trainId": 107,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 3
+    },
+    {
+      "trainId": 108,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 4
+    },
+    {
+      "trainId": 111,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Faisalabad",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 8
+    },
+    {
+      "trainId": 112,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Faisalabad",
+      "direction": "DN",
+      "stationCount": 8
+    },
+    {
+      "trainId": 113,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Faisalabad",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 114,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Faisalabad",
+      "direction": "DN",
+      "stationCount": 7
+    },
+    {
+      "trainId": 115,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 116,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "stationCount": 6
+    },
+    {
+      "trainId": 121,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Shorkot Cantt Jn",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 15
+    },
+    {
+      "trainId": 122,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Shorkot Cantt Jn",
+      "direction": "DN",
+      "stationCount": 15
+    },
+    {
+      "trainId": 125,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "stationCount": 15
+    },
+    {
+      "trainId": 126,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 15
+    },
+    {
+      "trainId": 127,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 37
+    },
+    {
+      "trainId": 128,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "stationCount": 37
+    },
+    {
+      "trainId": 129,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Rawalpindi",
+      "direction": "UP",
+      "stationCount": 41
+    },
+    {
+      "trainId": 130,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "stationCount": 39
+    },
+    {
+      "trainId": 133,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Kohat Cantt",
+      "direction": "UP",
+      "stationCount": 11
+    },
+    {
+      "trainId": 134,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kohat Cantt",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "stationCount": 11
+    },
+    {
+      "trainId": 135,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sargodha Jn",
+      "destination": "Lala Musa Jn.",
+      "direction": "UP",
+      "stationCount": 18
+    },
+    {
+      "trainId": 136,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lala Musa Jn.",
+      "destination": "Sargodha Jn",
+      "direction": "DN",
+      "stationCount": 18
+    },
+    {
+      "trainId": 145,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Jacobabad Jn",
+      "direction": "UP",
+      "stationCount": 22
+    },
+    {
+      "trainId": 146,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jacobabad Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 22
+    },
+    {
+      "trainId": 147,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mari Indus",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 15
+    },
+    {
+      "trainId": 148,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Mari Indus",
+      "direction": "DN",
+      "stationCount": 15
+    },
+    {
+      "trainId": 149,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "stationCount": 11
+    },
+    {
+      "trainId": 150,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 11
+    },
+    {
+      "trainId": 151,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "stationCount": 22
+    },
+    {
+      "trainId": 152,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 22
+    },
+    {
+      "trainId": 155,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Hyderabad Jn",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "stationCount": 4
+    },
+    {
+      "trainId": 156,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Hyderabad Jn",
+      "direction": "DN",
+      "stationCount": 4
+    },
+    {
+      "trainId": 201,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mari Indus",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "stationCount": 18
+    },
+    {
+      "trainId": 202,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Mari Indus",
+      "direction": "DN",
+      "stationCount": 18
+    },
+    {
+      "trainId": 203,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jand Jn",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 204,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Jand Jn",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 209,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Narowal Jn",
+      "direction": "UP",
+      "stationCount": 11
+    },
+    {
+      "trainId": 210,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Narowal Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 11
+    },
+    {
+      "trainId": 211,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Narowal Jn",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 212,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Narowal Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 213,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kotri Jn",
+      "destination": "Rohri Jn.",
+      "direction": "UP",
+      "stationCount": 24
+    },
+    {
+      "trainId": 214,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rohri Jn.",
+      "destination": "Kotri Jn",
+      "direction": "DN",
+      "stationCount": 24
+    },
+    {
+      "trainId": 225,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazirabad Jn",
+      "destination": "Sialkot Jn",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 226,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Sialkot Jn",
+      "destination": "Wazirabad Jn",
+      "direction": "DN",
+      "stationCount": 5
+    },
+    {
+      "trainId": 227,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Dabheji",
+      "direction": "UP",
+      "stationCount": 14
+    },
+    {
+      "trainId": 228,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Dabheji",
+      "destination": "Orangi",
+      "direction": "DN",
+      "stationCount": 21
+    },
+    {
+      "trainId": 267,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Havelian",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 268,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Havelian",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 271,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Khokhrapar",
+      "destination": "Mirpur Khas Jn",
+      "direction": "UP",
+      "stationCount": 17
+    },
+    {
+      "trainId": 272,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mirpur Khas Jn",
+      "destination": "Khokhrapar",
+      "direction": "DN",
+      "stationCount": 17
+    },
+    {
+      "trainId": 274,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Malakwal Jn",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "DN",
+      "stationCount": 3
+    },
+    {
+      "trainId": 275,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Rawalpindi",
+      "destination": "Attock City Jn",
+      "direction": "UP",
+      "stationCount": 4
+    },
+    {
+      "trainId": 276,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Attock City Jn",
+      "destination": "Rawalpindi",
+      "direction": "DN",
+      "stationCount": 3
+    },
+    {
+      "trainId": 277,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Pind Dadan Khan Railway Station",
+      "destination": "Malakwal Jn",
+      "direction": "UP",
+      "stationCount": 3
+    },
+    {
+      "trainId": 278,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Malakwal Jn",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "DN",
+      "stationCount": 3
+    },
+    {
+      "trainId": 303,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kemari",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 67
+    },
+    {
+      "trainId": 305,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kemari",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 73
+    },
+    {
+      "trainId": 307,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kemari",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 73
+    },
+    {
+      "trainId": 309,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 311,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 313,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 315,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 317,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 320,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 322,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 324,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 326,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 328,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 330,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 332,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 334,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kundian Jn",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "DN",
+      "stationCount": 25
+    },
+    {
+      "trainId": 335,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Nowshera Jn",
+      "direction": "UP",
+      "stationCount": 23
+    },
+    {
+      "trainId": 336,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Nowshera Jn",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "DN",
+      "stationCount": 21
+    },
+    {
+      "trainId": 337,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Nowshera Jn",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 338,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Nowshera Jn",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "DN",
+      "stationCount": 21
+    },
+    {
+      "trainId": 339,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Yousuf Wala Railway Station",
+      "destination": "Nowshera Jn",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 340,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Nowshera Jn",
+      "destination": "Yousuf Wala Railway Station",
+      "direction": "DN",
+      "stationCount": 22
+    },
+    {
+      "trainId": 345,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mehmood Kot",
+      "destination": "Chack Pirana",
+      "direction": "UP",
+      "stationCount": 19
+    },
+    {
+      "trainId": 347,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Pind Dadan Khan Railway Station",
+      "direction": "UP",
+      "stationCount": 30
+    },
+    {
+      "trainId": 353,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazir Mansion",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 354,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 355,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 356,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 357,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Faisalabad Dry Port",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 358,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Faisalabad Dry Port",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 359,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Daud Khel Jn",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 360,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Daud Khel Jn",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 7
+    },
+    {
+      "trainId": 361,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Jia Bagga Railway Station",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 362,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jia Bagga Railway Station",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 363,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Daud Khel Jn",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 364,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Daud Khel Jn",
+      "destination": "Marshalling Yard Pipri (Myp)",
+      "direction": "DN",
+      "stationCount": 8
+    },
+    {
+      "trainId": 401,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazir Mansion",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 402,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazir Mansion",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 403,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazir Mansion",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "stationCount": 5
+    },
+    {
+      "trainId": 406,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Wazir Mansion",
+      "direction": "DN",
+      "stationCount": 5
+    },
+    {
+      "trainId": 407,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Wazir Mansion",
+      "direction": "DN",
+      "stationCount": 5
+    },
+    {
+      "trainId": 408,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Wazir Mansion",
+      "direction": "DN",
+      "stationCount": 5
+    },
+    {
+      "trainId": 501,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Badami Bagh",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 502,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Badami Bagh",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 551,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Prem Nagar",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 552,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Prem Nagar",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 901,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jumma Goth",
+      "destination": "Mughalpura Railway Station",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 902,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Mughalpura Railway Station",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 903,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Daud Khel Jn",
+      "direction": "UP",
+      "stationCount": 8
+    },
+    {
+      "trainId": 905,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jumma Goth",
+      "destination": "Qila Sttar Shah",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 906,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Qila Sttar Shah",
+      "destination": "Jumma Goth",
+      "direction": "DN",
+      "stationCount": 10
+    },
+    {
+      "trainId": 917,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Bin Qasim",
+      "destination": "Laal Pir Railway Station",
+      "direction": "UP",
+      "stationCount": 8
+    },
+    {
+      "trainId": 918,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Laal Pir Railway Station",
+      "destination": "Bin Qasim",
+      "direction": "DN",
+      "stationCount": 6
+    },
+    {
+      "trainId": 919,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Port Qasim",
+      "destination": "Kot Radha Kishan",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 920,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Kot Radha Kishan",
+      "destination": "Port Qasim",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 921,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Port Qasim",
+      "destination": "Changa Manga",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 922,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Changa Manga",
+      "destination": "Port Qasim",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 1133,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Jacobabad Jn",
+      "destination": "Margala",
+      "direction": "UP",
+      "stationCount": 9
+    },
+    {
+      "trainId": 1134,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Margala",
+      "destination": "Jacobabad Jn",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 9042,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Faisalabad",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 9047,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Marshalling Yard Pipri (Myp)",
+      "destination": "Faisalabad Dry Port",
+      "direction": "UP",
+      "stationCount": 10
+    },
+    {
+      "trainId": 9049,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi Cantt",
+      "destination": "Lahore Jn.",
+      "direction": "UP",
+      "stationCount": 7
+    },
+    {
+      "trainId": 9050,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Karachi Cantt",
+      "direction": "DN",
+      "stationCount": 9
+    },
+    {
+      "trainId": 9052,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Karachi City",
+      "destination": "Peshawar Cantt",
+      "direction": "UP",
+      "stationCount": 43
+    },
+    {
+      "trainId": 9053,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Peshawar Cantt",
+      "destination": "Karachi City",
+      "direction": "DN",
+      "stationCount": 44
+    },
+    {
+      "trainId": 9054,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Multan Cantt",
+      "destination": "Dera Ghazi Khan",
+      "direction": "DN",
+      "stationCount": 6
+    },
+    {
+      "trainId": 9055,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Dera Ghazi Khan",
+      "destination": "Multan Cantt",
+      "direction": "DN",
+      "stationCount": 7
+    },
+    {
+      "trainId": 10052,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Lahore Jn.",
+      "destination": "Wazirabad Jn",
+      "direction": "UP",
+      "stationCount": 12
+    },
+    {
+      "trainId": 10053,
+      "trainNumber": null,
+      "trainName": "Unknown",
+      "origin": "Wazirabad Jn",
+      "destination": "Lahore Jn.",
+      "direction": "DN",
+      "stationCount": 12
+    }
+  ]
+}
