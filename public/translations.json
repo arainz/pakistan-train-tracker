@@ -130,7 +130,7 @@
       "trainsFound": "trains found",
       "live": "live",
       "availableTrains": "Available Trains",
-      "scheduled": "SCHEDULED",
+      "scheduled": "Scheduled",
       "scheduleOnly": "Schedule only",
       "loadingSchedule": "Loading schedule...",
       "loadingStationSchedule": "Loading station schedule...",
@@ -238,7 +238,8 @@
       "min": "min",
       "minute": "minute",
       "seconds": "seconds",
-      "date": "Date"
+      "date": "Date",
+      "trainDate": "Train Date"
     },
     "notifications": {
       "selectStation": "Select Station",
@@ -504,7 +505,8 @@
       "before": "پہلے",
       "date": "تاریخ",
       "seconds": "سیکنڈ",
-      "minute": "منٹ"
+      "minute": "منٹ",
+      "trainDate": "ٹرین کی تاریخ"
     },
     "notifications": {
       "selectStation": "اسٹیشن منتخب کریں",

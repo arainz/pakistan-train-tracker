@@ -348,7 +348,7 @@ class MobileApp {
             'train.arrival': 'Arrival',
             'train.status': 'Status',
             'train.trainNotFound': 'Unknown',
-            'schedule.departureTime': 'Scheduled',
+            'schedule.arrivalTime': 'Scheduled',
             'schedule.scheduleInformation': 'Schedule Information',
             'schedule.liveInformation': 'Live Information',
             'schedule.trainsFound': 'trains found',
@@ -1716,7 +1716,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.scheduled')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
@@ -1732,7 +1732,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('time.trainDate')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
@@ -1919,7 +1919,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.scheduled')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
@@ -1935,7 +1935,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('time.trainDate')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
@@ -2799,41 +2799,46 @@ class MobileApp {
                 timeClass = 'upcoming-time';
             }
 
-            // Calculate ETA (scheduled + delay) for current and upcoming stations
-            let displayTime = scheduledTime;
-            let isAlreadyFormatted = false;
-
-            if (status !== 'completed' && scheduledTime !== '--:--' && trainDelay !== 0) {
-                displayTime = this.adjustTimeForDelay(scheduledTime, trainDelay);
-                isAlreadyFormatted = true; // adjustTimeForDelay returns formatted time
+            // Use centralized getTrainETA() function for consistent ETA calculation
+            let rawETA = '--:--';  // Store raw 24-hour format for calculations
+            let etaTime = '--:--'; // Store formatted display value
+            if (status !== 'completed') {
+                const eta = this.getTrainETA(train);
+                if (eta && eta !== '--:--') {
+                    rawETA = eta;  // Keep raw format for calculations
+                    etaTime = this.formatTimeAMPM(eta);  // Format only for display
+                }
             }
-
-            // Only format if not already formatted
-            const formattedTime = isAlreadyFormatted ? displayTime : this.formatTimeAMPM(displayTime);
-
-            // Get ETA and status info for popover
-            const etaTime = status !== 'completed' ? formattedTime : '--:--';
             const t = this.getTranslatedLabel;
             const statusText = status === 'completed' ? t('train.completed') : status === 'current' ? t('train.nextStation') : t('train.upcoming');
             const lastUpdated = train.LastUpdated ? this.formatLastUpdated(new Date(train.LastUpdated)) : '--:--';
-            
-            // Alternate station names between top and bottom
-            const positionClass = index % 2 === 0 ? 'label-bottom' : 'label-top';
+
+            // Keep next station (current) at bottom, alternate others
+            let positionClass;
+            if (index === currentStationIndex) {
+                // Always keep the current/next station at the bottom
+                positionClass = 'label-bottom';
+                console.log(`📍 Next station at index ${index} positioned at BOTTOM`);
+            } else {
+                // Alternate other stations between top and bottom, skipping the current station index
+                const alternateIndex = index > currentStationIndex ? index - 1 : index;
+                positionClass = alternateIndex % 2 === 0 ? 'label-bottom' : 'label-top';
+            }
 
             html += `
-                <div class="station-point ${status} ${positionClass}" 
-                     data-station="${stationName}" 
+                <div class="station-point ${status} ${positionClass}"
+                     data-station="${stationName}"
                      data-station-index="${index}"
-                     data-distance="${distance}" 
+                     data-distance="${distance}"
                      data-scheduled="${scheduledTime}"
-                     data-eta="${etaTime}"
+                     data-eta="${rawETA}"
                      data-status="${statusText}"
                      data-last-updated="${lastUpdated}"
                      style="left: ${positionPercent}%;">
                     <div class="station-dot"></div>
                     <div class="station-info">
                         <div class="station-name">${stationName}</div>
-                        <div class="station-time ${timeClass}">${formattedTime}</div>
+                        <div class="station-time ${timeClass}">${etaTime}</div>
                     </div>
                 </div>
             `;
@@ -2914,12 +2919,15 @@ class MobileApp {
         
         // Create popover on the locomotive (always visible)
         if (targetPoint) {
+            const rawETA = targetPoint.getAttribute('data-eta') || '--:--';
             const scheduled = targetPoint.getAttribute('data-scheduled') || '--:--';
-            const eta = targetPoint.getAttribute('data-eta') || '--:--';
             const status = targetPoint.getAttribute('data-status') || 'Unknown';
             const lastUpdated = targetPoint.getAttribute('data-last-updated') || '--:--';
             const stationName = targetPoint.getAttribute('data-station') || 'Unknown';
-            
+
+            // Format ETA for display (raw format stored in data attribute)
+            const etaForDisplay = rawETA && rawETA !== '--:--' ? this.formatTimeAMPM(rawETA) : '--:--';
+
             // Only show "Current:" label if train has reached the station
             const t = this.getTranslatedLabel;
             const currentLabelHTML = hasReachedStation ? `
@@ -2928,7 +2936,7 @@ class MobileApp {
                     <span class="popover-value">${stationName}</span>
                 </div>
             ` : '';
-            
+
             const popover = document.createElement('div');
             popover.className = 'station-popover persistent locomotive-popover';
             popover.innerHTML = `
@@ -2940,7 +2948,7 @@ class MobileApp {
                     </div>
                     <div class="popover-row">
                         <span class="popover-label">${t('train.eta')}:</span>
-                        <span class="popover-value">${eta}</span>
+                        <span class="popover-value">${etaForDisplay}</span>
                     </div>
                     <div class="popover-row">
                         <span class="popover-label">${t('train.status')}:</span>
@@ -3081,7 +3089,7 @@ class MobileApp {
                 const translatedFromObject = translator.getStationName(station);
                 // Try getStationNameFromString as well (does lookup from window.stationsData)
                 const translatedFromString = translator.getStationNameFromString(stationNameStr);
-                
+
                 // Use the translation if we're in Urdu mode and got a translated name
                 if (translator.getLanguage() === 'ur') {
                     // Prefer translatedFromString if it's different from original, otherwise use translatedFromObject
@@ -3097,9 +3105,19 @@ class MobileApp {
             }
             const isFirst = index === 0;
 
-            // Get scheduled times
-            const scheduledArr = station.ArrivalTime || '--:--';
-            const scheduledDep = station.DepartureTime || '--:--';
+            // Get scheduled times from schedule data (not from displayed ETA values)
+            // For stations in the route, use stored times. For next station, look it up from schedule data
+            let scheduledArr = station.ArrivalTime || '--:--';
+            let scheduledDep = station.DepartureTime || '--:--';
+
+            // For the next station (current station index), use schedule lookup for accuracy
+            if (index === currentStationIndex && train) {
+                const scheduledTimeFromLookup = this.getScheduledTimeForNextStation(train);
+                if (scheduledTimeFromLookup && scheduledTimeFromLookup !== 'Schedule N/A' && scheduledTimeFromLookup !== 'Loading...') {
+                    scheduledArr = scheduledTimeFromLookup.replace('📅 ', '');
+                    console.log(`🔍 [Vertical Routes] Using schedule lookup for next station: ${scheduledArr}`);
+                }
+            }
             const actualArr = station.ActualArrivalTime;
             const actualDep = station.ActualDepartureTime;
 
@@ -3163,29 +3181,16 @@ class MobileApp {
                         delayClass = 'passed';
                     }
                 } else if (index === currentStationIndex) {
-                    // Current station
-                    const stationTime = scheduledArr || scheduledDep;
-                    if (stationTime) {
-                        if (trainDelay !== 0) {
-                            expectedArrival = this.adjustTimeForDelay(stationTime, trainDelay);
-                            stationDelay = this.formatDelayDisplay(trainDelay, false);
-                            delayClass = trainDelay > 0 ? 'late' : 'early';
-                        } else {
-                            expectedArrival = stationTime;
-                            stationDelay = t('train.onTime');
-                            delayClass = 'current';
-                        }
+                    // Current station - use centralized getTrainETA() function for consistent calculation
+                    const etaFromFunc = this.getTrainETA(train);
+                    if (etaFromFunc && etaFromFunc !== '--:--') {
+                        expectedArrival = etaFromFunc;
+                        stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay, false) : t('train.enRoute');
+                        delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
                     } else {
-                        const etaFromFunc = this.getTrainETA(train);
-                        if (etaFromFunc) {
-                            expectedArrival = etaFromFunc;
-                            stationDelay = trainDelay !== 0 ? this.formatDelayDisplay(trainDelay, false) : t('train.enRoute');
-                            delayClass = trainDelay > 0 ? 'late' : trainDelay < 0 ? 'early' : 'current';
-                        } else {
-                            expectedArrival = t('train.enRoute');
-                            stationDelay = t('train.enRoute');
-                            delayClass = 'current';
-                        }
+                        expectedArrival = t('train.enRoute');
+                        stationDelay = t('train.enRoute');
+                        delayClass = 'current';
                     }
                 } else {
                     // Future stations
@@ -3755,18 +3760,18 @@ class MobileApp {
         const t = this.getTranslatedLabel;
         const status = speed > 0 ? t('train.moving') : t('train.stopped');
         
-        // Format ETA using the same logic as train cards (AM/PM format)
-        const etaFromFunc = this.getTrainETA(train);
-        const etaTime = etaFromFunc
-            ? this.formatTimeAMPM(this.getTrainETA(train) || '--:--')
-            : '--:--';
-        
-        // Calculate delay using the same logic used across the site
-        // Try calculated delay first, fallback to API's LateBy field
+        // Use centralized getTrainETA() function for consistent ETA calculation
+        let etaTime = '--:--';
+        const eta = this.getTrainETA(train);
+        etaTime = eta ? this.formatTimeAMPM(eta) : '--:--';
+
+        // Calculate delay using the same logic as elsewhere
         let delay = this.calculateDelayFromETA(train);
         if (delay === null || delay === undefined) {
             delay = train.LateBy || 0;
         }
+
+        // Use the calculated delay for display
         const delayText = this.formatDelayDisplay(delay);
         
         // Get last updated
@@ -4117,12 +4122,24 @@ class MobileApp {
                 console.log(`✅ Using API ETA for ${train.TrainName || 'Train'} #${train.TrainNumber}: ${apiETA}`);
             }
         }
-        
+
         // Return the raw ETA time (either API or calculated)
+        // Ensure it's in 24-hour format (not formatted with AM/PM or صبح/شام)
         if (apiETA && apiETA !== '--:--') {
+            // If ETA is already formatted (contains AM/PM or صبح/شام), convert to 24-hour
+            if (this.isTimeFormatted(apiETA)) {
+                // Parse the formatted time back to 24-hour format
+                const minutes = this.parseTimeToMinutes(apiETA);
+                if (minutes !== null) {
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    apiETA = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                    console.log(`🔄 Converted formatted ETA back to 24-hour: ${apiETA}`);
+                }
+            }
             return apiETA;
         }
-        
+
         return null;
     }
 
@@ -4476,7 +4493,7 @@ class MobileApp {
         try {
             if (!timeStr || timeStr === '--:--') return null;
 
-            // Handle 12-hour format (e.g., "6:30 PM")
+            // Handle 12-hour format with English AM/PM (e.g., "6:30 PM")
             let hours, minutes;
             const time12Match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
             if (time12Match) {
@@ -4487,12 +4504,23 @@ class MobileApp {
                 if (isPM && hours !== 12) hours += 12;
                 else if (!isPM && hours === 12) hours = 0;
             } else {
-                // Handle 24-hour format (e.g., "18:30")
-                const time24Match = timeStr.match(/(\d{1,2}):(\d{2})/);
-                if (!time24Match) return null;
+                // Handle 12-hour format with Urdu صبح/شام (e.g., "2:30 صبح" or "2:30 شام")
+                const time12UrduMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(صبح|شام)/i);
+                if (time12UrduMatch) {
+                    hours = parseInt(time12UrduMatch[1]);
+                    minutes = parseInt(time12UrduMatch[2]);
+                    const isShaam = time12UrduMatch[3] === 'شام';
 
-                hours = parseInt(time24Match[1]);
-                minutes = parseInt(time24Match[2]);
+                    if (isShaam && hours !== 12) hours += 12;
+                    else if (!isShaam && hours === 12) hours = 0;
+                } else {
+                    // Handle 24-hour format (e.g., "18:30")
+                    const time24Match = timeStr.match(/(\d{1,2}):(\d{2})/);
+                    if (!time24Match) return null;
+
+                    hours = parseInt(time24Match[1]);
+                    minutes = parseInt(time24Match[2]);
+                }
             }
 
             return hours * 60 + minutes;
@@ -4524,7 +4552,8 @@ class MobileApp {
     // Check if time string is already formatted with AM/PM
     isTimeFormatted(timeStr) {
         if (!timeStr) return false;
-        return /AM|PM|am|pm/i.test(timeStr);
+        // Check for English AM/PM or Urdu صبح/شام
+        return /AM|PM|am|pm|صبح|شام/i.test(timeStr);
     }
 
     // Calculate minutes elapsed since a timestamp
@@ -4989,7 +5018,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('schedule.departureTime')}: ${scheduledTimeAMPM}</span>
+                            <span class="info-text">${this.getTranslatedLabel('schedule.scheduled')}: ${scheduledTimeAMPM}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">⏱️</span>
@@ -5005,7 +5034,7 @@ class MobileApp {
                         </div>
                         <div class="info-row">
                             <span class="info-icon">📅</span>
-                            <span class="info-text">${this.getTranslatedLabel('train.trainNumber')} ${this.getTranslatedLabel('time.date')}: ${trainDate}</span>
+                            <span class="info-text">${this.getTranslatedLabel('time.trainDate')}: ${trainDate}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-icon">🔄</span>
@@ -7941,7 +7970,7 @@ class MobileApp {
             );
 
             if (stationWithTime) {
-                const scheduledTime = stationWithTime.DepartureTime || stationWithTime.ArrivalTime;
+                const scheduledTime = stationWithTime.ArrivalTime || stationWithTime.DepartureTime;
                 return `📅 ${scheduledTime}`;
             }
 
@@ -8572,7 +8601,7 @@ class MobileApp {
                     </div>
                     <div class="info-row">
                         <span class="info-icon">📍</span>
-                        <span class="info-text">${t('schedule.departureTime')}: ${translatedStationName}</span>
+                        <span class="info-text">${t('schedule.arrivalTime')}: ${translatedStationName}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-icon">⏱️</span>
