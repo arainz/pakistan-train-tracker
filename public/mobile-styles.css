@@ -78,8 +78,13 @@ body.mobile-app {
 .lang-urdu .update-time,
 .lang-urdu .locomotive-popover,
 .lang-urdu .locomotive-popover .popover-row span,
-.lang-urdu .last-updated-header span:last-child,
-.lang-urdu .home-last-updated span:last-child {
+.lang-urdu #homeLastUpdatedTime,
+.lang-urdu #liveTrackingLastUpdatedTime,
+.lang-urdu #trainDetailLastUpdatedTime,
+.lang-urdu #mapLastUpdatedTime,
+.lang-urdu #stationLastUpdatedTime,
+.lang-urdu #scheduleLastUpdatedTime,
+.lang-urdu #favoritesLastUpdatedTime {
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     direction: rtl !important;
 }
