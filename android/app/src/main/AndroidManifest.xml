@@ -30,6 +30,23 @@
     </application>
 
     <!-- Permissions -->
-
+    <!-- Internet permission -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Notification permission (required for Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Alarm permissions for scheduled notifications (required for Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- Wakelock permission to keep device awake for notifications -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Receive boot events to restore scheduled notifications after restart -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 </manifest>

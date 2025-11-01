@@ -38,7 +38,15 @@ class MobileApp {
         
         // Progress bar update control
         this.progressBarUpdateInterval = null;
-        
+
+        // Back button debounce to prevent double-presses
+        this.lastBackPressTime = 0;
+        this.backPressDebounceMs = 800; // 800ms debounce for safety
+
+        // Flag to prevent minimize immediately after navigation to home
+        this.justNavigatedToHome = false;
+        this.navigationLockoutMs = 1000; // 1 second lockout after navigating to home
+
         this.init();
     }
 
@@ -94,14 +102,17 @@ class MobileApp {
         
         // Request location permission on app startup (native dialog)
         await this.requestLocationPermission();
-        
+
+        // Request notification permission on app startup (native dialog)
+        await this.requestNotificationPermission();
+
         // Load schedule data FIRST (needed for filtering completed journeys)
         await this.loadScheduledTrainsForHome();
-        
+
         // Then load live trains data for home screen (after schedule is available)
         // MUST await to ensure trainData.active is populated before loadLiveUpdates()
         await this.loadLiveTrains();
-        
+
         // Request user location ONLY if permission is already granted (no popup)
         await this.getUserLocationIfPermitted();
         
@@ -110,13 +121,14 @@ class MobileApp {
         
         this.setupNavigation();
         this.setupHistoryNavigation();
+        this.setupAppLifecycleListeners();
         this.setupNotificationCenter();
         this.initializeDarkMode();
         this.initializeLanguage();
         this.startAutoRefresh();
         this.startLastUpdatedCountdown();
         this.initializePullToRefresh();
-        
+
         // Hide splash screen once app is ready
         this.hideSplashScreen();
     }
@@ -366,72 +378,92 @@ class MobileApp {
     }
 
     async requestLocationPermission() {
-        console.log('📱 Requesting location permission...');
-        
+        console.log('📍 Requesting location permission...');
+
         // Request Location Permission (Capacitor)
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            try {
-                const { Geolocation } = window.Capacitor.Plugins;
-                
-                // Check current permission status
-                const permissionStatus = await Geolocation.checkPermissions();
-                console.log('📍 Location permission status:', permissionStatus);
-                
-                // Only request if not yet determined (first time)
-                if (permissionStatus.location === 'prompt' || permissionStatus.location === 'prompt-with-rationale' || permissionStatus.location !== 'granted') {
-                    const requestResult = await Geolocation.requestPermissions({ permissions: ['location'] });
-                    console.log('📍 Location permission request result:', requestResult);
-                    
-                    if (requestResult.location === 'granted') {
-                        console.log('✅ Location permission granted');
-                    } else {
-                        console.log('❌ Location permission denied');
-                    }
-                } else if (permissionStatus.location === 'granted') {
-                    console.log('✅ Location permission already granted');
-                }
-            } catch (error) {
-                console.error('❌ Error requesting location permission:', error);
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            console.log('ℹ️ Not a native platform, skipping Capacitor location permission');
+            return false;
+        }
+
+        try {
+            const { Geolocation } = window.Capacitor.Plugins;
+
+            if (!Geolocation) {
+                console.warn('⚠️ Geolocation plugin not available');
+                return false;
             }
+
+            // Check current permission status
+            const permissionStatus = await Geolocation.checkPermissions();
+            console.log('📍 Location permission status:', permissionStatus);
+
+            // Only request if not yet determined or denied
+            if (permissionStatus.location === 'granted') {
+                console.log('✅ Location permission already granted');
+                return true;
+            }
+
+            if (permissionStatus.location === 'prompt' || permissionStatus.location === 'prompt-with-rationale' || permissionStatus.location === 'denied') {
+                console.log('📍 Requesting location permission from user...');
+                const requestResult = await Geolocation.requestPermissions({ permissions: ['location'] });
+                console.log('📍 Location permission request result:', requestResult);
+
+                if (requestResult.location === 'granted') {
+                    console.log('✅ Location permission granted');
+                    return true;
+                } else {
+                    console.log('❌ Location permission denied by user');
+                    return false;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error requesting location permission:', error);
+            return false;
         }
     }
     
     async requestNotificationPermission() {
-        console.log('📱 Requesting notification permission...');
-        
+        console.log('🔔 Requesting notification permission...');
+
         // Use Capacitor LocalNotifications for native apps
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             try {
                 const { LocalNotifications } = window.Capacitor.Plugins;
-                
+
+                if (!LocalNotifications) {
+                    console.warn('⚠️ LocalNotifications plugin not available');
+                    return false;
+                }
+
                 // Check current permission status
                 const permissionStatus = await LocalNotifications.checkPermissions();
-                console.log('🔔 Notification permission status:', permissionStatus.display);
-                
+                console.log('🔔 Notification permission status:', permissionStatus);
+
                 // Request if not granted
-                if (permissionStatus.display !== 'granted') {
+                if (permissionStatus.display === 'granted') {
+                    console.log('✅ Notification permission already granted');
+                    this.startNotificationMonitoring();
+                    return true;
+                }
+
+                if (permissionStatus.display === 'prompt' || permissionStatus.display === 'prompt-with-rationale' || permissionStatus.display === 'denied') {
+                    console.log('🔔 Requesting notification permission from user...');
                     const requestResult = await LocalNotifications.requestPermissions();
-                    console.log('🔔 Notification permission request result:', requestResult.display);
-                    
+                    console.log('🔔 Notification permission request result:', requestResult);
+
                     if (requestResult.display === 'granted') {
                         console.log('✅ Notification permission granted');
                         this.startNotificationMonitoring();
                         return true;
                     } else {
-                        console.log('❌ Notification permission denied');
-                        const t = this.getTranslatedLabel;
-                        this.showToast(t('errors.notificationPermissionDenied'));
+                        console.log('❌ Notification permission denied by user');
                         return false;
                     }
-                } else {
-                    console.log('✅ Notification permission already granted');
-                    this.startNotificationMonitoring();
-                    return true;
                 }
+                return false;
             } catch (error) {
                 console.error('❌ Error requesting notification permission:', error);
-                const t = this.getTranslatedLabel;
-                this.showToast(t('errors.errorRequestingNotificationPermission'));
                 return false;
             }
         } else {
@@ -502,12 +534,23 @@ class MobileApp {
             console.log('✅ Capacitor App plugin found');
             
             App.addListener('backButton', (data) => {
+                const now = Date.now();
+                const timeSinceLastPress = now - this.lastBackPressTime;
+
                 console.log('🔙 ========================================');
                 console.log('🔙 CAPACITOR BACK BUTTON PRESSED');
                 console.log('🔙 ========================================');
                 console.log('🔙 Current screen:', this.currentScreen);
                 console.log('🔙 Can go back:', data?.canGoBack);
-                
+                console.log('🔙 Time since last press:', timeSinceLastPress + 'ms');
+
+                // Debounce: ignore if pressed within 500ms
+                if (timeSinceLastPress < this.backPressDebounceMs) {
+                    console.log('🔙 Back button debounced - ignoring rapid press');
+                    return;
+                }
+
+                this.lastBackPressTime = now;
                 this.goBack();
                 return; // Explicit return to avoid undefined warning
             });
@@ -597,32 +640,131 @@ class MobileApp {
         });
     }
 
+    setupAppLifecycleListeners() {
+        console.log('📱 Setting up app lifecycle listeners...');
+
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            console.log('ℹ️ Not a native platform, skipping lifecycle listeners');
+            return;
+        }
+
+        try {
+            const { App } = window.Capacitor.Plugins;
+
+            if (!App) {
+                console.warn('⚠️ App plugin not available');
+                return;
+            }
+
+            // Handle app resume
+            App.addListener('appStateChange', (state) => {
+                console.log('📱 App state changed:', state);
+
+                if (state.isActive) {
+                    console.log('📱 App resumed to foreground');
+                    // Resume notifications and location checks
+                    this.resumeApp();
+                } else {
+                    console.log('📱 App moved to background');
+                    // Can pause certain operations if needed
+                    this.pauseApp();
+                }
+            });
+
+            console.log('✅ App lifecycle listeners set up');
+        } catch (error) {
+            console.error('❌ Error setting up app lifecycle listeners:', error);
+        }
+    }
+
+    resumeApp() {
+        console.log('🔄 Resuming app...');
+        // Force a notification check when app comes back to foreground
+        if (this.notificationCheckInterval === null || this.notificationCheckInterval === undefined) {
+            console.log('🔔 Restarting notification monitoring...');
+            this.startNotificationMonitoring();
+        }
+    }
+
+    pauseApp() {
+        console.log('⏸️ Pausing app...');
+        // Can pause some operations if needed
+    }
+
+    minimizeApp() {
+        try {
+            const { App } = window.Capacitor.Plugins;
+            console.log('📱 Minimizing app...');
+            App.exitApp();
+        } catch (error) {
+            console.error('❌ Error minimizing app:', error);
+        }
+    }
+
     navigateTo(screen, data = null) {
-        console.log('🔄 Navigating to:', screen);
-        
+        console.log('🔄 Navigating to (nav bar):', screen);
+        console.log('📚 Current stack before nav:', JSON.stringify(this.navigationStack));
+
         // Update active nav item
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        
+
+        let targetScreen;
+        let screenMap = {
+            'home': 'home',
+            'track': 'liveTracking',
+            'search': 'trainScreenSearch',
+            'favorites': 'favoritesScreen',
+            'profile': 'profileScreen'
+        };
+
+        targetScreen = screenMap[screen];
+
+        // If clicking on current screen, don't add to stack
+        if (this.currentScreen === targetScreen) {
+            console.log('ℹ️ Already on', targetScreen, '- not changing stack');
+            // Just update the active state
+            const navIndex = { 'home': 0, 'track': 1, 'search': 2, 'favorites': 3, 'profile': 4 }[screen];
+            if (navIndex !== undefined) {
+                document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+            }
+            return;
+        }
+
         switch(screen) {
             case 'home':
                 document.querySelectorAll('.nav-item')[0].classList.add('active');
-                this.goBack();
+                // Going to home - clear stack completely (this is the root)
+                this.navigationStack = ['home'];
+                this.navigateToScreen('home', false);
                 break;
             case 'track':
                 document.querySelectorAll('.nav-item')[1].classList.add('active');
-                this.openMostRecentTrain();
+                // Build history: keep home as root, add this screen
+                this.navigationStack = ['home', 'liveTracking'];
+                this.showLiveTracking();
+                break;
+            case 'search':
+                document.querySelectorAll('.nav-item')[2].classList.add('active');
+                // Build history: keep home as root, add this screen
+                this.navigationStack = ['home', 'trainScreenSearch'];
+                this.navigateToScreen('trainScreenSearch', false);
                 break;
             case 'favorites':
-                document.querySelectorAll('.nav-item')[2].classList.add('active');
-                this.navigateToScreen('favoritesScreen');
-                // loadFavorites is called by loadScreenData
+                document.querySelectorAll('.nav-item')[3].classList.add('active');
+                // Build history: keep home as root, add this screen
+                this.navigationStack = ['home', 'favoritesScreen'];
+                this.navigateToScreen('favoritesScreen', false);
                 break;
             case 'profile':
-                document.querySelectorAll('.nav-item')[3].classList.add('active');
-                this.navigateToScreen('profileScreen');
+                document.querySelectorAll('.nav-item')[4].classList.add('active');
+                // Build history: keep home as root, add this screen
+                this.navigationStack = ['home', 'profileScreen'];
+                this.navigateToScreen('profileScreen', false);
                 this.loadProfile();
                 break;
         }
+
+        console.log('📚 Navigation stack after nav:', JSON.stringify(this.navigationStack));
     }
 
     // Helper: clear search inputs when navigating to a screen
@@ -923,61 +1065,137 @@ class MobileApp {
 
     goBack() {
         console.log('⬅️ Going back from:', this.currentScreen);
-        console.log('📚 Navigation stack:', this.navigationStack);
+        console.log('📚 Navigation stack:', JSON.stringify(this.navigationStack));
+        console.log('📚 Stack length:', this.navigationStack.length);
+
+        // MINIMIZE ONLY FROM HOME SCREEN - ULTIMATE STRICT CHECK
+        // Only minimize if ALL conditions are met:
+        // 1. Currently viewing the HOME screen (currentScreen === 'home')
+        // 2. Navigation stack has exactly 1 item
+        // 3. That one item is 'home'
+        // 4. NOT within lockout period after navigating to home
+        // 5. NOT on settings, favorites, track, or schedule screens
+
+        // Check 1: Is currentScreen 'home'?
+        if (this.currentScreen !== 'home') {
+            console.log('⬅️ NOT on home screen (on ' + this.currentScreen + ') - NOT minimizing');
+            // Fall through to normal back navigation
+        }
+        // Check 2: Is stack length exactly 1?
+        else if (this.navigationStack.length !== 1) {
+            console.log('⬅️ On home but stack length is ' + this.navigationStack.length + ' (expect 1) - NOT minimizing');
+            console.log('⬅️ Stack contents:', JSON.stringify(this.navigationStack));
+            // Fall through to normal back navigation
+        }
+        // Check 3: Is first stack item 'home'?
+        else if (this.navigationStack[0] !== 'home') {
+            console.log('⬅️ On home but first stack item is "' + this.navigationStack[0] + '" (expect "home") - NOT minimizing');
+            // Fall through to normal back navigation
+        }
+        // Check 4: Is justNavigatedToHome flag active (lockout period)?
+        else if (this.justNavigatedToHome) {
+            console.log('⬅️✅ Navigation lockout active - just navigated to home, NOT minimizing yet (prevent double-press minimize)');
+            // Fall through to normal back navigation
+        }
+        // All checks passed!
+        else {
+            console.log('⬅️✅ MINIMIZING APP: Truly on home with stack [home]');
+            this.minimizeApp();
+            return;
+        }
+
+        console.log('⬅️ Continuing normal back navigation...');
 
         // Special handling for map screen - check if train info panel is open
         if (this.currentScreen === 'mapScreen') {
             const trainInfoPanel = document.getElementById('trainInfoPanel');
             if (trainInfoPanel && trainInfoPanel.classList.contains('show')) {
-                // If train info panel is open, close it and show train list
                 console.log('⬅️ Closing train info panel, showing train list');
                 this.closeTrainInfo();
                 this.showTrainSelectionPanel();
                 return;
-        } else {
-                // If train list is showing, go back in navigation stack
-                console.log('⬅️ From map screen, going back in stack');
-                // Don't force home, use normal navigation
             }
         }
 
-        // Special handling for train detail screens - go to live tracking
+        // Special handling for train detail screens - go back to previous screen
         if (this.currentScreen === 'liveTrainDetail') {
-            console.log('⬅️ From train detail, going to live tracking');
-            // Remove current screen from stack
+            console.log('⬅️ From train detail, going back to previous screen');
             if (this.navigationStack.length > 1) {
-                this.navigationStack.pop();
+                this.navigationStack.pop(); // Remove current (liveTrainDetail)
+                const previousScreen = this.navigationStack[this.navigationStack.length - 1];
+                console.log('⬅️ Navigating back to:', previousScreen);
+
+                // If going back to liveTracking, load it
+                if (previousScreen === 'liveTracking') {
+                    this.navigateToScreen('liveTracking', false);
+                    setTimeout(() => {
+                        this.loadLiveTrains();
+                        this.populateLiveTrackingScreen();
+                    }, 100);
+                } else {
+                    // Otherwise just navigate back
+                    this.navigateToScreen(previousScreen, false);
+                }
+            } else {
+                // Fallback: go to home
+                this.navigateToScreen('home', false);
             }
-            // Ensure we're going to the correct screen
-            this.navigateToScreen('liveTracking', false);
-            // Load live trains data when returning to live tracking
-            setTimeout(() => {
-                this.loadLiveTrains();
-                this.populateLiveTrackingScreen();
-            }, 100);
             return;
         }
 
-        // Special handling for schedule details - go to schedule
+        // Special handling for schedule details - go back to previous screen
         if (this.currentScreen === 'scheduleDetailsScreen') {
-            console.log('⬅️ From schedule details, going to schedule');
-            // Remove current screen from stack first
+            console.log('⬅️ From schedule details, going back to previous screen');
             if (this.navigationStack.length > 1) {
-                this.navigationStack.pop();
+                this.navigationStack.pop(); // Remove current (scheduleDetailsScreen)
+                const previousScreen = this.navigationStack[this.navigationStack.length - 1];
+                console.log('⬅️ Navigating back to:', previousScreen);
+                this.navigateToScreen(previousScreen, false);
+            } else {
+                // Fallback: go to schedule
+                this.navigateToScreen('scheduleScreen', false);
             }
-            this.navigateToScreen('scheduleScreen', false);
             return;
         }
 
-        // Remove current screen from stack
+        // Normal back navigation - navigate to previous screen
         if (this.navigationStack.length > 1) {
-            this.navigationStack.pop(); // Remove current screen
+            console.log('⬅️ Stack length > 1, popping from stack');
+            this.navigationStack.pop();
             const previousScreen = this.navigationStack[this.navigationStack.length - 1];
             console.log('⬅️ Navigating to previous screen:', previousScreen);
+            console.log('⬅️ New stack after pop:', JSON.stringify(this.navigationStack));
+
+            // If navigating to home, set lockout flag to prevent minimize on double-press
+            if (previousScreen === 'home') {
+                console.log('⬅️ 🔒 Setting navigation lockout - navigating back to home');
+                this.justNavigatedToHome = true;
+                setTimeout(() => {
+                    this.justNavigatedToHome = false;
+                    console.log('⬅️ 🔓 Navigation lockout cleared');
+                }, this.navigationLockoutMs);
+            }
+
             this.navigateToScreen(previousScreen, false);
+        } else if (this.navigationStack.length === 1 && this.navigationStack[0] === 'home') {
+            // Edge case: stack only has home and we're not on home - go back to home
+            console.log('⬅️ Stack only has home, going to home');
+            console.log('⬅️ 🔒 Setting navigation lockout - navigating to home (edge case)');
+            this.justNavigatedToHome = true;
+            setTimeout(() => {
+                this.justNavigatedToHome = false;
+                console.log('⬅️ 🔓 Navigation lockout cleared');
+            }, this.navigationLockoutMs);
+            this.navigateToScreen('home', false);
         } else {
-            // Fallback to home if no previous screens
-            console.log('⬅️ No previous screens, going to home');
+            // Should not reach here - fallback to home without minimizing
+            console.log('⬅️ ⚠️ Unexpected stack state:', JSON.stringify(this.navigationStack));
+            console.log('⬅️ 🔒 Setting navigation lockout - fallback to home');
+            this.justNavigatedToHome = true;
+            setTimeout(() => {
+                this.justNavigatedToHome = false;
+                console.log('⬅️ 🔓 Navigation lockout cleared');
+            }, this.navigationLockoutMs);
             this.navigateToScreen('home', false);
         }
     }
@@ -7404,36 +7622,50 @@ class MobileApp {
     // NEW: Get user location ONLY if permission is already granted (no popup)
     async getUserLocationIfPermitted() {
         console.log('📍 Checking if can get user location...');
-        
+
         // Use Capacitor Geolocation (native) instead of browser geolocation
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             try {
                 const { Geolocation } = window.Capacitor.Plugins;
-                
+
+                if (!Geolocation) {
+                    console.warn('⚠️ Geolocation plugin not available');
+                    this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi fallback
+                    this.findNearestStation();
+                    return;
+                }
+
                 // Check permission status first
                 const permissionStatus = await Geolocation.checkPermissions();
-                console.log('📍 Location permission status:', permissionStatus.location);
-                
+                console.log('📍 Location permission status:', permissionStatus);
+
                 // Only get location if permission is already granted
                 if (permissionStatus.location === 'granted') {
-                    const position = await Geolocation.getCurrentPosition({
-                        enableHighAccuracy: true,
-                        timeout: 10000
-                    });
-                    
-                    this.userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    console.log('✅ User location obtained (native):', this.userLocation);
-                    this.findNearestStation();
+                    try {
+                        const position = await Geolocation.getCurrentPosition({
+                            enableHighAccuracy: true,
+                            timeout: 10000
+                        });
+
+                        this.userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        console.log('✅ User location obtained (native):', this.userLocation);
+                        this.findNearestStation();
+                    } catch (positionError) {
+                        console.warn('⚠️ Failed to get position:', positionError);
+                        console.log('📍 Using fallback location: Karachi');
+                        this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
+                        this.findNearestStation();
+                    }
                 } else {
                     console.log('⚠️ Location permission not granted, using fallback');
                     this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
                     this.findNearestStation();
                 }
             } catch (error) {
-                console.log('❌ Error getting location:', error);
+                console.error('❌ Error checking location permission:', error);
                 this.userLocation = { lat: 24.8607, lng: 67.0011 }; // Karachi
                 this.findNearestStation();
             }
@@ -9515,38 +9747,56 @@ class MobileApp {
     }
 
     async setupNotificationActionListener() {
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            try {
-                const { LocalNotifications } = window.Capacitor.Plugins;
-                
-                // Listen for notification taps
-                await LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-                    try {
-                        console.log('🔔 Notification tapped:', notification);
-                        
-                        // Get the train ID from notification data (this is InnerKey, not TrainNumber)
-                        const trainId = notification?.notification?.extra?.trainId;
-                        const trainName = notification?.notification?.extra?.trainName;
-                        
-                        if (trainId) {
-                            console.log(`📱 Opening train details for: ${trainName} (InnerKey: ${trainId})`);
-                            
-                            // trainId is actually InnerKey (e.g., 127109900 for specific train instance)
-                            // openTrainDetails will find the train by InnerKey from active trains
-                            this.openTrainDetails(trainId);
-                        } else {
-                            console.warn('⚠️ No trainId (InnerKey) found in notification data');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error handling notification tap:', error);
-                    }
-                    return; // Explicit return to avoid undefined warning
-                });
-                
-                console.log('✅ Notification action listener set up');
-            } catch (error) {
-                console.error('❌ Error setting up notification listener:', error);
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+            console.log('ℹ️ Not a native platform, skipping notification action listener');
+            return;
+        }
+
+        try {
+            const { LocalNotifications } = window.Capacitor.Plugins;
+
+            if (!LocalNotifications) {
+                console.warn('⚠️ LocalNotifications plugin not available');
+                return;
             }
+
+            // Listen for notification taps (foreground and background)
+            await LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+                try {
+                    console.log('🔔 Notification action performed:', notification);
+
+                    // Get the train ID from notification data (this is InnerKey, not TrainNumber)
+                    const trainId = notification?.notification?.extra?.trainId;
+                    const trainName = notification?.notification?.extra?.trainName;
+
+                    if (trainId) {
+                        console.log(`📱 Opening train details for: ${trainName} (InnerKey: ${trainId})`);
+
+                        // trainId is actually InnerKey (e.g., 127109900 for specific train instance)
+                        // openTrainDetails will find the train by InnerKey from active trains
+                        this.openTrainDetails(trainId);
+                    } else {
+                        console.warn('⚠️ No trainId (InnerKey) found in notification data');
+                    }
+                } catch (error) {
+                    console.error('❌ Error handling notification tap:', error);
+                }
+                return; // Explicit return to avoid undefined warning
+            });
+
+            // Also listen for notifications received in foreground
+            await LocalNotifications.addListener('localNotificationReceived', (notification) => {
+                try {
+                    console.log('🔔 Notification received in foreground:', notification);
+                    // App can handle foreground notifications here if needed
+                } catch (error) {
+                    console.error('❌ Error handling foreground notification:', error);
+                }
+            });
+
+            console.log('✅ Notification listeners set up (action + foreground)');
+        } catch (error) {
+            console.error('❌ Error setting up notification listeners:', error);
         }
     }
 
@@ -9655,25 +9905,72 @@ class MobileApp {
 
     async triggerNotification(notification, train, minutesUntilArrival) {
         console.log(`🔔 Triggering notification: ${notification.trainName} arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`);
-        
+
         const title = `${notification.trainName}`;
         const body = `Arriving at ${notification.stationName} in ${Math.round(minutesUntilArrival)} minutes`;
-        
-        // For native apps, we use scheduled notifications (background delivery)
-        // Do NOT send immediate notifications to avoid duplicates
-        // The scheduled notification will fire automatically at the right time
+
+        // For native apps, schedule an immediate notification as fallback
+        // in case the scheduled one didn't fire due to Doze/battery optimization
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            console.log('ℹ️ Native app - notification already scheduled in background, skipping immediate trigger');
-            console.log('ℹ️ The scheduled notification will fire automatically when train approaches');
-            
-            // Just mark as triggered and remove from active list
+            try {
+                const { LocalNotifications } = window.Capacitor.Plugins;
+                const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
+
+                console.log('📱 Native app - sending immediate display notification as fallback');
+
+                // Send immediate notification to ensure it's displayed
+                await LocalNotifications.sendNotifications({
+                    notifications: [{
+                        id: numericId,
+                        title: title,
+                        body: body,
+                        smallIcon: 'ic_stat_icon_config_sample',
+                        largeIcon: 'ic_launcher',
+                        summaryText: 'Train Notification',
+                        extra: {
+                            trainId: notification.trainId,
+                            trainName: notification.trainName,
+                            notificationId: notification.id
+                        }
+                    }]
+                });
+                console.log('✅ Immediate notification sent as fallback for native app');
+            } catch (error) {
+                // sendNotifications might not exist, try schedule with immediate time
+                try {
+                    const { LocalNotifications } = window.Capacitor.Plugins;
+                    const numericId = Math.abs(parseInt(notification.id) || Date.now()) % 2147483647;
+
+                    await LocalNotifications.schedule({
+                        notifications: [{
+                            id: numericId + 1,
+                            title: title,
+                            body: body,
+                            schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second from now
+                            smallIcon: 'ic_stat_icon_config_sample',
+                            largeIcon: 'ic_launcher',
+                            summaryText: 'Train Notification',
+                            extra: {
+                                trainId: notification.trainId,
+                                trainName: notification.trainName,
+                                notificationId: notification.id
+                            }
+                        }]
+                    });
+                    console.log('✅ Immediate scheduled notification sent as fallback');
+                } catch (innerError) {
+                    console.error('❌ Error sending immediate notification:', innerError);
+                }
+            }
+
+            // Mark as triggered and remove from active list
             notification.triggered = true;
             this.saveNotificationsToStorage();
-            
+
             // Remove the notification after marking as triggered
             console.log(`🗑️ Removing triggered notification from list: ${notification.id}`);
             await this.removeNotification(notification.id);
-            
+
             // Refresh the notification UI if we're on the train details page
             if (this.selectedTrain && String(this.selectedTrain.InnerKey) === String(notification.trainId)) {
                 const trainData = this.trainData.active.find(t => String(t.InnerKey) === String(notification.trainId));
@@ -9686,7 +9983,7 @@ class MobileApp {
             }
             return;
         }
-        
+
         // For web browsers, send immediate web notification
         if ('Notification' in window && Notification.permission === 'granted') {
             // Web notification
@@ -9704,11 +10001,11 @@ class MobileApp {
         } else {
             console.warn('⚠️ No notification method available or permission not granted');
         }
-        
+
         // Remove the notification after triggering
         console.log(`🗑️ Removing triggered notification: ${notification.id}`);
         await this.removeNotification(notification.id);
-        
+
         // Refresh the notification UI if we're on the train details page
         if (this.selectedTrain && String(this.selectedTrain.InnerKey) === String(notification.trainId)) {
             const trainData = this.trainData.active.find(t => String(t.InnerKey) === String(notification.trainId));
@@ -9730,9 +10027,9 @@ class MobileApp {
 
         try {
             const { LocalNotifications } = window.Capacitor.Plugins;
-            
+
             // Find the train to get the ETA
-            const train = this.trainData?.active?.find(t => 
+            const train = this.trainData?.active?.find(t =>
                 String(t.InnerKey) === String(notification.trainId) ||
                 String(t.TrainId) === String(notification.trainId)
             );
@@ -9742,15 +10039,25 @@ class MobileApp {
                 return;
             }
 
-            // Check if this station is the next station
+            // Check if this station is the next station (will match when it becomes next)
             const isNextStation = train.NextStation && (
                 notification.stationName.toLowerCase().includes(train.NextStation.toLowerCase()) ||
                 train.NextStation.toLowerCase().includes(notification.stationName.toLowerCase())
             );
 
             const etaFromFunction = this.getTrainETA(train);
-            if (!isNextStation || !etaFromFunction) {
-                console.log('ℹ️ Station is not next or no ETA available, will schedule when train approaches');
+
+            // If this is the next station and we have ETA, schedule it with the actual ETA
+            if (isNextStation && etaFromFunction) {
+                console.log('✅ Station is next station, scheduling with current ETA');
+                // Continue with scheduling below
+            } else if (!isNextStation && etaFromFunction) {
+                // Station is not next yet, but train exists and we have ETA
+                // Calculate an estimated time for when this station will be next
+                console.log('ℹ️ Station is not next yet, scheduling for future arrival...');
+                // Continue with scheduling below
+            } else if (!etaFromFunction) {
+                console.log('⚠️ No ETA available, cannot schedule notification');
                 return;
             }
 
@@ -9808,6 +10115,10 @@ class MobileApp {
                     body: `Arriving at ${notification.stationName} in ${notification.minutesBefore} minutes`,
                     schedule: { at: triggerTime },
                     sound: 'default',
+                    smallIcon: 'ic_stat_icon_config_sample',
+                    largeIcon: 'ic_launcher',
+                    summaryText: 'Train Notification',
+                    actionTypeId: 'TRAIN_NOTIFICATION',
                     extra: {
                         trainId: notification.trainId,
                         trainName: notification.trainName,
@@ -9847,11 +10158,12 @@ class MobileApp {
     }
 
     startNotificationMonitoring() {
-        // Check notifications every 30 seconds
+        // Check notifications every 15 seconds for better reliability on Android
+        // Especially important for Doze mode scenarios
         this.notificationCheckInterval = setInterval(() => {
             this.checkNotifications();
-        }, 30000);
-        
+        }, 15000);
+
         // Also check immediately
         this.checkNotifications();
     }

@@ -6,7 +6,8 @@
     "androidScheme": "https"
   },
   "android": {
-    "path": "android"
+    "path": "android",
+    "resizeOnFullScreen": false
   },
   "ios": {
     "path": "ios/App",

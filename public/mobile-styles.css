@@ -29,6 +29,8 @@ div.mobile-app {
     -ms-overflow-style: none;
     padding-bottom: 80px;
     overscroll-behavior-y: contain;
+    /* Ensure safe area for gesture navigation bar on Android */
+    padding-bottom: calc(80px + max(0px, env(safe-area-inset-bottom)));
 }
 
 /* When viewing inner screens, disable outer scrolling; let .screen own scroll */
@@ -58,6 +60,23 @@ body.mobile-app {
     transition: all 0.3s ease;
     -webkit-overflow-scrolling: touch;
     position: relative;
+}
+
+/* Ensure soft navigation bar always visible above app on Android */
+@supports (padding: max(0px)) {
+    body.mobile-app,
+    html {
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Android: Ensure content respects safe area for gesture navigation */
+@supports (padding: env(safe-area-inset-bottom)) {
+    .platform-android body,
+    .platform-android html {
+        padding-bottom: env(safe-area-inset-bottom);
+        background-attachment: fixed;
+    }
 }
 
 /* Urdu Language Support - LTR with Urdu fonts */
@@ -2941,6 +2960,10 @@ body.mobile-app.dark-mode .train-info h3 {
 /* Android-specific main content padding */
 .platform-android .main-content {
     padding-top: calc(70px + 28px); /* Header height (84px on Android) + Android status bar (28px) */
+    padding-bottom: 50px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: auto;
 }
 
 /* Floating Header Styles */
@@ -3091,6 +3114,9 @@ body.mobile-app.dark-mode .train-info h3 {
 /* Android-specific screen padding (header + status bar) */
 .platform-android .screen {
     padding-top: calc(60px + 28px); /* Header height (84px on Android) + Android status bar (28px) */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: auto;
 }
 
 /* Train Details screen has taller header (~90px vs ~70px), adjust padding */
@@ -4342,6 +4368,72 @@ body.mobile-app.dark-mode .logo-icon {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 1px;
+}
+
+/* Android-specific bottom navigation - increase height */
+.platform-android .bottom-nav {
+    min-height: 70px;
+    padding-bottom: 50px;
+}
+
+.platform-android .bottom-nav .nav-item {
+    padding: 0;
+    justify-content: flex-start;
+}
+
+.platform-android .bottom-nav .nav-icon {
+    font-size: 1.5em;
+    margin-bottom: 4px;
+}
+
+.platform-android .bottom-nav .nav-label {
+    font-size: 0.7em;
+    margin-top: 2px;
+}
+
+/* Dark Mode - Bottom Navigation */
+body.mobile-app.dark-mode .bottom-nav {
+    background: rgba(15, 23, 42, 0.98);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+}
+
+body.mobile-app.dark-mode .bottom-nav .nav-item {
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .bottom-nav .nav-item:hover {
+    background: rgba(102, 126, 234, 0.15);
+    color: #e2e8f0;
+}
+
+body.mobile-app.dark-mode .bottom-nav .nav-item.active {
+    background: rgba(102, 126, 234, 0.25);
+    color: #93c5fd;
+}
+
+body.mobile-app.dark-mode .bottom-nav .nav-item.active::before {
+    background: #93c5fd;
+}
+
+/* Dark Mode - Android Bottom Navigation */
+body.mobile-app.dark-mode .platform-android .bottom-nav {
+    background: rgba(15, 23, 42, 0.98);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.mobile-app.dark-mode .platform-android .bottom-nav .nav-item {
+    color: #cbd5e1;
+}
+
+body.mobile-app.dark-mode .platform-android .bottom-nav .nav-item:hover {
+    background: rgba(102, 126, 234, 0.15);
+    color: #e2e8f0;
+}
+
+body.mobile-app.dark-mode .platform-android .bottom-nav .nav-item.active {
+    background: rgba(102, 126, 234, 0.25);
+    color: #93c5fd;
 }
 
 /* Quick Menu */

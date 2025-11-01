@@ -46,7 +46,8 @@
       "Read(/Users/abdulnasir/Data/**)",
       "Bash(sed:*)",
       "Read(/Users/abdulnasir/Data/**)",
-      "Read(/Users/abdulnasir/Data/**)"
+      "Read(/Users/abdulnasir/Data/**)",
+      "Bash(node -c:*)"
     ],
     "deny": [],
     "ask": []
