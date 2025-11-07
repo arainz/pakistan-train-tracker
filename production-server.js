@@ -8,9 +8,401 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(cors());
+// Configure CORS to allow credentials
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  credentials: true
+}));
 app.use(express.json());
-app.use(express.static('public'));
+
+// Simple cookie parser middleware
+app.use((req, _, next) => {
+  const cookies = {};
+  if (req.headers.cookie) {
+    req.headers.cookie.split(';').forEach(cookie => {
+      const [key, val] = cookie.trim().split('=');
+      cookies[key] = val;
+    });
+  }
+  req.cookies = cookies;
+  next();
+});
+
+// =====================================================
+// ADMIN PANEL AUTHENTICATION
+// =====================================================
+// Default credentials - CHANGE THESE IN PRODUCTION!
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'abdulnasir';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Arainz@898';
+
+// Simple authentication middleware for admin panel
+function authMiddleware(req, res, next) {
+  const auth = req.headers.authorization;
+  const sessionCookie = req.cookies.adminSession;
+
+  // Check session cookie first
+  if (sessionCookie) {
+    try {
+      const credentials = Buffer.from(sessionCookie, 'base64').toString();
+      const [username, password] = credentials.split(':');
+
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        return next();
+      }
+    } catch (e) {
+      // Invalid cookie, continue to check auth header
+    }
+  }
+
+  // Check if authorization header exists
+  if (!auth) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Please provide credentials' });
+  }
+
+  // Parse Basic Auth credentials
+  try {
+    const credentials = Buffer.from(auth.split(' ')[1], 'base64').toString();
+    const [username, password] = credentials.split(':');
+
+    // Validate credentials
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      next();
+    } else {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Invalid credentials' });
+    }
+  } catch (e) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid auth header' });
+  }
+}
+
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Create a simple token (in production, use JWT)
+    const token = Buffer.from(`${username}:${password}`).toString('base64');
+
+    // Set cookie for session
+    res.cookie('adminSession', token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+
+    res.json({
+      success: true,
+      token: token,
+      message: 'Login successful'
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
+});
+
+// Apply authentication to admin panel
+app.get('/admin-data-manager.html', (req, res) => {
+  const auth = req.headers.authorization;
+  const sessionCookie = req.cookies.adminSession;
+  const token = req.query.token; // Check for token in query string (from login redirect)
+
+  // Check if valid session cookie exists
+  if (sessionCookie) {
+    try {
+      const credentials = Buffer.from(sessionCookie, 'base64').toString();
+      const [username, password] = credentials.split(':');
+
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        return res.sendFile('public/admin-data-manager.html', { root: __dirname });
+      }
+    } catch (e) {
+      // Invalid cookie
+    }
+  }
+
+  // Check if token is passed in query string (post-login redirect)
+  if (token) {
+    try {
+      const credentials = Buffer.from(token, 'base64').toString();
+      const [username, password] = credentials.split(':');
+
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        // Set the cookie for future requests
+        res.cookie('adminSession', token, {
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000,
+          path: '/'
+        });
+        return res.sendFile('public/admin-data-manager.html', { root: __dirname });
+      }
+    } catch (e) {
+      // Invalid token
+    }
+  }
+
+  if (!auth) {
+    // No authorization header, serve login page
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Admin Panel Login</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+          }
+          .login-container h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+          }
+          .form-group {
+            margin-bottom: 20px;
+          }
+          .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+          }
+          .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+          }
+          .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+          }
+          .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+          }
+          .btn:hover {
+            transform: translateY(-2px);
+          }
+          .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+          }
+          .message.error {
+            background: #fee;
+            color: #c33;
+            display: none;
+          }
+          .message.success {
+            background: #efe;
+            color: #3c3;
+            display: none;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="login-container">
+          <h1>🔐 Admin Panel</h1>
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+            <div id="message" class="message"></div>
+          </form>
+        </div>
+
+        <script>
+          document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            try {
+              const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                // Store token in localStorage
+                localStorage.setItem('adminToken', data.token);
+                // Redirect to admin panel with token in query string
+                window.location.href = '/admin-data-manager.html?token=' + encodeURIComponent(data.token);
+              } else {
+                messageDiv.textContent = data.message;
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+              }
+            } catch (error) {
+              messageDiv.textContent = 'Connection error: ' + error.message;
+              messageDiv.className = 'message error';
+              messageDiv.style.display = 'block';
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  }
+
+  // Check if valid credentials in header
+  try {
+    const credentials = Buffer.from(auth.split(' ')[1], 'base64').toString();
+    const [username, password] = credentials.split(':');
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      return res.sendFile('public/admin-data-manager.html', { root: __dirname });
+    }
+  } catch (e) {
+    // Invalid auth header
+  }
+
+  // Invalid or missing credentials
+  res.status(401).set('WWW-Authenticate', 'Basic realm="Admin Panel"').send('Unauthorized');
+});
+
+// Test login page (for debugging)
+app.get('/login-test', (_, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Admin Panel Login Test</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: 500; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #764ba2; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .result.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .result.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .step { margin-top: 15px; padding: 10px; background: #f9f9f9; border-left: 3px solid #667eea; }
+        .success-text { color: green; font-weight: bold; }
+        .error-text { color: red; font-weight: bold; }
+        a { color: #667eea; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🔐 Admin Panel Login Test</h1>
+        <form id="loginForm">
+          <div class="form-group">
+            <label>Username:</label>
+            <input type="text" id="username" value="admin" required>
+          </div>
+          <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="password" value="admin123" required>
+          </div>
+          <button type="submit">Login & Test Access</button>
+        </form>
+        <div id="result"></div>
+      </div>
+
+      <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const resultDiv = document.getElementById('result');
+          resultDiv.innerHTML = '<div class="step">🔄 Step 1: Logging in...</div>';
+
+          const username = document.getElementById('username').value;
+          const password = document.getElementById('password').value;
+
+          try {
+            // Step 1: Login
+            const loginRes = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+
+            const loginData = await loginRes.json();
+
+            if (!loginData.success) {
+              resultDiv.innerHTML += '<div class="result error"><strong>❌ Login failed:</strong><pre>' + JSON.stringify(loginData, null, 2) + '</pre></div>';
+              return;
+            }
+
+            resultDiv.innerHTML += '<div class="step"><span class="success-text">✅ Login successful!</span><pre>' + JSON.stringify(loginData, null, 2) + '</pre></div>';
+
+            // Store token
+            localStorage.setItem('adminToken', loginData.token);
+
+            // Step 2: Try to access admin panel
+            resultDiv.innerHTML += '<div class="step">🔄 Step 2: Accessing admin panel with token...</div>';
+            const adminRes = await fetch('/admin-data-manager.html', {
+              headers: { 'Authorization': 'Basic ' + loginData.token }
+            });
+
+            if (adminRes.ok) {
+              resultDiv.innerHTML += '<div class="result success"><strong>✅ Success!</strong> Admin panel is accessible.<br><br><strong>Next step:</strong> <a href="/admin-data-manager.html" target="_blank">Go to admin panel →</a></div>';
+            } else {
+              resultDiv.innerHTML += '<div class="result error"><strong>❌ Failed to access admin panel.</strong><br>Status: ' + adminRes.status + '</div>';
+            }
+          } catch (error) {
+            resultDiv.innerHTML += '<div class="result error"><strong>❌ Error:</strong><pre>' + error.message + '</pre></div>';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// NOW add static middleware AFTER auth routes so admin-data-manager.html goes through auth first
+// Configure static middleware to skip admin-data-manager.html (let our route handle it)
+app.use(express.static('public', {
+  skip: (req) => {
+    return req.path === '/admin-data-manager.html';
+  }
+}));
 
 // Data storage
 let data = {
@@ -21,52 +413,70 @@ let data = {
   lastUpdated: null
 };
 
-// Base URLs
-const DATA_BASE_URL = 'https://trackyourtrains.com/data';
+// Local data path (primary and only source)
+const LOCAL_DATA_PATH = './public/data';
 const SOCKET_URL = 'https://socket.pakraillive.com';
 
-// Fetch live train data directly - removed, will use WebSocket only
-
-// Fetch static data from JSON endpoints
-async function fetchStaticData() {
+// Load local JSON file
+function loadLocalFile(filename) {
   try {
-    console.log('Fetching static data from trackyourtrains.com...');
-    
-    // Fetch stations data
-    const stationsResponse = await axios.get(`${DATA_BASE_URL}/StationsData.json?v=2025-06-06`);
-    if (stationsResponse.data && stationsResponse.data.Response) {
-      data.stations = Array.isArray(stationsResponse.data.Response) ? stationsResponse.data.Response : [];
-    } else {
-      data.stations = Array.isArray(stationsResponse.data) ? stationsResponse.data : [];
-    }
-    console.log(`Loaded ${data.stations.length} stations`);
-    
-    // Fetch trains data
-    const trainsResponse = await axios.get(`${DATA_BASE_URL}/Trains.json?v=2025-06-06`);
-    if (trainsResponse.data && trainsResponse.data.Response) {
-      data.trains = Array.isArray(trainsResponse.data.Response) ? trainsResponse.data.Response : [];
-    } else {
-      data.trains = Array.isArray(trainsResponse.data) ? trainsResponse.data : [];
-    }
-    console.log(`Loaded ${data.trains.length} trains`);
-    
-    // Fetch train-stations mapping (schedules)
-    const trainStationsResponse = await axios.get(`${DATA_BASE_URL}/TrainStations.json?v=2025-06-06`);
-    if (trainStationsResponse.data && trainStationsResponse.data.Response) {
-      data.trainStations = Array.isArray(trainStationsResponse.data.Response) ? trainStationsResponse.data.Response : [];
-    } else {
-      data.trainStations = Array.isArray(trainStationsResponse.data) ? trainStationsResponse.data : [];
-    }
-    console.log(`Loaded schedules for ${data.trainStations.length} trains`);
-    
-    data.lastUpdated = new Date().toISOString();
-    
+    const _fs = require('fs');
+    const _path = require('path');
+    const filePath = _path.join(LOCAL_DATA_PATH, filename);
+    const fileContent = _fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContent);
   } catch (error) {
-    console.error('Error fetching static data:', error.message);
-    // Initialize with empty arrays to prevent errors
-    data.stations = data.stations || [];
-    data.trains = data.trains || [];
-    data.trainStations = data.trainStations || [];
+    console.error(`❌ Error loading ${filename}:`, error.message);
+    return null;
+  }
+}
+
+// Fetch static data from local files only
+function fetchStaticData() {
+  try {
+    console.log('🔄 Loading static data from local files...');
+
+    // Load stations data
+    const stationsData = loadLocalFile('stations.json');
+    if (stationsData) {
+      data.stations = Array.isArray(stationsData.Response) ? stationsData.Response :
+                     Array.isArray(stationsData) ? stationsData : [];
+      console.log(`✅ Loaded ${data.stations.length} stations`);
+    } else {
+      console.error('❌ Failed to load stations.json');
+      data.stations = [];
+    }
+
+    // Load trains data
+    const trainsData = loadLocalFile('trains.json');
+    if (trainsData) {
+      data.trains = Array.isArray(trainsData.Response) ? trainsData.Response :
+                   Array.isArray(trainsData) ? trainsData : [];
+      console.log(`✅ Loaded ${data.trains.length} trains`);
+    } else {
+      console.error('❌ Failed to load trains.json');
+      data.trains = [];
+    }
+
+    // Load schedules data
+    const schedulesData = loadLocalFile('schedules.json');
+    if (schedulesData) {
+      data.trainStations = Array.isArray(schedulesData.Response) ? schedulesData.Response :
+                          Array.isArray(schedulesData) ? schedulesData : [];
+      console.log(`✅ Loaded ${data.trainStations.length} schedules`);
+    } else {
+      console.error('❌ Failed to load schedules.json');
+      data.trainStations = [];
+    }
+
+    data.lastUpdated = new Date().toISOString();
+    console.log('✅ All static data loaded from local files');
+
+  } catch (error) {
+    console.error('❌ Error during data load:', error.message);
+    data.stations = [];
+    data.trains = [];
+    data.trainStations = [];
   }
 }
 
@@ -231,11 +641,7 @@ function connectWebSocket() {
   
   socket.on('disconnect', (reason) => {
     console.log('❌ WebSocket disconnected:', reason);
-    // Try to reconnect
-    setTimeout(() => {
-      console.log('Attempting to reconnect...');
-      socket.connect();
-    }, 5000);
+    // socket.io-client will automatically reconnect based on the reconnection config
   });
   
   socket.on('connect_error', (error) => {
@@ -533,6 +939,113 @@ app.get('/api/insights', (req, res) => {
     success: true,
     data: insights
   });
+});
+
+// =====================================================
+// DATA MANAGEMENT ENDPOINTS (for admin panel)
+// =====================================================
+
+const fs = require('fs');
+const path = require('path');
+
+// Save trains data
+app.post('/api/save-trains', authMiddleware, (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'public', 'data', 'trains.json');
+    fs.writeFileSync(filePath, JSON.stringify(req.body, null, 2));
+    data.trains = req.body.Response || req.body;
+
+    console.log('✅ Trains data updated');
+    res.json({
+      success: true,
+      message: 'Trains data saved successfully',
+      count: (req.body.Response || req.body).length
+    });
+  } catch (error) {
+    console.error('❌ Error saving trains:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Save stations data
+app.post('/api/save-stations', authMiddleware, (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'public', 'data', 'stations.json');
+    fs.writeFileSync(filePath, JSON.stringify(req.body, null, 2));
+    data.stations = req.body.Response || req.body;
+
+    console.log('✅ Stations data updated');
+    res.json({
+      success: true,
+      message: 'Stations data saved successfully',
+      count: (req.body.Response || req.body).length
+    });
+  } catch (error) {
+    console.error('❌ Error saving stations:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Save schedules data
+app.post('/api/save-schedules', authMiddleware, (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'public', 'data', 'schedules.json');
+    fs.writeFileSync(filePath, JSON.stringify(req.body, null, 2));
+    data.trainStations = req.body.Response || req.body;
+
+    console.log('✅ Schedules data updated');
+    res.json({
+      success: true,
+      message: 'Schedules data saved successfully',
+      count: (req.body.Response || req.body).length
+    });
+  } catch (error) {
+    console.error('❌ Error saving schedules:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get data file info
+app.get('/api/data-info', (req, res) => {
+  try {
+    const dataDir = path.join(__dirname, 'public', 'data');
+    const files = ['trains.json', 'stations.json', 'schedules.json', 'version.json'];
+
+    const info = {};
+    files.forEach(file => {
+      const filePath = path.join(dataDir, file);
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        info[file] = {
+          size: stats.size,
+          sizeKB: (stats.size / 1024).toFixed(2),
+          modified: stats.mtime,
+          exists: true
+        };
+      }
+    });
+
+    res.json({
+      success: true,
+      dataDirectory: dataDir,
+      files: info
+    });
+  } catch (error) {
+    console.error('❌ Error getting data info:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Initialize data and start server
