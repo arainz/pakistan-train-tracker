@@ -413,52 +413,70 @@ let data = {
   lastUpdated: null
 };
 
-// Base URLs
-const DATA_BASE_URL = 'https://trackyourtrains.com/data';
+// Local data path (primary and only source)
+const LOCAL_DATA_PATH = './public/data';
 const SOCKET_URL = 'https://socket.pakraillive.com';
 
-// Fetch live train data directly - removed, will use WebSocket only
-
-// Fetch static data from JSON endpoints
-async function fetchStaticData() {
+// Load local JSON file
+function loadLocalFile(filename) {
   try {
-    console.log('Fetching static data from trackyourtrains.com...');
-    
-    // Fetch stations data
-    const stationsResponse = await axios.get(`${DATA_BASE_URL}/StationsData.json?v=2025-06-06`);
-    if (stationsResponse.data && stationsResponse.data.Response) {
-      data.stations = Array.isArray(stationsResponse.data.Response) ? stationsResponse.data.Response : [];
-    } else {
-      data.stations = Array.isArray(stationsResponse.data) ? stationsResponse.data : [];
-    }
-    console.log(`Loaded ${data.stations.length} stations`);
-    
-    // Fetch trains data
-    const trainsResponse = await axios.get(`${DATA_BASE_URL}/Trains.json?v=2025-06-06`);
-    if (trainsResponse.data && trainsResponse.data.Response) {
-      data.trains = Array.isArray(trainsResponse.data.Response) ? trainsResponse.data.Response : [];
-    } else {
-      data.trains = Array.isArray(trainsResponse.data) ? trainsResponse.data : [];
-    }
-    console.log(`Loaded ${data.trains.length} trains`);
-    
-    // Fetch train-stations mapping (schedules)
-    const trainStationsResponse = await axios.get(`${DATA_BASE_URL}/TrainStations.json?v=2025-06-06`);
-    if (trainStationsResponse.data && trainStationsResponse.data.Response) {
-      data.trainStations = Array.isArray(trainStationsResponse.data.Response) ? trainStationsResponse.data.Response : [];
-    } else {
-      data.trainStations = Array.isArray(trainStationsResponse.data) ? trainStationsResponse.data : [];
-    }
-    console.log(`Loaded schedules for ${data.trainStations.length} trains`);
-    
-    data.lastUpdated = new Date().toISOString();
-    
+    const _fs = require('fs');
+    const _path = require('path');
+    const filePath = _path.join(LOCAL_DATA_PATH, filename);
+    const fileContent = _fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContent);
   } catch (error) {
-    console.error('Error fetching static data:', error.message);
-    // Initialize with empty arrays to prevent errors
-    data.stations = data.stations || [];
-    data.trains = data.trains || [];
-    data.trainStations = data.trainStations || [];
+    console.error(`❌ Error loading ${filename}:`, error.message);
+    return null;
+  }
+}
+
+// Fetch static data from local files only
+function fetchStaticData() {
+  try {
+    console.log('🔄 Loading static data from local files...');
+
+    // Load stations data
+    const stationsData = loadLocalFile('stations.json');
+    if (stationsData) {
+      data.stations = Array.isArray(stationsData.Response) ? stationsData.Response :
+                     Array.isArray(stationsData) ? stationsData : [];
+      console.log(`✅ Loaded ${data.stations.length} stations`);
+    } else {
+      console.error('❌ Failed to load stations.json');
+      data.stations = [];
+    }
+
+    // Load trains data
+    const trainsData = loadLocalFile('trains.json');
+    if (trainsData) {
+      data.trains = Array.isArray(trainsData.Response) ? trainsData.Response :
+                   Array.isArray(trainsData) ? trainsData : [];
+      console.log(`✅ Loaded ${data.trains.length} trains`);
+    } else {
+      console.error('❌ Failed to load trains.json');
+      data.trains = [];
+    }
+
+    // Load schedules data
+    const schedulesData = loadLocalFile('schedules.json');
+    if (schedulesData) {
+      data.trainStations = Array.isArray(schedulesData.Response) ? schedulesData.Response :
+                          Array.isArray(schedulesData) ? schedulesData : [];
+      console.log(`✅ Loaded ${data.trainStations.length} schedules`);
+    } else {
+      console.error('❌ Failed to load schedules.json');
+      data.trainStations = [];
+    }
+
+    data.lastUpdated = new Date().toISOString();
+    console.log('✅ All static data loaded from local files');
+
+  } catch (error) {
+    console.error('❌ Error during data load:', error.message);
+    data.stations = [];
+    data.trains = [];
+    data.trainStations = [];
   }
 }
 
