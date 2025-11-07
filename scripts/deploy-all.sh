@@ -182,7 +182,7 @@ if [ "$DEPLOY_ORACLE" = true ]; then
   if pm2 info train-tracker &> /dev/null; then
     pm2 restart train-tracker
   else
-    pm2 start server.js --name "train-tracker" --instances max --exec-mode cluster
+    pm2 start server.js --name "train-tracker"
   fi
   pm2 save
 EOFREMOTE

@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Configuration - Update these with your actual URLs
-GCP_URL="${GCP_URL:-https://pakistan-train-tracker-xxxxxxxxx.us-central1.run.app}"
+GCP_URL="${GCP_URL:-https://pakistan-train-tracker-cgh5kxvuiq-uc.a.run.app}"
 ORACLE_URL="${ORACLE_URL:-http://138.2.91.18:3000}"
 KOYEB_URL="${KOYEB_URL:-https://confused-eel-pakrail-7ab69761.koyeb.app}"
 

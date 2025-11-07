@@ -672,6 +672,23 @@ function updateLiveTrains(delta) {
 
 // API Endpoints
 
+// Health check endpoint
+app.get('/health', (_, res) => {
+  const healthStatus = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    data: {
+      trains: data.trains.length,
+      stations: data.stations.length,
+      liveTrains: data.liveTrains.length,
+      lastDataUpdate: data.lastUpdated
+    }
+  };
+
+  res.json(healthStatus);
+});
+
 // Get all trains
 app.get('/api/trains', (req, res) => {
   res.json({

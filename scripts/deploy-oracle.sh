@@ -19,7 +19,7 @@ echo ""
 
 # Verify SSH connection
 echo "🔑 Checking SSH connection..."
-if ! ssh -o ConnectTimeout=5 $ORACLE_USER@$ORACLE_IP "echo 'SSH connection OK'" > /dev/null 2>&1; then
+if ! ssh -i ~/.ssh/oracle_vm.key -o ConnectTimeout=5 $ORACLE_USER@$ORACLE_IP "echo 'SSH connection OK'" > /dev/null 2>&1; then
     echo "❌ Cannot connect to Oracle instance via SSH"
     echo "Make sure:"
     echo "  1. SSH key is configured"
@@ -32,7 +32,7 @@ echo "✅ SSH connection successful"
 # Sync files to Oracle
 echo ""
 echo "📦 Syncing application files..."
-rsync -avz --delete \
+rsync -avz --delete -e "ssh -i ~/.ssh/oracle_vm.key" \
   --exclude node_modules \
   --exclude .git \
   --exclude .env \
@@ -45,7 +45,7 @@ echo "✅ Files synced"
 # Remote setup and deployment
 echo ""
 echo "🚀 Setting up and deploying on Oracle instance..."
-ssh $ORACLE_USER@$ORACLE_IP << 'EOFREMOTE'
+ssh -i ~/.ssh/oracle_vm.key $ORACLE_USER@$ORACLE_IP << 'EOFREMOTE'
   set -e
   cd /home/ubuntu/app
 
@@ -56,7 +56,7 @@ ssh $ORACLE_USER@$ORACLE_IP << 'EOFREMOTE'
   if pm2 info train-tracker &> /dev/null; then
     pm2 restart train-tracker
   else
-    pm2 start server.js --name "train-tracker" --instances max --exec-mode cluster
+    pm2 start server.js --name "train-tracker"
   fi
 
   pm2 save
