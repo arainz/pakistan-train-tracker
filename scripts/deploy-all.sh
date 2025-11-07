@@ -14,7 +14,7 @@ NC='\033[0m'
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-GCP_PROJECT_ID="pakistan-train-tracker"
+GCP_PROJECT_ID="tracking-b67e7"
 ORACLE_USER="ubuntu"
 ORACLE_IP="138.2.91.18"
 KOYEB_APP="pakistan-train-tracker"

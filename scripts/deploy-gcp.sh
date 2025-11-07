@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_ID="${1:-your-project-id}"
+PROJECT_ID="${1:-tracking-b67e7}"
 REGION="${2:-us-central1}"
 SERVICE_NAME="pakistan-train-tracker"
 
