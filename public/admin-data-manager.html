@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Manager - Pakistan Train Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #2563EB 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .nav-item:hover {
+            background: #e8e8ff;
+            border-color: #667eea;
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .main {
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-group textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .info-box {
+            background: #e0f2fe;
+            border-left: 4px solid #0284c7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0c4a6e;
+        }
+
+        .success-box {
+            background: #dcfce7;
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #166534;
+        }
+
+        .error-box {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #7f1d1d;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #78350f;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #1e293b;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .file-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: #64748b;
+            background: none;
+            border: none;
+            width: auto;
+            padding: 0;
+        }
+
+        .modal-close:hover {
+            color: #1e293b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .timestamp {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .data-preview {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                overflow-x: auto;
+            }
+
+            .nav-item {
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚂 Data Manager</h1>
+            <p>Manage JSON data files for Pakistan Train Tracker</p>
+        </div>
+
+        <div class="content">
+            <div class="sidebar">
+                <button class="nav-item active" onclick="switchSection('dashboard')">📊 Dashboard</button>
+                <button class="nav-item" onclick="switchSection('trains')">🚆 Trains</button>
+                <button class="nav-item" onclick="switchSection('stations')">🏢 Stations</button>
+                <button class="nav-item" onclick="switchSection('schedules')">📅 Schedules</button>
+                <button class="nav-item" onclick="switchSection('import')">📥 Import</button>
+                <button class="nav-item" onclick="switchSection('export')">📤 Export</button>
+                <button class="nav-item" onclick="switchSection('settings')">⚙️ Settings</button>
+            </div>
+
+            <div class="main">
+                <!-- Dashboard Section -->
+                <section class="section active" id="dashboard">
+                    <div class="section-title">📊 Dashboard</div>
+                    <div class="section-subtitle">Overview of all data files</div>
+
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="trainCount">--</div>
+                            <div class="stat-label">Trains</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="stationCount">--</div>
+                            <div class="stat-label">Stations</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="scheduleCount">--</div>
+                            <div class="stat-label">Schedules</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalSize">--</div>
+                            <div class="stat-label">Total Size</div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="loadAllData()">🔄 Refresh Stats</button>
+                        <button class="btn-secondary" onclick="validateAllData()">✓ Validate Data</button>
+                    </div>
+
+                    <div id="dashboardContent"></div>
+                </section>
+
+                <!-- Trains Section -->
+                <section class="section" id="trains">
+                    <div class="section-title">🚆 Trains Management</div>
+                    <div class="section-subtitle">Edit, add, and manage train data</div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="loadTrainsData()">📂 Load Trains</button>
+                        <button class="btn-success" onclick="showAddTrainModal()">➕ Add Train</button>
+                        <button class="btn-secondary" onclick="downloadTrains()">💾 Download</button>
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Manage train information including names, numbers, descriptions, and status
+                    </div>
+
+                    <div id="trainsContainer"></div>
+                </section>
+
+                <!-- Stations Section -->
+                <section class="section" id="stations">
+                    <div class="section-title">🏢 Stations Management</div>
+                    <div class="section-subtitle">Edit, add, and manage station data</div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="loadStationsData()">📂 Load Stations</button>
+                        <button class="btn-success" onclick="showAddStationModal()">➕ Add Station</button>
+                        <button class="btn-secondary" onclick="downloadStations()">💾 Download</button>
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Manage station information including names, codes, and coordinates
+                    </div>
+
+                    <div id="stationsContainer"></div>
+                </section>
+
+                <!-- Schedules Section -->
+                <section class="section" id="schedules">
+                    <div class="section-title">📅 Schedules Management</div>
+                    <div class="section-subtitle">Edit, add, and manage train schedules</div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="loadSchedulesData()">📂 Load Schedules</button>
+                        <button class="btn-success" onclick="showAddScheduleModal()">➕ Add Schedule</button>
+                        <button class="btn-secondary" onclick="downloadSchedules()">💾 Download</button>
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Manage train schedules with station stops, times, and distances
+                    </div>
+
+                    <div id="schedulesContainer"></div>
+                </section>
+
+                <!-- Import Section -->
+                <section class="section" id="import">
+                    <div class="section-title">📥 Import Data</div>
+                    <div class="section-subtitle">Import data from JSON files</div>
+
+                    <div class="warning-box">
+                        ⚠️ Importing will replace existing data. Make sure to backup first!
+                    </div>
+
+                    <div class="input-group">
+                        <label>Select File to Import</label>
+                        <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                            <div>📁 Click to select file or drag & drop</div>
+                            <small style="color: #64748b; margin-top: 10px; display: block;">Accepted: .json files</small>
+                            <input type="file" id="fileInput" accept=".json" onchange="handleFileImport(event)">
+                        </div>
+                    </div>
+
+                    <div id="importStatus"></div>
+                </section>
+
+                <!-- Export Section -->
+                <section class="section" id="export">
+                    <div class="section-title">📤 Export Data</div>
+                    <div class="section-subtitle">Export all data as JSON</div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="exportAllData()">📦 Export All</button>
+                        <button class="btn-secondary" onclick="exportTrains()">🚆 Export Trains</button>
+                        <button class="btn-secondary" onclick="exportStations()">🏢 Export Stations</button>
+                        <button class="btn-secondary" onclick="exportSchedules()">📅 Export Schedules</button>
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Export data to download as JSON files
+                    </div>
+
+                    <div id="exportStatus"></div>
+                </section>
+
+                <!-- Settings Section -->
+                <section class="section" id="settings">
+                    <div class="section-title">⚙️ Settings</div>
+                    <div class="section-subtitle">Configure data sources</div>
+
+                    <div class="input-group">
+                        <label>Data Source</label>
+                        <select id="dataSource">
+                            <option value="local">Local Files (/data/)</option>
+                            <option value="remote">Remote Server</option>
+                            <option value="both">Try Local First, Then Remote</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Remote Server URL (without /trains.json, /stations.json, etc.)</label>
+                        <input type="text" id="remoteURL" placeholder="https://pakistan-train-tracker-174840179894.us-central1.run.app/public/data" value="https://pakistan-train-tracker-174840179894.us-central1.run.app/public/data">
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Current Setting: <strong id="currentDataSource">Local Files</strong>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+                        <button class="btn-secondary" onclick="resetSettings()">🔄 Reset to Default</button>
+                        <button class="btn-success" onclick="testDataSource()">🧪 Test Connection</button>
+                    </div>
+
+                    <div id="settingsStatus"></div>
+                </section>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Data Manager v1.0 | Pakistan Train Tracker | Last Updated: <span id="lastUpdated">--</span></p>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit -->
+    <div class="modal" id="dataModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allData = {
+            trains: null,
+            stations: null,
+            schedules: null
+        };
+
+        let currentEditor = null;
+
+        // Global data source settings
+        window.DATA_SOURCE = localStorage.getItem('dataSource') || 'local';
+        window.REMOTE_URL = localStorage.getItem('remoteURL') || 'https://pakistan-train-tracker-174840179894.us-central1.run.app/public/data';
+
+        // Helper function to get data URL
+        function getDataURL(filename) {
+            if (window.DATA_SOURCE === 'local') {
+                return `/data/${filename}`;
+            } else if (window.DATA_SOURCE === 'remote') {
+                return `${window.REMOTE_URL}/${filename}`;
+            } else if (window.DATA_SOURCE === 'both') {
+                // For 'both' mode, we'll try local first, fallback to remote in loadAllData
+                return `/data/${filename}`;
+            }
+            return `/data/${filename}`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Data Manager Initialized');
+            console.log('Data Source:', window.DATA_SOURCE);
+            console.log('Remote URL:', window.REMOTE_URL);
+
+            // Load settings display
+            document.getElementById('dataSource').value = window.DATA_SOURCE;
+            document.getElementById('remoteURL').value = window.REMOTE_URL;
+            updateDataSourceDisplay();
+
+            loadAllData();
+        });
+
+        // Switch sections
+        function switchSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+
+            // Hide all nav items
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Mark nav item as active
+            event.target.classList.add('active');
+
+            // Load data if needed
+            if (sectionId === 'trains') loadTrainsData();
+            else if (sectionId === 'stations') loadStationsData();
+            else if (sectionId === 'schedules') loadSchedulesData();
+            else if (sectionId === 'dashboard') loadAllData();
+        }
+
+        // Load all data
+        async function loadAllData() {
+            try {
+                // Build URLs based on data source
+                const trainsURL = getDataURL('trains.json');
+                const stationsURL = getDataURL('stations.json');
+                const schedulesURL = getDataURL('schedules.json');
+
+                console.log('Loading from:', { trains: trainsURL, stations: stationsURL, schedules: schedulesURL });
+
+                const [trains, stations, schedules] = await Promise.all([
+                    fetch(trainsURL).then(r => r.json()),
+                    fetch(stationsURL).then(r => r.json()),
+                    fetch(schedulesURL).then(r => r.json())
+                ]);
+
+                allData = { trains, stations, schedules };
+
+                // Update stats
+                const trainCount = trains.Response?.length || trains.length || 0;
+                const stationCount = stations.Response?.length || stations.length || 0;
+                const scheduleCount = Array.isArray(schedules) ? schedules.length : (schedules.Response?.length || 0);
+
+                document.getElementById('trainCount').textContent = trainCount;
+                document.getElementById('stationCount').textContent = stationCount;
+                document.getElementById('scheduleCount').textContent = scheduleCount;
+
+                // Calculate total size
+                const totalSize = JSON.stringify(trains).length + JSON.stringify(stations).length + JSON.stringify(schedules).length;
+                document.getElementById('totalSize').textContent = formatBytes(totalSize);
+
+                // Update timestamp
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+
+                console.log('✅ All data loaded successfully');
+            } catch (error) {
+                console.error('❌ Error loading data:', error);
+                showError('Failed to load data: ' + error.message);
+            }
+        }
+
+        // Load trains data
+        async function loadTrainsData() {
+            try {
+                const url = getDataURL('trains.json');
+                const response = await fetch(url);
+                const data = await response.json();
+                allData.trains = data;
+
+                // Handle both formats: plain array or {Response: [...]}
+                const trains = Array.isArray(data) ? data : (data.Response || []);
+                let html = `<div class="table-container"><table><thead><tr><th>ID</th><th>Number</th><th>Name</th><th>Urdu</th><th>Description</th><th>Active</th><th>Live</th><th>Actions</th></tr></thead><tbody>`;
+
+                trains.forEach((train, index) => {
+                    const isActive = train.IsActive ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>';
+                    const isLive = train.IsLive ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>';
+                    html += `
+                        <tr>
+                            <td>${train.TrainId}</td>
+                            <td>${train.TrainNumber}</td>
+                            <td>${train.TrainName}</td>
+                            <td>${train.TrainNameUR || '-'}</td>
+                            <td>${train.TrainDescription || '-'}</td>
+                            <td>${isActive}</td>
+                            <td>${isLive}</td>
+                            <td>
+                                <button class="btn-secondary" onclick="editTrain(${index})" style="width: auto; padding: 5px 10px;">✏️</button>
+                                <button class="btn-danger" onclick="deleteTrain(${index})" style="width: auto; padding: 5px 10px;">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div>';
+                document.getElementById('trainsContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading trains:', error);
+                showError('Failed to load trains data');
+            }
+        }
+
+        // Load stations data
+        async function loadStationsData() {
+            try {
+                const url = getDataURL('stations.json');
+                const response = await fetch(url);
+                const data = await response.json();
+                allData.stations = data;
+
+                // Handle both formats: plain array or {Response: [...]}
+                const stations = Array.isArray(data) ? data : (data.Response || []);
+                let html = `<div class="table-container"><table><thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Latitude</th><th>Longitude</th><th>Actions</th></tr></thead><tbody>`;
+
+                stations.slice(0, 50).forEach((station, index) => {
+                    html += `
+                        <tr>
+                            <td>${station.StationId || '-'}</td>
+                            <td>${station.StationName}</td>
+                            <td>${station.StationCode || '-'}</td>
+                            <td>${station.Latitude || '-'}</td>
+                            <td>${station.Longitude || '-'}</td>
+                            <td>
+                                <button class="btn-secondary" onclick="editStation(${index})" style="width: auto; padding: 5px 10px;">✏️</button>
+                                <button class="btn-danger" onclick="deleteStation(${index})" style="width: auto; padding: 5px 10px;">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div>';
+                if (stations.length > 50) {
+                    html += `<p style="color: #64748b;">Showing 50 of ${stations.length} stations. Download to see all.</p>`;
+                }
+                document.getElementById('stationsContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading stations:', error);
+                showError('Failed to load stations data');
+            }
+        }
+
+        // Load schedules data
+        async function loadSchedulesData() {
+            try {
+                const url = getDataURL('schedules.json');
+                const response = await fetch(url);
+                const data = await response.json();
+                allData.schedules = data;
+
+                // Handle both formats: plain array or {Response: [...]}
+                const schedules = Array.isArray(data) ? data : (data.Response || []);
+                let html = `<div class="table-container"><table><thead><tr><th>TrainId</th><th>Stations</th><th>First Station</th><th>Last Station</th><th>Actions</th></tr></thead><tbody>`;
+
+                schedules.slice(0, 50).forEach((schedule, index) => {
+                    const stations = schedule.stations || schedule.Stations || [];
+                    const firstStation = stations.length > 0 ? stations[0].StationName : '-';
+                    const lastStation = stations.length > 0 ? stations[stations.length - 1].StationName : '-';
+
+                    html += `
+                        <tr>
+                            <td>${schedule.TrainId}</td>
+                            <td>${stations.length}</td>
+                            <td>${firstStation}</td>
+                            <td>${lastStation}</td>
+                            <td>
+                                <button class="btn-secondary" onclick="editSchedule(${index})" style="width: auto; padding: 5px 10px;">✏️</button>
+                                <button class="btn-danger" onclick="deleteSchedule(${index})" style="width: auto; padding: 5px 10px;">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div>';
+                if (schedules.length > 50) {
+                    html += `<p style="color: #64748b;">Showing 50 of ${schedules.length} schedules. Download to see all.</p>`;
+                }
+                document.getElementById('schedulesContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading schedules:', error);
+                showError('Failed to load schedules data');
+            }
+        }
+
+        // Validate all data
+        async function validateAllData() {
+            try {
+                const [trains, stations, schedules] = await Promise.all([
+                    fetch('/data/trains.json').then(r => r.json()),
+                    fetch('/data/stations.json').then(r => r.json()),
+                    fetch('/data/schedules.json').then(r => r.json())
+                ]);
+
+                let issues = [];
+
+                // Check trains - handle both formats
+                const trainArray = Array.isArray(trains) ? trains : (trains.Response || []);
+                if (!trainArray || trainArray.length === 0) {
+                    issues.push('⚠️ No trains found');
+                }
+
+                // Check stations - handle both formats
+                const stationArray = Array.isArray(stations) ? stations : (stations.Response || []);
+                if (!stationArray || stationArray.length === 0) {
+                    issues.push('⚠️ No stations found');
+                }
+
+                // Check schedules - handle both formats
+                const scheduleArray = Array.isArray(schedules) ? schedules : (schedules.Response || []);
+                if (!scheduleArray || scheduleArray.length === 0) {
+                    issues.push('⚠️ No schedules found');
+                }
+
+                if (issues.length === 0) {
+                    showSuccess('✅ All data is valid!');
+                } else {
+                    showWarning('⚠️ ' + issues.join('<br>'));
+                }
+            } catch (error) {
+                showError('Validation error: ' + error.message);
+            }
+        }
+
+        // Edit functions
+        function editTrain(index) {
+            const trainsArray = Array.isArray(allData.trains) ? allData.trains : (allData.trains.Response || []);
+            const train = trainsArray[index];
+            showModal(`
+                <h3>Edit Train - ID: ${train.TrainId}</h3>
+                <div class="input-group">
+                    <label>Train JSON</label>
+                    <textarea id="trainJson" style="height: 300px; font-family: monospace; font-size: 12px;">${JSON.stringify(train, null, 2)}</textarea>
+                </div>
+                <div style="color: #888; font-size: 12px; margin-top: 10px;">
+                    📝 Edit the JSON above and click Save to update the train
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="saveTrain(${index})">💾 Save</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        function editStation(index) {
+            const stationsArray = Array.isArray(allData.stations) ? allData.stations : (allData.stations.Response || []);
+            const station = stationsArray[index];
+            showModal(`
+                <h3>Edit Station - ID: ${station.StationId}</h3>
+                <div class="input-group">
+                    <label>Station JSON</label>
+                    <textarea id="stationJson" style="height: 300px; font-family: monospace; font-size: 12px;">${JSON.stringify(station, null, 2)}</textarea>
+                </div>
+                <div style="color: #888; font-size: 12px; margin-top: 10px;">
+                    📝 Edit the JSON above and click Save to update the station
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="saveStation(${index})">💾 Save</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        function editSchedule(index) {
+            const schedulesArray = Array.isArray(allData.schedules) ? allData.schedules : (allData.schedules.Response || []);
+            const schedule = schedulesArray[index];
+            const stations = schedule.stations || schedule.Stations || [];
+            showModal(`
+                <h3>Edit Schedule - TrainId: ${schedule.TrainId}</h3>
+                <div class="input-group">
+                    <label>Schedule JSON</label>
+                    <textarea id="scheduleJson" style="height: 300px; font-family: monospace; font-size: 12px;">${JSON.stringify(schedule, null, 2)}</textarea>
+                </div>
+                <div style="color: #888; font-size: 12px; margin-top: 10px;">
+                    📝 Edit the JSON above and click Save to update the schedule
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="saveSchedule(${index})">💾 Save</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        // Save functions
+        function saveTrain(index) {
+            try {
+                const trainsArray = Array.isArray(allData.trains) ? allData.trains : (allData.trains.Response || []);
+                const updatedTrain = JSON.parse(document.getElementById('trainJson').value);
+                trainsArray[index] = updatedTrain;
+                saveDataToServer('trains', Array.isArray(allData.trains) ? allData.trains : allData.trains);
+                closeModal();
+            } catch (error) {
+                alert('Invalid JSON: ' + error.message);
+            }
+        }
+
+        function saveStation(index) {
+            try {
+                const stationsArray = Array.isArray(allData.stations) ? allData.stations : (allData.stations.Response || []);
+                const updatedStation = JSON.parse(document.getElementById('stationJson').value);
+                stationsArray[index] = updatedStation;
+                saveDataToServer('stations', Array.isArray(allData.stations) ? allData.stations : allData.stations);
+                closeModal();
+            } catch (error) {
+                alert('Invalid JSON: ' + error.message);
+            }
+        }
+
+        function saveSchedule(index) {
+            try {
+                const schedulesArray = Array.isArray(allData.schedules) ? allData.schedules : (allData.schedules.Response || []);
+                const updatedSchedule = JSON.parse(document.getElementById('scheduleJson').value);
+                schedulesArray[index] = updatedSchedule;
+                saveDataToServer('schedules', Array.isArray(allData.schedules) ? allData.schedules : allData.schedules);
+                closeModal();
+            } catch (error) {
+                alert('Invalid JSON: ' + error.message);
+            }
+        }
+
+        // Delete functions
+        function deleteTrain(index) {
+            if (confirm('Are you sure you want to delete this train?')) {
+                const trainsArray = Array.isArray(allData.trains) ? allData.trains : (allData.trains.Response || []);
+                trainsArray.splice(index, 1);
+                saveDataToServer('trains', Array.isArray(allData.trains) ? allData.trains : allData.trains);
+                loadTrainsData();
+            }
+        }
+
+        function deleteStation(index) {
+            if (confirm('Are you sure you want to delete this station?')) {
+                const stationsArray = Array.isArray(allData.stations) ? allData.stations : (allData.stations.Response || []);
+                stationsArray.splice(index, 1);
+                saveDataToServer('stations', Array.isArray(allData.stations) ? allData.stations : allData.stations);
+                loadStationsData();
+            }
+        }
+
+        function deleteSchedule(index) {
+            if (confirm('Are you sure you want to delete this schedule?')) {
+                const schedulesArray = Array.isArray(allData.schedules) ? allData.schedules : (allData.schedules.Response || []);
+                schedulesArray.splice(index, 1);
+                saveDataToServer('schedules', Array.isArray(allData.schedules) ? allData.schedules : allData.schedules);
+                loadSchedulesData();
+            }
+        }
+
+        // Show modal functions
+        function showAddTrainModal() {
+            showModal(`
+                <h3>Add New Train</h3>
+                <div class="input-group">
+                    <label>Train Number</label>
+                    <input type="number" id="trainNumber" placeholder="e.g., 1">
+                </div>
+                <div class="input-group">
+                    <label>Train Name (English)</label>
+                    <input type="text" id="trainName" placeholder="e.g., Khyber Mail 1UP">
+                </div>
+                <div class="input-group">
+                    <label>Train Name (Urdu)</label>
+                    <input type="text" id="trainNameUR" placeholder="e.g., خیبر میل 1 اپ">
+                </div>
+                <div class="input-group">
+                    <label>Description</label>
+                    <input type="text" id="trainDesc" placeholder="e.g., Karachi Cantt TO Peshawar Cantt">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="addNewTrain()">➕ Add Train</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        function showAddStationModal() {
+            showModal(`
+                <h3>Add New Station</h3>
+                <div class="input-group">
+                    <label>Station Name</label>
+                    <input type="text" id="stationName" placeholder="e.g., Karachi Cantt">
+                </div>
+                <div class="input-group">
+                    <label>Station Code</label>
+                    <input type="text" id="stationCode" placeholder="e.g., KCT">
+                </div>
+                <div class="input-group">
+                    <label>Latitude</label>
+                    <input type="number" id="stationLat" placeholder="24.7938" step="0.0001">
+                </div>
+                <div class="input-group">
+                    <label>Longitude</label>
+                    <input type="number" id="stationLon" placeholder="66.9910" step="0.0001">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="addNewStation()">➕ Add Station</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        function showAddScheduleModal() {
+            showModal(`
+                <h3>Add New Schedule</h3>
+                <div class="warning-box">
+                    ℹ️ To add a schedule, please use the Import feature with properly formatted JSON data.
+                </div>
+                <div class="input-group">
+                    <label>Paste JSON Schedule</label>
+                    <textarea id="scheduleJSON" placeholder='{"TrainId": 1, "stations": []}'></textarea>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="addNewSchedule()">➕ Add Schedule</button>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `);
+        }
+
+        // Add new functions
+        function addNewTrain() {
+            const trainsArray = Array.isArray(allData.trains) ? allData.trains : (allData.trains.Response || []);
+            const newTrain = {
+                TrainId: trainsArray.length + 1,
+                TrainNumber: parseInt(document.getElementById('trainNumber').value),
+                TrainName: document.getElementById('trainName').value,
+                TrainNameUR: document.getElementById('trainNameUR').value,
+                TrainDescription: document.getElementById('trainDesc').value,
+                IsActive: true,
+                IsLive: false,
+                IsUp: true
+            };
+
+            trainsArray.push(newTrain);
+            saveDataToServer('trains', Array.isArray(allData.trains) ? allData.trains : allData.trains);
+            closeModal();
+            loadTrainsData();
+            showSuccess('✅ Train added successfully!');
+        }
+
+        function addNewStation() {
+            const stationsArray = Array.isArray(allData.stations) ? allData.stations : (allData.stations.Response || []);
+            const newStation = {
+                StationId: stationsArray.length + 1,
+                StationName: document.getElementById('stationName').value,
+                StationCode: document.getElementById('stationCode').value,
+                Latitude: parseFloat(document.getElementById('stationLat').value),
+                Longitude: parseFloat(document.getElementById('stationLon').value)
+            };
+
+            stationsArray.push(newStation);
+            saveDataToServer('stations', Array.isArray(allData.stations) ? allData.stations : allData.stations);
+            closeModal();
+            loadStationsData();
+            showSuccess('✅ Station added successfully!');
+        }
+
+        function addNewSchedule() {
+            try {
+                const schedulesArray = Array.isArray(allData.schedules) ? allData.schedules : (allData.schedules.Response || []);
+                const scheduleJSON = JSON.parse(document.getElementById('scheduleJSON').value);
+                schedulesArray.push(scheduleJSON);
+                saveDataToServer('schedules', Array.isArray(allData.schedules) ? allData.schedules : allData.schedules);
+                closeModal();
+                loadSchedulesData();
+                showSuccess('✅ Schedule added successfully!');
+            } catch (error) {
+                showError('Invalid JSON: ' + error.message);
+            }
+        }
+
+        // Save data to server
+        async function saveDataToServer(type, data) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                // Add Authorization header if token exists
+                if (token) {
+                    headers['Authorization'] = `Basic ${token}`;
+                }
+
+                const response = await fetch(`/api/save-${type}`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showSuccess(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} saved successfully!`);
+                    return true;
+                } else if (response.status === 401) {
+                    showError('⚠️ Session expired. Please login again.');
+                    window.location.href = '/admin-data-manager.html';
+                    return false;
+                } else {
+                    showError(`Failed to save ${type}`);
+                    return false;
+                }
+            } catch (error) {
+                showError('Server error: ' + error.message);
+                return false;
+            }
+        }
+
+        // Export functions
+        function downloadTrains() {
+            downloadJSON(allData.trains, 'trains.json');
+        }
+
+        function downloadStations() {
+            downloadJSON(allData.stations, 'stations.json');
+        }
+
+        function downloadSchedules() {
+            downloadJSON(allData.schedules, 'schedules.json');
+        }
+
+        function exportAllData() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            downloadJSON({ trains: allData.trains, stations: allData.stations, schedules: allData.schedules }, `all-data-${timestamp}.json`);
+        }
+
+        function exportTrains() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            downloadJSON(allData.trains, `trains-${timestamp}.json`);
+        }
+
+        function exportStations() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            downloadJSON(allData.stations, `stations-${timestamp}.json`);
+        }
+
+        function exportSchedules() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            downloadJSON(allData.schedules, `schedules-${timestamp}.json`);
+        }
+
+        // Helper functions
+        function downloadJSON(data, filename) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showSuccess(`✅ Downloaded ${filename}`);
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    showModal(`
+                        <h3>Confirm Import</h3>
+                        <div class="warning-box">
+                            ⚠️ This will replace existing data. Are you sure?
+                        </div>
+                        <div class="data-preview">${JSON.stringify(data, null, 2).slice(0, 500)}...</div>
+                        <div class="action-buttons" style="margin-top: 20px;">
+                            <button class="btn-danger" onclick="confirmImport('${file.name}', ${JSON.stringify(data).length})">⚠️ Import Anyway</button>
+                            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        </div>
+                    `);
+                } catch (error) {
+                    showError('Invalid JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmImport(filename, size) {
+            showSuccess(`📥 Imported ${filename} (${formatBytes(size)})`);
+            closeModal();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Modal functions
+        function showModal(content) {
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('dataModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('dataModal').classList.remove('active');
+        }
+
+        // Message functions
+        function showSuccess(message) {
+            const statusDiv = document.getElementById('dashboardContent');
+            statusDiv.innerHTML = `<div class="success-box">${message}</div>` + statusDiv.innerHTML;
+            setTimeout(() => {
+                const elem = statusDiv.querySelector('.success-box');
+                if (elem) elem.remove();
+            }, 4000);
+        }
+
+        function showError(message) {
+            const statusDiv = document.getElementById('dashboardContent');
+            statusDiv.innerHTML = `<div class="error-box">❌ ${message}</div>` + statusDiv.innerHTML;
+            setTimeout(() => {
+                const elem = statusDiv.querySelector('.error-box');
+                if (elem) elem.remove();
+            }, 4000);
+        }
+
+        function showWarning(message) {
+            const statusDiv = document.getElementById('dashboardContent');
+            statusDiv.innerHTML = `<div class="warning-box">${message}</div>` + statusDiv.innerHTML;
+            setTimeout(() => {
+                const elem = statusDiv.querySelector('.warning-box');
+                if (elem) elem.remove();
+            }, 4000);
+        }
+
+        // Settings functions
+        function updateDataSourceDisplay() {
+            const sourceMap = {
+                'local': 'Local Files (/data/)',
+                'remote': `Remote Server (${window.REMOTE_URL})`,
+                'both': 'Local First, Then Remote'
+            };
+            document.getElementById('currentDataSource').textContent = sourceMap[window.DATA_SOURCE] || 'Local Files';
+        }
+
+        function saveSettings() {
+            const dataSource = document.getElementById('dataSource').value;
+            const remoteURL = document.getElementById('remoteURL').value;
+
+            if (!remoteURL && dataSource !== 'local') {
+                showError('❌ Remote URL cannot be empty!');
+                return;
+            }
+
+            localStorage.setItem('dataSource', dataSource);
+            localStorage.setItem('remoteURL', remoteURL);
+
+            // Update global data source
+            window.DATA_SOURCE = dataSource;
+            window.REMOTE_URL = remoteURL;
+
+            updateDataSourceDisplay();
+            showSuccess('✅ Settings saved! Click "📂 Load" buttons to reload data from new source.');
+        }
+
+        function resetSettings() {
+            localStorage.removeItem('dataSource');
+            localStorage.removeItem('remoteURL');
+            document.getElementById('dataSource').value = 'local';
+            document.getElementById('remoteURL').value = 'https://pakistan-train-tracker-174840179894.us-central1.run.app/public/data';
+
+            window.DATA_SOURCE = 'local';
+            window.REMOTE_URL = 'https://pakistan-train-tracker-174840179894.us-central1.run.app/public/data';
+
+            updateDataSourceDisplay();
+            showSuccess('✅ Settings reset to default!');
+        }
+
+        async function testDataSource() {
+            try {
+                const source = document.getElementById('dataSource').value;
+                const testURL = source === 'local' ? '/data/trains.json' : `${window.REMOTE_URL}/trains.json`;
+
+                const response = await fetch(testURL, { method: 'HEAD' });
+                if (response.ok) {
+                    showSuccess(`✅ Connection successful! Data source is accessible.`);
+                } else {
+                    showError(`❌ Connection failed: HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showError(`❌ Connection test failed: ${error.message}`);
+            }
+        }
+
+        // Close modal on outside click
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('dataModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
