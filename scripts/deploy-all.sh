@@ -142,7 +142,7 @@ if [ "$DEPLOY_GCP" = true ]; then
       --memory 512Mi \
       --cpu 1 \
       --timeout 3600 \
-      --set-env-vars NODE_ENV=production,PORT=8080,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com
+      --set-env-vars NODE_ENV=production,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com
 
     GCP_URL=$(gcloud run services describe pakistan-train-tracker \
       --region us-central1 \

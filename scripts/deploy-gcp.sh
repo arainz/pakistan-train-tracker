@@ -44,7 +44,7 @@ gcloud run deploy $SERVICE_NAME \
   --memory 512Mi \
   --cpu 1 \
   --timeout 3600 \
-  --set-env-vars NODE_ENV=production,PORT=8080,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com
+  --set-env-vars NODE_ENV=production,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com
 
 # Get service URL
 echo ""
