@@ -249,6 +249,111 @@
             color: #78350f;
         }
 
+        /* Accordion Styles */
+        .accordion {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .accordion-item {
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .accordion-item:last-child {
+            border-bottom: none;
+        }
+
+        .accordion-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: #e8e8f0;
+        }
+
+        .accordion-header.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .accordion-toggle {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            font-size: 12px;
+        }
+
+        .accordion-header.active .accordion-toggle {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: #fafafa;
+        }
+
+        .accordion-content.active {
+            max-height: 5000px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .schedule-detail {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .schedule-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .station-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .station-row:last-child {
+            border-bottom: none;
+        }
+
+        .station-field {
+            font-size: 13px;
+        }
+
+        .station-field label {
+            display: block;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .station-field input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
         .table-container {
             overflow-x: auto;
             margin-bottom: 20px;
@@ -548,7 +653,21 @@
                         ℹ️ Manage train information including names, numbers, descriptions, and status
                     </div>
 
-                    <div id="trainsContainer"></div>
+                    <!-- Toggle View Buttons -->
+                    <div class="action-buttons" style="margin-bottom: 20px;">
+                        <button class="btn-secondary" onclick="switchTrainsView('accordion')" id="trainsViewAccordionBtn" style="opacity: 0.6;">📋 Accordion View</button>
+                        <button class="btn-secondary" onclick="switchTrainsView('table')" id="trainsViewTableBtn" style="opacity: 1;">📊 Table View</button>
+                    </div>
+
+                    <!-- Accordion View -->
+                    <div id="trainsAccordionView" style="display: none;">
+                        <div id="trainsAccordion" class="accordion"></div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="trainsTableView" style="display: block;">
+                        <div id="trainsContainer"></div>
+                    </div>
                 </section>
 
                 <!-- Stations Section -->
@@ -566,7 +685,21 @@
                         ℹ️ Manage station information including names, codes, and coordinates
                     </div>
 
-                    <div id="stationsContainer"></div>
+                    <!-- Toggle View Buttons -->
+                    <div class="action-buttons" style="margin-bottom: 20px;">
+                        <button class="btn-secondary" onclick="switchStationsView('accordion')" id="stationsViewAccordionBtn" style="opacity: 0.6;">📋 Accordion View</button>
+                        <button class="btn-secondary" onclick="switchStationsView('table')" id="stationsViewTableBtn" style="opacity: 1;">📊 Table View</button>
+                    </div>
+
+                    <!-- Accordion View -->
+                    <div id="stationsAccordionView" style="display: none;">
+                        <div id="stationsAccordion" class="accordion"></div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="stationsTableView" style="display: block;">
+                        <div id="stationsContainer"></div>
+                    </div>
                 </section>
 
                 <!-- Schedules Section -->
@@ -584,7 +717,21 @@
                         ℹ️ Manage train schedules with station stops, times, and distances
                     </div>
 
-                    <div id="schedulesContainer"></div>
+                    <!-- Toggle View Buttons -->
+                    <div class="action-buttons" style="margin-bottom: 20px;">
+                        <button class="btn-secondary" onclick="switchScheduleView('accordion')" id="viewAccordionBtn" style="opacity: 0.6;">📋 Accordion View</button>
+                        <button class="btn-secondary" onclick="switchScheduleView('table')" id="viewTableBtn" style="opacity: 1;">📊 Table View</button>
+                    </div>
+
+                    <!-- Accordion View -->
+                    <div id="accordionView" style="display: none;">
+                        <div id="schedulesAccordion" class="accordion"></div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="tableView" style="display: block;">
+                        <div id="schedulesContainer"></div>
+                    </div>
                 </section>
 
                 <!-- Import Section -->
@@ -868,15 +1015,17 @@
 
                 // Handle both formats: plain array or {Response: [...]}
                 const schedules = Array.isArray(data) ? data : (data.Response || []);
-                let html = `<div class="table-container"><table><thead><tr><th>TrainId</th><th>Stations</th><th>First Station</th><th>Last Station</th><th>Actions</th></tr></thead><tbody>`;
+                let html = `<div class="table-container"><table><thead><tr><th>Train Name</th><th>Train ID</th><th>Stations</th><th>First Station</th><th>Last Station</th><th>Actions</th></tr></thead><tbody>`;
 
                 schedules.slice(0, 50).forEach((schedule, index) => {
                     const stations = schedule.stations || schedule.Stations || [];
-                    const firstStation = stations.length > 0 ? stations[0].StationName : '-';
+                    const firstStation = stations.length > 0 ? stations[0].StationName : schedule.StationName || '-';
                     const lastStation = stations.length > 0 ? stations[stations.length - 1].StationName : '-';
+                    const trainName = (stations.length > 0 && stations[0].TrainName) ? stations[0].TrainName : `Train ${schedule.TrainId}`;
 
                     html += `
                         <tr>
+                            <td>${trainName}</td>
                             <td>${schedule.TrainId}</td>
                             <td>${stations.length}</td>
                             <td>${firstStation}</td>
@@ -899,6 +1048,275 @@
                 console.error('Error loading schedules:', error);
                 showError('Failed to load schedules data');
             }
+        }
+
+        // Switch between accordion and table views
+        function switchScheduleView(view) {
+            const accordionView = document.getElementById('accordionView');
+            const tableView = document.getElementById('tableView');
+            const accordionBtn = document.getElementById('viewAccordionBtn');
+            const tableBtn = document.getElementById('viewTableBtn');
+
+            if (view === 'accordion') {
+                accordionView.style.display = 'block';
+                tableView.style.display = 'none';
+                accordionBtn.style.opacity = '1';
+                tableBtn.style.opacity = '0.6';
+                renderAccordionView();
+            } else {
+                accordionView.style.display = 'none';
+                tableView.style.display = 'block';
+                accordionBtn.style.opacity = '0.6';
+                tableBtn.style.opacity = '1';
+            }
+        }
+
+        // Render accordion view
+        function renderAccordionView() {
+            const accordion = document.getElementById('schedulesAccordion');
+            const schedules = Array.isArray(allData.schedules) ? allData.schedules : (allData.schedules.Response || []);
+
+            let html = '';
+            schedules.forEach((schedule, index) => {
+                const stations = schedule.stations || schedule.Stations || [];
+                const trainName = (stations.length > 0 && stations[0].TrainName) ? stations[0].TrainName : `Train ${schedule.TrainId}`;
+
+                html += `
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <span>🚆 ${schedule.TrainId} - ${trainName} - ${stations.length} stations</span>
+                            <span class="accordion-toggle">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="schedule-detail">
+                                <h4 style="margin-bottom: 15px; color: #667eea;">📍 Station Stops</h4>
+                                ${stations.map((station, sIdx) => `
+                                    <div class="station-row">
+                                        <div class="station-field">
+                                            <label>Sequence</label>
+                                            <input type="number" value="${station.SequenceNumber || sIdx + 1}" readonly>
+                                        </div>
+                                        <div class="station-field">
+                                            <label>Station</label>
+                                            <input type="text" value="${station.StationName || ''}" readonly>
+                                        </div>
+                                        <div class="station-field">
+                                            <label>Arrival</label>
+                                            <input type="text" value="${station.ArrivalTime || ''}" readonly>
+                                        </div>
+                                        <div class="station-field">
+                                            <label>Departure</label>
+                                            <input type="text" value="${station.DepartureTime || ''}" readonly>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                                    <button class="btn-secondary" onclick="editSchedule(${index})" style="width: auto; padding: 8px 15px;">✏️ Edit</button>
+                                    <button class="btn-danger" onclick="deleteSchedule(${index})" style="width: auto; padding: 8px 15px;">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            accordion.innerHTML = html;
+        }
+
+        // Toggle accordion item
+        function toggleAccordion(header) {
+            const isActive = header.classList.contains('active');
+
+            // Close all other accordions
+            document.querySelectorAll('.accordion-header').forEach(h => {
+                h.classList.remove('active');
+                h.nextElementSibling.classList.remove('active');
+            });
+
+            // Toggle current one
+            if (!isActive) {
+                header.classList.add('active');
+                header.nextElementSibling.classList.add('active');
+            }
+        }
+
+        // Switch between accordion and table views for trains
+        function switchTrainsView(view) {
+            const accordionView = document.getElementById('trainsAccordionView');
+            const tableView = document.getElementById('trainsTableView');
+            const accordionBtn = document.getElementById('trainsViewAccordionBtn');
+            const tableBtn = document.getElementById('trainsViewTableBtn');
+
+            if (view === 'accordion') {
+                accordionView.style.display = 'block';
+                tableView.style.display = 'none';
+                accordionBtn.style.opacity = '1';
+                tableBtn.style.opacity = '0.6';
+                renderTrainsAccordionView();
+            } else {
+                accordionView.style.display = 'none';
+                tableView.style.display = 'block';
+                accordionBtn.style.opacity = '0.6';
+                tableBtn.style.opacity = '1';
+            }
+        }
+
+        // Render accordion view for trains
+        function renderTrainsAccordionView() {
+            const accordion = document.getElementById('trainsAccordion');
+            const trains = Array.isArray(allData.trains) ? allData.trains : (allData.trains.Response || []);
+
+            let html = '';
+            trains.forEach((train, index) => {
+                const trainName = train.TrainName || `Train ${train.TrainId}`;
+                const trainNumber = train.TrainNumber || '-';
+                const trainDescription = train.TrainDescription || 'No description';
+                const isActive = train.IsActive ? '✅ Yes' : '❌ No';
+                const isLive = train.IsLive ? '✅ Yes' : '❌ No';
+
+                html += `
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <span>🚆 ${trainName} (${trainNumber})</span>
+                            <span class="accordion-toggle">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="schedule-detail">
+                                <div class="station-row">
+                                    <div class="station-field">
+                                        <label>Train ID</label>
+                                        <input type="text" value="${train.TrainId}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Train Number</label>
+                                        <input type="text" value="${trainNumber}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Active</label>
+                                        <input type="text" value="${isActive}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Live</label>
+                                        <input type="text" value="${isLive}" readonly>
+                                    </div>
+                                </div>
+                                <div class="station-row">
+                                    <div class="station-field">
+                                        <label>Train Name (English)</label>
+                                        <input type="text" value="${trainName}" readonly style="grid-column: 1 / 3;">
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Train Name (Urdu)</label>
+                                        <input type="text" value="${train.TrainNameUR || '-'}" readonly style="grid-column: 3 / 5;">
+                                    </div>
+                                </div>
+                                <div class="station-row">
+                                    <div class="station-field" style="grid-column: 1 / 5;">
+                                        <label>Description</label>
+                                        <input type="text" value="${trainDescription}" readonly>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                                    <button class="btn-secondary" onclick="editTrain(${index})" style="width: auto; padding: 8px 15px;">✏️ Edit</button>
+                                    <button class="btn-danger" onclick="deleteTrain(${index})" style="width: auto; padding: 8px 15px;">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            accordion.innerHTML = html;
+        }
+
+        // Switch between accordion and table views for stations
+        function switchStationsView(view) {
+            const accordionView = document.getElementById('stationsAccordionView');
+            const tableView = document.getElementById('stationsTableView');
+            const accordionBtn = document.getElementById('stationsViewAccordionBtn');
+            const tableBtn = document.getElementById('stationsViewTableBtn');
+
+            if (view === 'accordion') {
+                accordionView.style.display = 'block';
+                tableView.style.display = 'none';
+                accordionBtn.style.opacity = '1';
+                tableBtn.style.opacity = '0.6';
+                renderStationsAccordionView();
+            } else {
+                accordionView.style.display = 'none';
+                tableView.style.display = 'block';
+                accordionBtn.style.opacity = '0.6';
+                tableBtn.style.opacity = '1';
+            }
+        }
+
+        // Render accordion view for stations
+        function renderStationsAccordionView() {
+            const accordion = document.getElementById('stationsAccordion');
+            const stations = Array.isArray(allData.stations) ? allData.stations : (allData.stations.Response || []);
+
+            let html = '';
+            stations.forEach((station, index) => {
+                const stationName = station.StationName || `Station ${station.StationId}`;
+                const stationCode = station.StationCode || '-';
+                const latitude = station.Latitude || '-';
+                const longitude = station.Longitude || '-';
+
+                html += `
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <span>🏢 ${stationName} (${stationCode})</span>
+                            <span class="accordion-toggle">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="schedule-detail">
+                                <div class="station-row">
+                                    <div class="station-field">
+                                        <label>Station ID</label>
+                                        <input type="text" value="${station.StationId || '-'}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Station Name</label>
+                                        <input type="text" value="${stationName}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Station Code</label>
+                                        <input type="text" value="${stationCode}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Distance</label>
+                                        <input type="text" value="${station.Distance || '-'}" readonly>
+                                    </div>
+                                </div>
+                                <div class="station-row">
+                                    <div class="station-field">
+                                        <label>Latitude</label>
+                                        <input type="text" value="${latitude}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Longitude</label>
+                                        <input type="text" value="${longitude}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Altitude</label>
+                                        <input type="text" value="${station.Altitude || '-'}" readonly>
+                                    </div>
+                                    <div class="station-field">
+                                        <label>Province</label>
+                                        <input type="text" value="${station.Province || '-'}" readonly>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                                    <button class="btn-secondary" onclick="editStation(${index})" style="width: auto; padding: 8px 15px;">✏️ Edit</button>
+                                    <button class="btn-danger" onclick="deleteStation(${index})" style="width: auto; padding: 8px 15px;">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            accordion.innerHTML = html;
         }
 
         // Validate all data

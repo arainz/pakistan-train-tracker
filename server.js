@@ -32,8 +32,8 @@ app.use((req, _, next) => {
 // ADMIN PANEL AUTHENTICATION
 // =====================================================
 // Default credentials - CHANGE THESE IN PRODUCTION!
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'abdulnasir';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Arainz@898';
 
 // Simple authentication middleware for admin panel
 function authMiddleware(req, res, next) {
