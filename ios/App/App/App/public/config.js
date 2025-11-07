@@ -82,10 +82,10 @@ const API_CONFIG = {
         train: '/api/train'
     },
 
-    // WebSocket configuration
+    // WebSocket configuration (uses currently active server)
     getSocketURL() {
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            return 'https://pakistan-train-tracker-174840179894.us-central1.run.app';
+            return this._currentServer || this.servers.primary;
         } else {
             return window.location.origin;
         }
@@ -100,25 +100,33 @@ const API_CONFIG = {
             schedules: '/data/schedules.json',
             version: '/data/version.json'
         },
-        // Remote source (fallback for web, updates)
-        remote: {
-            stations: 'https://pakrail.rise.com.pk/data/stations.json',
-            trains: 'https://pakrail.rise.com.pk/data/trains.json',
-            schedules: 'https://pakrail.rise.com.pk/data/schedules.json',
-            version: 'https://pakrail.rise.com.pk/data/version.json'
+        // Remote source (fallback - uses active server)
+        // URLs are built dynamically using getRemoteUrl()
+        endpoints: {
+            stations: '/api/stations',
+            trains: '/api/trains',
+            schedules: '/api/schedule',
+            version: '/api/version'
         }
+    },
+
+    // Get remote URL using currently active server
+    getRemoteUrl(endpoint) {
+        const baseUrl = this._currentServer || this.servers.primary;
+        const endpointPath = this.staticData.endpoints[endpoint];
+        return `${baseUrl}${endpointPath}`;
     },
 
     // Helper to fetch static data with hybrid approach
     async fetchStaticData(type, forceRemote = false) {
         const startTime = Date.now();
         const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
-        
+
         console.log(`📦 [DATA SOURCE] Loading ${type} data...`);
         console.log(`📦 [DATA SOURCE] Force remote: ${forceRemote}`);
         console.log(`📦 [DATA SOURCE] Platform: ${isMobileApp ? 'MOBILE APP' : 'WEB BROWSER'}`);
         console.log(`📦 [DATA SOURCE] Origin: ${window.location.origin}`);
-        
+
         // ALWAYS try local first (unless explicitly forcing remote)
         // For mobile app, NEVER fallback to remote to ensure bundled data is used
         if (!forceRemote) {
@@ -127,10 +135,10 @@ const API_CONFIG = {
                 // Add cache-busting parameter to prevent iOS WebView caching
                 const cacheBuster = `?v=${Date.now()}`;
                 const urlWithCacheBuster = `${localPath}${cacheBuster}`;
-                
+
                 console.log(`📂 [DATA SOURCE] Attempting local: ${localPath}`);
                 console.log(`📂 [DATA SOURCE] Full URL: ${window.location.origin}${urlWithCacheBuster}`);
-                
+
                 const response = await fetch(urlWithCacheBuster, {
                     cache: 'no-store',  // Prevent caching
                     headers: {
@@ -140,19 +148,19 @@ const API_CONFIG = {
                     }
                 });
                 console.log(`📂 [DATA SOURCE] Local response status: ${response.status} ${response.statusText}`);
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     const loadTime = Date.now() - startTime;
                     const dataSize = JSON.stringify(data).length;
                     const records = Array.isArray(data) ? data.length : (data.Response?.length || 'N/A');
-                    
+
                     console.log(`✅ [DATA SOURCE] SUCCESS - Loaded ${type} from LOCAL files`);
                     console.log(`✅ [DATA SOURCE] Source: ${window.location.origin}${localPath}`);
                     console.log(`✅ [DATA SOURCE] Load time: ${loadTime}ms`);
                     console.log(`✅ [DATA SOURCE] Data size: ${(dataSize / 1024).toFixed(2)} KB`);
                     console.log(`✅ [DATA SOURCE] Records: ${records}`);
-                    
+
                     return data;
                 } else {
                     console.warn(`⚠️ [DATA SOURCE] Local ${type} returned ${response.status}`);
@@ -162,27 +170,31 @@ const API_CONFIG = {
                 console.warn(`⚠️ [DATA SOURCE] Will try remote fallback...`);
             }
         }
-        
+
         // Fallback to remote or if forced
         try {
-            const remotePath = this.staticData.remote[type];
-            console.log(`🌐 [DATA SOURCE] Attempting remote: ${remotePath}`);
-            console.log(`🌐 [DATA SOURCE] Fetching from internet...`);
-            
-            const response = await fetch(remotePath);
+            // Build URL using currently active server
+            const remoteUrl = this.getRemoteUrl(type);
+            console.log(`🌐 [DATA SOURCE] Attempting remote: ${remoteUrl}`);
+            console.log(`🌐 [DATA SOURCE] Active server: ${this._currentServer || this.servers.primary}`);
+            console.log(`🌐 [DATA SOURCE] Fetching from server...`);
+
+            const response = await fetch(remoteUrl, {
+                timeout: 10000
+            });
             console.log(`🌐 [DATA SOURCE] Remote response status: ${response.status} ${response.statusText}`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             const loadTime = Date.now() - startTime;
             const dataSize = JSON.stringify(data).length;
             const records = Array.isArray(data) ? data.length : (data.Response?.length || 'N/A');
-            
-            console.log(`✅ [DATA SOURCE] SUCCESS - Loaded ${type} from REMOTE source`);
-            console.log(`✅ [DATA SOURCE] Source: ${remotePath}`);
+
+            console.log(`✅ [DATA SOURCE] SUCCESS - Loaded ${type} from REMOTE server`);
+            console.log(`✅ [DATA SOURCE] Source: ${remoteUrl}`);
             console.log(`✅ [DATA SOURCE] Load time: ${loadTime}ms`);
             console.log(`✅ [DATA SOURCE] Data size: ${(dataSize / 1024).toFixed(2)} KB`);
             console.log(`✅ [DATA SOURCE] Records: ${records}`);
@@ -323,10 +335,10 @@ console.log('   Stations:', API_CONFIG.staticData.local.stations);
 console.log('   Trains:', API_CONFIG.staticData.local.trains);
 console.log('   Schedules:', API_CONFIG.staticData.local.schedules);
 console.log('');
-console.log('🌐 [CONFIG] Remote Data URLs:');
-console.log('   Stations:', API_CONFIG.staticData.remote.stations);
-console.log('   Trains:', API_CONFIG.staticData.remote.trains);
-console.log('   Schedules:', API_CONFIG.staticData.remote.schedules);
+console.log('🌐 [CONFIG] Remote Data Endpoints:');
+console.log('   Stations:', API_CONFIG.staticData.endpoints.stations);
+console.log('   Trains:', API_CONFIG.staticData.endpoints.trains);
+console.log('   Schedules:', API_CONFIG.staticData.endpoints.schedules);
 console.log('');
 console.log('💡 [CONFIG] Data Loading Strategy: HYBRID (Local First, Remote Fallback)');
 console.log('🔄 [CONFIG] Server Redundancy: PRIMARY → FALLBACK (Automatic Switching)');

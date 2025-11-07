@@ -9,8 +9,24 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Configure CORS to allow credentials
+// Support multiple origins for development and production
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'http://138.2.91.18:3000',
+  'https://pakistan-train-tracker-174840179894.us-central1.run.app',
+  'https://confused-eel-pakrail-7ab69761.koyeb.app'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like curl requests or mobile apps)
+    if (!origin || allowedOrigins.includes(origin) || process.env.CORS_ORIGIN === '*') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
