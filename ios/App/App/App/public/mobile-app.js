@@ -3961,23 +3961,25 @@ class MobileApp {
     // This function handles both API ETA and calculated fallback ETA based on speed/distance
     getTrainETA(train) {
         if (!train) return null;
-        
+
         // Check if API ETA is unrealistic (> 5 hours) and train is moving
         const speed = train.Speed || train.SpeedKmph || 0;
         let apiETA = train.NextStationETA;
         let useCalculatedETA = false;
         let calculatedETATime = null;
-        
-        if (apiETA && apiETA !== '--:--' && speed > 0) {
+
+        // ENHANCEMENT: Also validate when speed is 0 or unknown
+        // A stopped train with a future ETA needs validation too
+        if (apiETA && apiETA !== '--:--') {
             // Parse API ETA to minutes
             const apiETAMinutes = this.parseTimeToMinutes(apiETA);
             const currentMinutes = this.getCurrentTimeInMinutes();
-            
+
             if (apiETAMinutes !== null && currentMinutes !== null) {
                 // Calculate minutes until arrival
                 let minutesUntilArrival = apiETAMinutes - currentMinutes;
                 const rawMinutesUntilArrival = minutesUntilArrival; // Keep original for past check
-                
+
                 // Handle day wrap: if ETA is early morning (< 6AM) and current time is late evening (> 6PM), it's next day
                 if (apiETAMinutes < 360 && currentMinutes > 1080 && minutesUntilArrival < 0) {
                     minutesUntilArrival += 1440;
@@ -3987,9 +3989,26 @@ class MobileApp {
                     minutesUntilArrival += 1440;
                     console.log(`🌙 Near-midnight adjustment: ETA ${apiETA} treated as tomorrow (${minutesUntilArrival} minutes away)`);
                 }
-                
-                // If ETA is more than 5 hours away (300 minutes) OR clearly in the past (< -10), use fallback
+
+                // NEW VALIDATION: Also check if ETA is unrealistic for a stationary train
+                // A stopped train (speed = 0) should not have an ETA > 3 hours in the future
+                let needsFallbackCalculation = false;
+
                 if (minutesUntilArrival > 300 || rawMinutesUntilArrival < -10) {
+                    needsFallbackCalculation = true;
+                    console.log(`⚠️ ETA is unrealistic (${minutesUntilArrival} minutes away): Triggering fallback calculation`);
+                } else if (speed === 0 && minutesUntilArrival > 120) {
+                    // ENHANCED: Stopped train with ETA > 2 hours is suspicious (lowered from 3 hours)
+                    needsFallbackCalculation = true;
+                    console.log(`⚠️ Stopped train with long ETA (${minutesUntilArrival} min = ${(minutesUntilArrival/60).toFixed(1)} hours): Triggering fallback calculation`);
+                } else if (speed < 10 && speed > 0 && minutesUntilArrival > 480) {
+                    // ENHANCED: Very slow train (< 10 km/h) with ETA > 8 hours is suspicious (lowered from 10 hours)
+                    needsFallbackCalculation = true;
+                    console.log(`⚠️ Very slow train (${speed} km/h) with long ETA (${minutesUntilArrival} min = ${(minutesUntilArrival/60).toFixed(1)} hours): Triggering fallback calculation`);
+                }
+
+                // If ETA is more than 5 hours away (300 minutes) OR clearly in the past (< -10), use fallback
+                if (needsFallbackCalculation) {
                     // Check if train is stopped or speed is decreasing
                     let shouldWaitForSpeedRecovery = false;
                     
@@ -4074,7 +4093,7 @@ class MobileApp {
                             // Check if calculated ETA is also in the past
                             const calculatedETAMinutes = this.parseTimeToMinutes(calculatedETATime);
                             const calculatedMinutesUntilArrival = calculatedETAMinutes - currentMinutes;
-                            
+
                             if (calculatedMinutesUntilArrival <= -10) {
                                 // Both ETAs are in the past - train is arriving early or already arrived
                                 // Use API ETA as it's likely more accurate from the source
@@ -4088,15 +4107,15 @@ class MobileApp {
                         } else {
                             // Get scheduled time for comparison
                             const scheduledTime = this.getScheduledTimeForNextStation(train);
-                            const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A' 
+                            const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A'
                                 ? this.parseTimeToMinutes(scheduledTime.replace('📅 ', ''))
                                 : null;
-                            
+
                             if (scheduledMinutes !== null) {
                                 // Compare both ETAs against scheduled time
                                 const apiDiff = Math.abs(apiETAMinutes - scheduledMinutes);
                                 const calculatedDiff = Math.abs(this.parseTimeToMinutes(calculatedETATime) - scheduledMinutes);
-                                
+
                                 // Use whichever is closer to scheduled time
                                 if (calculatedDiff < apiDiff) {
                                     useCalculatedETA = true;
@@ -4107,6 +4126,17 @@ class MobileApp {
                                 useCalculatedETA = true;
                                 apiETA = calculatedETATime;
                             }
+                        }
+                    } else {
+                        // FALLBACK: Coordinate-based calculation failed or was rejected by sanity check
+                        // Try schedule-based calculation
+                        const scheduleETA = this.calculateETAFromSchedule(train);
+                        if (scheduleETA && scheduleETA !== '--:--') {
+                            useCalculatedETA = true;
+                            apiETA = scheduleETA;
+                            console.log(`📅 Falling back to schedule-based ETA: ${scheduleETA}`);
+                        } else {
+                            console.log(`⚠️ All ETA calculation methods failed, will use API ETA as-is: ${apiETA}`);
                         }
                     }
                 }
@@ -4382,10 +4412,65 @@ class MobileApp {
             
             // Format as HH:MM
             const etaTime = `${String(etaHours).padStart(2, '0')}:${String(etaMinutes).padStart(2, '0')}`;
-            
+
             const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || train.trainName || `Train ${train.TrainNumber}`);
             console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km [FROM ${distanceSourceForETA}] | Speed: ${speed}km/h | ETA: ${etaTime}`);
-            
+
+            // SMART COMPARISON: Compare calculated ETA with API ETA
+            // Only reject if there's a significant difference (> 30 minutes)
+            const currentMinutes = this.getCurrentTimeInMinutes();
+            const calculatedETAMinutes = this.parseTimeToMinutes(etaTime);
+
+            if (calculatedETAMinutes !== null && currentMinutes !== null) {
+                let minutesUntilCalculatedETA = calculatedETAMinutes - currentMinutes;
+
+                // Handle midnight crossing for calculated ETA
+                if (calculatedETAMinutes < 360 && currentMinutes > 1080 && minutesUntilCalculatedETA < 0) {
+                    minutesUntilCalculatedETA += 1440;
+                }
+
+                // Compare with the API ETA that was passed into this function
+                if (train.NextStationETA && train.NextStationETA !== '--:--') {
+                    const apiETAMinutes = this.parseTimeToMinutes(train.NextStationETA);
+                    if (apiETAMinutes !== null) {
+                        let minutesUntilAPIETA = apiETAMinutes - currentMinutes;
+
+                        // Handle midnight crossing for API ETA
+                        if (apiETAMinutes < 360 && currentMinutes > 1080 && minutesUntilAPIETA < 0) {
+                            minutesUntilAPIETA += 1440;
+                        }
+
+                        // Calculate difference between calculated and API ETA
+                        const etaDifference = Math.abs(minutesUntilCalculatedETA - minutesUntilAPIETA);
+
+                        // If difference is small (< 30 minutes), they agree - use API ETA (it's from source)
+                        if (etaDifference < 30) {
+                            console.log(`✅ SMART ETA CHECK: Calculated ETA (${etaTime}, ${minutesUntilCalculatedETA} min away) matches API ETA (${train.NextStationETA}, ${minutesUntilAPIETA} min away) within 30 min - using API ETA`);
+                            return train.NextStationETA;  // Return original API ETA without modification
+                        }
+
+                        // If difference is large, calculated is likely more accurate
+                        if (etaDifference >= 30) {
+                            console.log(`⚠️ SMART ETA CHECK: Large difference detected!`);
+                            console.log(`   Calculated: ${etaTime} (${minutesUntilCalculatedETA} min away, Distance: ${distanceToNextStation.toFixed(1)}km, Speed: ${speed}km/h)`);
+                            console.log(`   API:        ${train.NextStationETA} (${minutesUntilAPIETA} min away)`);
+                            console.log(`   Difference: ${etaDifference} minutes - Using calculated ETA as it's more reliable`);
+                            return etaTime;  // Return calculated ETA as it differs significantly
+                        }
+                    }
+                }
+
+                // If no API ETA to compare, still reject if calculated is completely unrealistic
+                if (minutesUntilCalculatedETA > 720) {
+                    console.log(`⚠️ UNREALISTIC CALCULATED ETA: ${etaTime} is ${minutesUntilCalculatedETA} min away (${(minutesUntilCalculatedETA/60).toFixed(1)} hours)`);
+                    console.log(`   No API ETA to compare - this distance/speed calculation seems wrong`);
+                    return null;  // Return null to trigger schedule-based fallback
+                } else if (minutesUntilCalculatedETA < -10) {
+                    console.log(`⚠️ CALCULATED ETA IS IN PAST: ${etaTime} was ${Math.abs(minutesUntilCalculatedETA)} min ago`);
+                    return null;  // Return null to trigger fallback
+                }
+            }
+
             return etaTime;
             
         } catch (error) {
@@ -4412,6 +4497,32 @@ class MobileApp {
     // Convert degrees to radians
     toRadians(degrees) {
         return degrees * (Math.PI / 180);
+    }
+
+    // Calculate ETA from schedule when coordinate-based calculation fails
+    calculateETAFromSchedule(train) {
+        try {
+            if (!train.NextStation) return null;
+
+            // Get scheduled time for next station
+            const scheduledTime = this.getScheduledTimeForNextStation(train);
+            if (scheduledTime === '📅 Loading...' || scheduledTime === '📅 Schedule N/A' || !scheduledTime) {
+                return null;
+            }
+
+            // Remove emoji and parse
+            const cleanScheduledTime = scheduledTime.replace('📅 ', '');
+            const delay = train.LateBy || 0;
+
+            // Adjust scheduled time by delay
+            const adjustedETA = this.adjustTimeForDelay(cleanScheduledTime, delay);
+            console.log(`📅 ETA from Schedule: ${train.TrainName || 'Train'} #${train.TrainNumber} → ${train.NextStation} | Scheduled: ${cleanScheduledTime} + ${delay}min delay = ${adjustedETA}`);
+
+            return adjustedETA;
+        } catch (error) {
+            console.error('Error calculating ETA from schedule:', error);
+            return null;
+        }
     }
     
     // Calculate delay by comparing NextStationETA with scheduled time
