@@ -1292,6 +1292,64 @@ class MobileApp {
                 // Enrich train data with TrainNameUR from metadata
                 const enrichedTrains = this.enrichTrainsWithMetadata(data.data);
 
+                // Track train arrivals at next station (< 2km away) for accurate ETA fallback
+                enrichedTrains.forEach(train => {
+                    if (train.Latitude && train.Longitude && train.NextStation && this.stationsMetadata) {
+                        // Find next station coordinates
+                        const nextStation = this.stationsMetadata.find(s =>
+                            s.StationName === train.NextStation ||
+                            s.StationName.includes(train.NextStation) ||
+                            train.NextStation.includes(s.StationName)
+                        );
+
+                        if (nextStation && nextStation.Latitude && nextStation.Longitude) {
+                            // Calculate distance to next station
+                            const distanceToNext = this.calculateHaversineDistance(
+                                train.Latitude, train.Longitude,
+                                nextStation.Latitude, nextStation.Longitude
+                            );
+
+                            // ARRIVAL DETECTION: < 2km means train is at/very close to station
+                            if (distanceToNext < 2) {
+                                const speed = train.Speed || train.SpeedKmph || 0;
+
+                                // Check if train is stopped or moving slowly (arriving)
+                                if (speed <= 5) {
+                                    // Save arrival time if not already saved for this station
+                                    if (!train._arrivedAt || train._arrivedAtStation !== train.NextStation) {
+                                        const now = new Date();
+                                        train._arrivedAt = now;
+                                        train._arrivedAtStation = train.NextStation;
+                                        train._arrivedAtTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                        train._distanceAtArrival = distanceToNext;
+                                        console.log(`🎯 ARRIVAL TRACKED: ${train.TrainName || 'Train'} #${train.TrainNumber} arrived at ${train.NextStation} at ${train._arrivedAtTime} (${distanceToNext.toFixed(2)}km away)`);
+                                    } else if (train._arrivedAt) {
+                                        // Already at station - calculate stopped duration
+                                        const now = new Date();
+                                        const stoppedDurationMs = now - train._arrivedAt;
+                                        const stoppedDurationMins = Math.floor(stoppedDurationMs / 60000);
+                                        train._stoppedDurationMinutes = stoppedDurationMins;
+
+                                        if (stoppedDurationMins > 0 && stoppedDurationMins % 5 === 0) {
+                                            // Log every 5 minutes
+                                            console.log(`⏱️ STOPPED DURATION: ${train.TrainName || 'Train'} #${train.TrainNumber} at ${train.NextStation} for ${stoppedDurationMins} minutes`);
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Train moved away from station or NextStation changed - clear arrival record
+                                if (train._arrivedAtStation && train._arrivedAtStation === train.NextStation && distanceToNext >= 2) {
+                                    console.log(`🚂 DEPARTURE: ${train.TrainName || 'Train'} #${train.TrainNumber} departed from ${train.NextStation} (now ${distanceToNext.toFixed(2)}km away, speed: ${speed}km/h)`);
+                                    delete train._arrivedAt;
+                                    delete train._arrivedAtStation;
+                                    delete train._arrivedAtTime;
+                                    delete train._distanceAtArrival;
+                                }
+                            }
+                        }
+                    }
+                });
+
                 // Filter to keep only LIVE trains (IsLive !== false)
                 let filteredTrains = enrichedTrains.filter(train => train.IsLive !== false);
                 console.log(`📡 Filtered by IsLive flag: ${filteredTrains.length} live trains (from ${enrichedTrains.length} total)`);
@@ -1325,8 +1383,8 @@ class MobileApp {
         console.log('🔍 Filtering duplicate train instances by date...');
         console.log('📊 Total trains from API:', trains.length);
 
-        // First, filter out trains not matching last 2 dates (more aggressive filtering)
-        const trainsWithValidDates = this.filterByRecentDates(trains, 2);
+        // First, filter out trains not matching last 3 dates
+        const trainsWithValidDates = this.filterByRecentDates(trains, 3);
         
         // Group trains by train number AND direction (UP/DN)
         const trainsByNumberAndDirection = {};
@@ -3996,27 +4054,105 @@ class MobileApp {
                     minutesUntilArrival += 1440;
                     console.log(`🌙 Midnight crossing detected: ETA ${apiETA} is tomorrow (adjusted from ${rawMinutesUntilArrival} to ${minutesUntilArrival} minutes)`);
                 } else if (minutesUntilArrival < 0 && minutesUntilArrival > -360) {
-                    // Also handle near-midnight cases (within 6 hours on same side)
-                    minutesUntilArrival += 1440;
-                    console.log(`🌙 Near-midnight adjustment: ETA ${apiETA} treated as tomorrow (${minutesUntilArrival} minutes away)`);
+                    // Smart handling of near-past times (within 6 hours in past)
+                    // Only treat as day-wrap if ETA is early morning but current time is NOT early morning
+                    const currentIsEarlyMorning = currentMinutes < 360; // 0:00 - 5:59 AM
+                    const etaIsEarlyMorning = apiETAMinutes < 360;     // 0:00 - 5:59 AM
+
+                    if (etaIsEarlyMorning && !currentIsEarlyMorning) {
+                        // Only apply day-wrap: ETA in early morning BUT current time is NOT early morning
+                        minutesUntilArrival += 1440;
+                        console.log(`🌙 Near-midnight adjustment: ETA ${apiETA} (early morning) is tomorrow (adjusted from ${rawMinutesUntilArrival} to ${minutesUntilArrival} minutes)`);
+                    } else if (currentIsEarlyMorning && etaIsEarlyMorning) {
+                        // Both in early morning → same day, don't adjust
+                        console.log(`🌅 Both current (${currentMinutes}min) and ETA (${apiETAMinutes}min) in early morning: Same day, no adjustment needed`);
+                    } else {
+                        // Current is late evening, ETA is also late evening → same day, don't adjust
+                        console.log(`🌆 Both in same period (evening or other): Same day, no adjustment needed`);
+                    }
                 }
 
-                // NEW VALIDATION: Also check if ETA is unrealistic for a stationary train
-                // A stopped train (speed = 0) should not have an ETA > 3 hours in the future
+                // NEW VALIDATION: Check if ETA is unrealistic
                 let needsFallbackCalculation = false;
 
-                if (minutesUntilArrival > 300 || rawMinutesUntilArrival < -10) {
-                    needsFallbackCalculation = true;
-                    console.log(`⚠️ ETA is unrealistic (${minutesUntilArrival} minutes away): Triggering fallback calculation`);
-                } else if (speed === 0 && minutesUntilArrival > 120) {
-                    // ENHANCED: Stopped train with ETA > 2 hours is suspicious (lowered from 3 hours)
-                    needsFallbackCalculation = true;
-                    console.log(`⚠️ Stopped train with long ETA (${minutesUntilArrival} min = ${(minutesUntilArrival/60).toFixed(1)} hours): Triggering fallback calculation`);
-                } else if (speed < 10 && speed > 0 && minutesUntilArrival > 480) {
-                    // ENHANCED: Very slow train (< 10 km/h) with ETA > 8 hours is suspicious (lowered from 10 hours)
-                    needsFallbackCalculation = true;
-                    console.log(`⚠️ Very slow train (${speed} km/h) with long ETA (${minutesUntilArrival} min = ${(minutesUntilArrival/60).toFixed(1)} hours): Triggering fallback calculation`);
+                // CRITICAL: Check if train is already at the NextStation (stopped, CurrentStation = NextStation)
+                if (speed === 0) {
+                    const currentStation = train.CurrentStation || train.LastStation || '';
+                    const nextStation = train.NextStation || '';
+                    const isAtStation = currentStation && currentStation.toLowerCase() === nextStation.toLowerCase();
+
+                    if (isAtStation && minutesUntilArrival > 10) {
+                        // Train is stopped AT the station but API shows > 10 min away (unrealistic)
+                        // Return current time as ETA (train is already at destination)
+                        const now = new Date();
+                        const hours = String(now.getHours()).padStart(2, '0');
+                        const mins = String(now.getMinutes()).padStart(2, '0');
+                        const currentTimeStr = `${hours}:${mins}`;
+                        console.log(`🎯 Train already at ${currentStation}: API shows ${minutesUntilArrival}min away, returning current time ${currentTimeStr} as ETA`);
+                        return currentTimeStr;
+                    }
+
+                    // Check if we have a saved arrival time (train arrived at current NextStation within < 2km)
+                    if (train._arrivedAtTime && train._arrivedAtStation === nextStation) {
+                        // Use the tracked arrival time as ETA (train is confirmed to be at the station)
+                        console.log(`✅ Using tracked arrival time: ${train.TrainName || 'Train'} #${train.TrainNumber} arrived at ${train._arrivedAtStation} at ${train._arrivedAtTime}`);
+                        return train._arrivedAtTime;
+                    }
                 }
+
+                // IMPROVED: Check if delay is unrealistic instead of ETA
+                // Delay > 5 hours (300 min) OR negative means API ETA is wrong
+                let shouldTriggerFallback = false;
+
+                // Get scheduled time for delay calculation
+                const scheduledTime = this.getScheduledTimeForNextStation(train);
+                const scheduledMinutes = scheduledTime !== '📅 Loading...' && scheduledTime !== '📅 Schedule N/A'
+                    ? this.parseTimeToMinutes(scheduledTime.replace('📅 ', ''))
+                    : null;
+
+                if (scheduledMinutes !== null) {
+                    // Calculate delay from API ETA
+                    const apiEtaMinutes = this.parseTimeToMinutes(apiETA);
+                    let delayMinutes = apiEtaMinutes - scheduledMinutes;
+
+                    // Handle day wrap for delay calculation
+                    if (Math.abs(delayMinutes) > 720) {
+                        // Check if wrapping makes it more reasonable
+                        const wrappedDelay = delayMinutes > 0 ? delayMinutes - 1440 : delayMinutes + 1440;
+                        if (Math.abs(wrappedDelay) < Math.abs(delayMinutes)) {
+                            delayMinutes = wrappedDelay;
+                        }
+                    }
+
+                    // Check if delay is unrealistic (> 300 min = 5 hours OR negative)
+                    if (delayMinutes > 300 || delayMinutes < -10) {
+                        shouldTriggerFallback = true;
+                        console.log(`⚠️ Delay is unrealistic: API ETA ${apiETA} vs Scheduled ${scheduledTime.replace('📅 ', '')} = ${delayMinutes}min delay. Triggering fallback calculation`);
+                    } else if (minutesUntilArrival < -10) {
+                        // Delay is realistic BUT ETA is in the past - must be midnight boundary issue
+                        shouldTriggerFallback = true;
+                        console.log(`⚠️ ETA is in past (${minutesUntilArrival} min ago) even with realistic delay: Triggering fallback to fix day boundary`);
+                    } else {
+                        // Delay is realistic AND ETA is in future, use API ETA
+                        console.log(`✅ Delay is realistic: API ETA ${apiETA} vs Scheduled ${scheduledTime.replace('📅 ', '')} = ${delayMinutes}min delay. ETA is in future (${minutesUntilArrival}min away). Using API ETA`);
+                        shouldTriggerFallback = false;
+                    }
+                } else {
+                    // No scheduled time - fall back to old ETA-based check
+                    if (rawMinutesUntilArrival < -10) {
+                        shouldTriggerFallback = true;
+                        console.log(`⚠️ No scheduled time available, ETA is in past (${rawMinutesUntilArrival} min): Triggering fallback`);
+                    } else if (minutesUntilArrival > 360) {
+                        shouldTriggerFallback = true;
+                        console.log(`⚠️ No scheduled time available, ETA > 6 hours (${minutesUntilArrival} min): Triggering fallback`);
+                    }
+                }
+
+                if (shouldTriggerFallback) {
+                    needsFallbackCalculation = true;
+                }
+                // Note: Very slow train check removed - rely on delay-based validation only
+                // If speed < 10 km/h but delay is realistic (within 5 hours), trust the API ETA
 
                 // If ETA is more than 5 hours away (300 minutes) OR clearly in the past (< -10), use fallback
                 if (needsFallbackCalculation) {
@@ -4460,10 +4596,17 @@ class MobileApp {
                         // Calculate difference between calculated and API ETA
                         const etaDifference = Math.abs(minutesUntilCalculatedETA - minutesUntilAPIETA);
 
-                        // If difference is small (< 30 minutes), they agree - use API ETA (it's from source)
+                        // If difference is small (< 30 minutes), they agree - BUT check if API ETA is in past
                         if (etaDifference < 30) {
-                            console.log(`✅ SMART ETA CHECK: Calculated ETA (${etaTime}, ${minutesUntilCalculatedETA} min away) matches API ETA (${train.NextStationETA}, ${minutesUntilAPIETA} min away) within 30 min - using API ETA`);
-                            return train.NextStationETA;  // Return original API ETA without modification
+                            // Even if they match, API ETA must be in future
+                            if (minutesUntilAPIETA < -10) {
+                                // API ETA is in the past, use calculated even though they match
+                                console.log(`⚠️ SMART ETA CHECK: ETAs match (${etaDifference}min diff) but API ETA is in past (${minutesUntilAPIETA}min ago) - using calculated ETA ${etaTime}`);
+                                return etaTime;
+                            } else {
+                                console.log(`✅ SMART ETA CHECK: Calculated ETA (${etaTime}, ${minutesUntilCalculatedETA} min away) matches API ETA (${train.NextStationETA}, ${minutesUntilAPIETA} min away) within 30 min - using API ETA`);
+                                return train.NextStationETA;  // Return original API ETA without modification
+                            }
                         }
 
                         // If difference is large, calculated is likely more accurate
