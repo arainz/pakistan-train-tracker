@@ -8920,9 +8920,9 @@ class MobileApp {
         const hasTrainNumber = train.TrainNumber && train.TrainNumber !== 'undefined';
         const hasLocation = train.CurrentStation || train.NextStation || train.LastStation;
         const hasCoordinates = train.Latitude && train.Longitude;
-        const hasRecentUpdate = train.LastUpdated && new Date(train.LastUpdated) > new Date(Date.now() - 30 * 60 * 1000); // 30 minutes
-        
-        // Check if train has been updated recently (within 30 minutes)
+        const hasRecentUpdate = train.LastUpdated && new Date(train.LastUpdated) > new Date(Date.now() - 15 * 60 * 1000); // 15 minutes (updated from 30)
+
+        // Check if train has been updated recently (within 15 minutes)
         const isRecentlyUpdated = hasRecentUpdate;
         
         // Train is out of coverage if:
