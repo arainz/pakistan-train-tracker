@@ -1291,15 +1291,19 @@ class MobileApp {
             if (data.success && data.data && data.data.length > 0) {
                 // Enrich train data with TrainNameUR from metadata
                 const enrichedTrains = this.enrichTrainsWithMetadata(data.data);
-                
+
+                // Filter to keep only LIVE trains (IsLive !== false)
+                let filteredTrains = enrichedTrains.filter(train => train.IsLive !== false);
+                console.log(`📡 Filtered by IsLive flag: ${filteredTrains.length} live trains (from ${enrichedTrains.length} total)`);
+
                 // Filter to keep only recent instances per train
-                let filteredTrains = this.filterDuplicateTrains(enrichedTrains);
+                filteredTrains = this.filterDuplicateTrains(filteredTrains);
                 filteredTrains = this.filterCompletedJourneys(filteredTrains);
                 filteredTrains = this.filterUnrealisticDelays(filteredTrains);
-                
+
                 // Filter to only show trains that have schedule data
                 filteredTrains = this.filterByScheduleAvailability(filteredTrains);
-                
+
                 this.trainData.active = filteredTrains;
                 this.liveDataLastFetchTime = new Date(); // Update timestamp when live data is successfully fetched
                 console.log('✅ Live trains loaded and filtered:', filteredTrains.length, 'trains (from', data.data.length, 'total)');
@@ -1320,9 +1324,9 @@ class MobileApp {
     filterDuplicateTrains(trains) {
         console.log('🔍 Filtering duplicate train instances by date...');
         console.log('📊 Total trains from API:', trains.length);
-        
-        // First, filter out trains not matching last 3 dates
-        const trainsWithValidDates = this.filterByRecentDates(trains, 3);
+
+        // First, filter out trains not matching last 2 dates (more aggressive filtering)
+        const trainsWithValidDates = this.filterByRecentDates(trains, 2);
         
         // Group trains by train number AND direction (UP/DN)
         const trainsByNumberAndDirection = {};
@@ -3980,8 +3984,15 @@ class MobileApp {
                 let minutesUntilArrival = apiETAMinutes - currentMinutes;
                 const rawMinutesUntilArrival = minutesUntilArrival; // Keep original for past check
 
-                // Handle day wrap: if ETA is early morning (< 6AM) and current time is late evening (> 6PM), it's next day
-                if (apiETAMinutes < 360 && currentMinutes > 1080 && minutesUntilArrival < 0) {
+                // CRITICAL FIX: Handle ALL past times as potential day-wrap cases
+                // If API ETA is significantly in the past (> 360 min = 6 hours), it's likely from yesterday
+                if (minutesUntilArrival < -360) {
+                    // API time is more than 6 hours in the past - likely previous day
+                    // Assume it's for today or tomorrow instead
+                    minutesUntilArrival += 1440;  // Add 24 hours
+                    console.log(`🌙 CRITICAL: API ETA is from previous day! Adjusted from ${rawMinutesUntilArrival}min to ${minutesUntilArrival}min (adding 24hrs)`);
+                } else if (apiETAMinutes < 360 && currentMinutes > 1080 && minutesUntilArrival < 0) {
+                    // Handle day wrap: if ETA is early morning (< 6AM) and current time is late evening (> 6PM), it's next day
                     minutesUntilArrival += 1440;
                     console.log(`🌙 Midnight crossing detected: ETA ${apiETA} is tomorrow (adjusted from ${rawMinutesUntilArrival} to ${minutesUntilArrival} minutes)`);
                 } else if (minutesUntilArrival < 0 && minutesUntilArrival > -360) {
