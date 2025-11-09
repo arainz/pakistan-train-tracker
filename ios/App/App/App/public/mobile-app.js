@@ -4100,21 +4100,27 @@ class MobileApp {
                     
                     if (calculatedETATime) {
                         // If API ETA is clearly in the past (more than 10 minutes ago), check calculated ETA
-                        if (rawMinutesUntilArrival < -10) {
-                            // Check if calculated ETA is also in the past
+                        // NOTE: Use ADJUSTED minutesUntilArrival (after midnight boundary fix) to make decision
+                        if (minutesUntilArrival < -10 && rawMinutesUntilArrival < -10) {
+                            // Both raw and adjusted are still in the past - likely train arriving early
                             const calculatedETAMinutes = this.parseTimeToMinutes(calculatedETATime);
                             const calculatedMinutesUntilArrival = calculatedETAMinutes - currentMinutes;
 
                             if (calculatedMinutesUntilArrival <= -10) {
                                 // Both ETAs are in the past - train is arriving early or already arrived
                                 // Use API ETA as it's likely more accurate from the source
-                                console.log(`ℹ️ Both API ETA (${rawMinutesUntilArrival} min ago) and Calculated ETA (${calculatedMinutesUntilArrival} min ago) are in the past - train arriving early, using API ETA`);
+                                console.log(`ℹ️ Both API ETA (${rawMinutesUntilArrival} min ago, adjusted to ${minutesUntilArrival}) and Calculated ETA (${calculatedMinutesUntilArrival} min ago) are in the past - train arriving early, using API ETA`);
                             } else {
                                 // API is in past but calculated is in future - API is wrong
                                 useCalculatedETA = true;
                                 apiETA = calculatedETATime;
-                                console.log(`⚠️ API ETA is in the past (${rawMinutesUntilArrival} min ago) but calculated ETA is in future, forcing calculated ETA`);
+                                console.log(`⚠️ API ETA is in the past (${rawMinutesUntilArrival} min ago, adjusted to ${minutesUntilArrival}) but calculated ETA is in future, forcing calculated ETA`);
                             }
+                        } else if (rawMinutesUntilArrival < -10 && minutesUntilArrival > 0) {
+                            // API was adjusted from past to future (midnight boundary fix) - use adjusted value
+                            console.log(`🌙 API ETA was adjusted from past (${rawMinutesUntilArrival} min) to future (${minutesUntilArrival} min) - using calculated for validation`);
+                            useCalculatedETA = true;
+                            apiETA = calculatedETATime;
                         } else {
                             // Get scheduled time for comparison
                             const scheduledTime = this.getScheduledTimeForNextStation(train);
