@@ -1699,18 +1699,32 @@ class MobileApp {
             console.log('❌ Live trains container not found');
             return;
         }
-        
+
         if (!this.trainData.active || this.trainData.active.length === 0) {
             const t = this.getTranslatedLabel;
             container.innerHTML = `<div class="loading">${t('errors.noLiveTrainsAvailable')}</div>`;
             return;
         }
-        
+
         console.log('🔄 Populating', this.trainData.active.length, 'live trains on home screen');
 
         let html = '';
-        
-        this.trainData.active.slice(0, 10).forEach(train => {
+
+        // Sort trains: favorites first, then by existing criteria
+        const sortedTrains = [...this.trainData.active].sort((a, b) => {
+            const aIsFavorite = this.favoriteTrains.includes(String(a.TrainNumber));
+            const bIsFavorite = this.favoriteTrains.includes(String(b.TrainNumber));
+
+            // If one is favorite and other isn't, favorite goes first
+            if (aIsFavorite !== bIsFavorite) {
+                return bIsFavorite - aIsFavorite;
+            }
+
+            // Otherwise maintain existing order (speed, delay, etc)
+            return 0;
+        });
+
+        sortedTrains.slice(0, 10).forEach(train => {
             const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
             const trainNumber = String(train.TrainNumber);
             // Get translated train name based on current language
