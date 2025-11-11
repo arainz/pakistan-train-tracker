@@ -330,4 +330,73 @@ router.get('/data', (req, res) => {
   }
 });
 
+/**
+ * POST /api/schedule-report/update-schedule
+ * Update a schedule entry with API data
+ */
+router.post('/update-schedule', (req, res) => {
+  try {
+    const { trainCode, stationCode, apiArrivalTime, apiDepartureTime } = req.body;
+
+    if (!trainCode || !stationCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing trainCode or stationCode'
+      });
+    }
+
+    // Load schedules
+    const schedules = JSON.parse(fs.readFileSync(SCHEDULES_FILE, 'utf8'));
+
+    // Find the train
+    const train = schedules.find(t => t.trainCode === trainCode);
+    if (!train) {
+      return res.status(404).json({
+        success: false,
+        error: `Train ${trainCode} not found`
+      });
+    }
+
+    // Find the station
+    const station = train.stations.find(s => s.stationCode === stationCode);
+    if (!station) {
+      return res.status(404).json({
+        success: false,
+        error: `Station ${stationCode} not found for train ${trainCode}`
+      });
+    }
+
+    // Store old values for response
+    const oldArrival = station.ArrivalTime;
+    const oldDeparture = station.DepartureTime;
+
+    // Update the times - only update if API values are provided and not empty
+    if (apiArrivalTime && apiArrivalTime.trim()) {
+      station.ArrivalTime = apiArrivalTime;
+    }
+    if (apiDepartureTime && apiDepartureTime.trim()) {
+      station.DepartureTime = apiDepartureTime;
+    }
+
+    // Save updated schedules
+    fs.writeFileSync(SCHEDULES_FILE, JSON.stringify(schedules, null, 2), 'utf8');
+
+    res.json({
+      success: true,
+      message: `Updated ${trainCode} at ${stationCode}`,
+      updated: {
+        trainCode,
+        stationCode,
+        arrivalTime: { old: oldArrival, new: station.ArrivalTime },
+        departureTime: { old: oldDeparture, new: station.DepartureTime }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
