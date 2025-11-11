@@ -52,5 +52,3 @@ tmp/
 temp/
 .vercel
 
-# Server-side generated data (runtime-only, not for version control or app builds)
-.server-data/
