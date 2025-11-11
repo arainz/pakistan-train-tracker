@@ -2,8 +2,16 @@ const fs = require('fs');
 const path = require('path');
 
 // Load data
-const schedulesPath = path.join(__dirname, 'public/data/schedules.json');
-const apiRawPath = path.join(__dirname, 'public/data/api-raw-data.json');
+const PUBLIC_DATA_DIR = path.join(__dirname, 'public/data');
+const SERVER_DATA_DIR = path.join(__dirname, '.server-data');
+
+// Ensure server data directory exists
+if (!fs.existsSync(SERVER_DATA_DIR)) {
+  fs.mkdirSync(SERVER_DATA_DIR, { recursive: true });
+}
+
+const schedulesPath = path.join(PUBLIC_DATA_DIR, 'schedules.json');
+const apiRawPath = path.join(SERVER_DATA_DIR, 'api-raw-data.json');
 
 const schedules = JSON.parse(fs.readFileSync(schedulesPath, 'utf8'));
 const apiRawData = JSON.parse(fs.readFileSync(apiRawPath, 'utf8'));
@@ -11,7 +19,8 @@ const apiRawData = JSON.parse(fs.readFileSync(apiRawPath, 'utf8'));
 // Build a map of trainCode -> stationCode -> API data for quick lookup
 const apiDataMap = {};
 for (const trainData of apiRawData) {
-  const trainCode = trainData.stations[0]?.stationTrainCode;
+  // Handle both old format (stationTrainCode) and new format (trainCode field)
+  const trainCode = trainData.trainCode || trainData.stations[0]?.stationTrainCode;
 
   if (!trainCode) continue;
 
@@ -21,7 +30,10 @@ for (const trainData of apiRawData) {
 
   // Map each station by its code
   for (const station of trainData.stations) {
-    const stationCode = station.station.stationCode;
+    // Handle both nested format (station.stationCode) and flat format (stationCode)
+    const stationCode = station.stationCode || station.station?.stationCode;
+
+    if (!stationCode) continue;
 
     // Store all occurrences (in case of duplicate codes, keep the first one)
     if (!apiDataMap[trainCode][stationCode]) {
@@ -127,8 +139,10 @@ for (const trainCode in trainCodeToSchedule) {
       // Found matching API station
       const schedArrival = station.ArrivalTime || '';
       const schedDeparture = station.DepartureTime || '';
-      const apiArrival = apiStation.arrivalTime || '';
-      const apiBoardTime = apiStation.boardTime || '';
+
+      // Handle both formats: lowercase (nested) and uppercase/mixed case (flat)
+      const apiArrival = apiStation.arrivalTime || apiStation.ArrivalTime || '';
+      const apiBoardTime = apiStation.boardTime || apiStation.DepartureTime || '';
 
       // Format API times to HH:MM:SS
       const formattedApiArrival = extractTimeHMS(apiArrival);
@@ -184,7 +198,7 @@ const csvContent = reportRows
   .map(row => row.map(escapeCSV).join(','))
   .join('\n');
 
-const outputPath = path.join(__dirname, 'public/data/schedule-train-station-times-match.csv');
+const outputPath = path.join(SERVER_DATA_DIR, 'schedule-train-station-times-match.csv');
 fs.writeFileSync(outputPath, csvContent, 'utf8');
 
 console.log(`\nReport generated: ${outputPath}`);

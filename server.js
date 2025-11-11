@@ -401,6 +401,10 @@ app.use(express.static('public', {
   }
 }));
 
+// Schedule Report Route
+const scheduleReportRouter = require('./routes/schedule-report');
+app.use('/api/schedule-report', scheduleReportRouter);
+
 // Data storage
 let data = {
   stations: [],

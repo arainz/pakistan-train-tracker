@@ -17,10 +17,11 @@ const fs = require('fs');
 const path = require('path');
 
 const API_BASE_URL = 'https://isapi.pakrailways.gov.pk/v1/ticket';
-const CACHE_DIR = path.join(__dirname, '..', 'public', 'data');
+const CACHE_DIR = path.join(__dirname, '..', '.server-data');
+const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const CACHE_FILE = path.join(CACHE_DIR, 'official-schedules-cache.json');
-const SUMMARY_FILE = path.join(CACHE_DIR, 'trains-summary.json');
-const SCHEDULES_FILE = path.join(CACHE_DIR, 'schedules.json');
+const SUMMARY_FILE = path.join(PUBLIC_DATA_DIR, 'trains-summary.json');
+const SCHEDULES_FILE = path.join(PUBLIC_DATA_DIR, 'schedules.json');
 
 // Configuration
 const CONFIG = {
@@ -431,9 +432,8 @@ async function generateSchedulesFromCache() {
     }
     console.log(`✅ Loaded ${localSchedules.length} local schedules`);
 
-    // Load local schedules for coordinates
-    console.log('\n📥 Loading local schedules for coordinates...');
-    const localSchedules = await loadLocalSchedules();
+    // Create map from local schedules for coordinates
+    console.log('\n📥 Creating local schedules map...');
     const localMap = new Map();
     localSchedules.forEach(s => {
       const trainNum = s.TrainId || s.trainId;

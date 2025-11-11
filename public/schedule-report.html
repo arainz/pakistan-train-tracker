@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Report - API Comparison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #d0d0d0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item label {
+            font-weight: 600;
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .info-item value {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 20px 30px;
+            border-radius: 5px;
+            margin: 20px 30px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.active {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .table-section {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .table-controls input,
+        .table-controls select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #667eea;
+        }
+
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .time-match-yes {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .time-match-no {
+            background: #f8d7da;
+            color: #721c24;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-box .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Schedule Report</h1>
+            <p>API Data Comparison and Validation</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="fetchBtn" onclick="fetchAndCompare()">
+                <span>🔄</span> Fetch Latest Data & Generate Report
+            </button>
+            <button class="btn btn-secondary" id="generateBtn" onclick="generateReport()">
+                <span>📋</span> Generate Report (Existing Data)
+            </button>
+            <button class="btn btn-secondary" id="refreshBtn" onclick="checkStatus()">
+                <span>🔃</span> Refresh Status
+            </button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Processing data... This may take a few minutes.</p>
+        </div>
+
+        <div id="infoSection" class="info-section" style="display: none;">
+            <div class="info-item">
+                <label>Schedules Status</label>
+                <value id="schedulesStatus">-</value>
+            </div>
+            <div class="info-item">
+                <label>API Data Status</label>
+                <value id="apiDataStatus">-</value>
+            </div>
+            <div class="info-item">
+                <label>Report Status</label>
+                <value id="reportStatus">-</value>
+            </div>
+            <div class="info-item">
+                <label>Cache Freshness</label>
+                <value id="cacheFreshness">-</value>
+            </div>
+        </div>
+
+        <div id="statsSection" class="stats" style="display: none; padding: 20px 30px;">
+            <div class="stat-box">
+                <h3>Total Records</h3>
+                <div class="value" id="totalRecords">-</div>
+            </div>
+            <div class="stat-box">
+                <h3>Matched Times</h3>
+                <div class="value" id="matchedTimes">-</div>
+            </div>
+            <div class="stat-box">
+                <h3>Unmatched Times</h3>
+                <div class="value" id="unmatchedTimes">-</div>
+            </div>
+            <div class="stat-box">
+                <h3>Match Rate</h3>
+                <div class="value" id="matchRate">-</div>
+            </div>
+        </div>
+
+        <div class="table-section" id="tableSection" style="display: none;">
+            <h2 style="margin-bottom: 20px;">📈 Report Data</h2>
+
+            <div class="table-controls">
+                <input type="text" id="searchInput" placeholder="Search train code or station code..." onkeyup="filterTable()">
+                <select id="filterMatch" onchange="filterTable()">
+                    <option value="">All Results</option>
+                    <option value="YES">Matched Only</option>
+                    <option value="NO">Mismatched Only</option>
+                </select>
+                <button class="btn btn-secondary" onclick="downloadCSV()">
+                    <span>⬇️</span> Download CSV
+                </button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Train Code</th>
+                            <th>Station Code</th>
+                            <th>Schedule Arrival</th>
+                            <th>Schedule Departure</th>
+                            <th>API Arrival</th>
+                            <th>API Departure</th>
+                            <th>Match</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+
+        <div id="noData" class="no-data" style="display: none;">
+            <p>No data available. Click "Fetch Latest Data" to get started.</p>
+        </div>
+
+        <div class="footer">
+            <p>Pakistan Railways Schedule Comparison Tool | Last Updated: <span id="lastUpdated">Never</span></p>
+        </div>
+    </div>
+
+    <script>
+        const ITEMS_PER_PAGE = 50;
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+
+        // Show/hide loading spinner
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+            document.getElementById('fetchBtn').disabled = show;
+            document.getElementById('generateBtn').disabled = show;
+        }
+
+        // Show message
+        function showMessage(message, type = 'success') {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = message;
+            msgEl.className = `message active ${type}`;
+            setTimeout(() => msgEl.classList.remove('active'), 5000);
+        }
+
+        // Format time for display
+        function formatTime(time) {
+            return time || '-';
+        }
+
+        // Get match badge HTML
+        function getMatchBadge(match) {
+            if (match === 'YES') {
+                return '<span class="time-match-yes">✓ YES</span>';
+            } else {
+                return '<span class="time-match-no">✗ NO</span>';
+            }
+        }
+
+        // Check status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/schedule-report/status');
+                const status = await response.json();
+
+                document.getElementById('infoSection').style.display = 'grid';
+
+                // Update status badges
+                document.getElementById('schedulesStatus').innerHTML =
+                    `<span class="status-badge ${status.schedulesExist ? 'success' : 'error'}">
+                        ${status.schedulesExist ? '✓ Available' : '✗ Missing'}
+                    </span>`;
+
+                document.getElementById('apiDataStatus').innerHTML =
+                    `<span class="status-badge ${status.apiDataExist ? 'success' : 'error'}">
+                        ${status.apiDataExist ? '✓ Available' : '✗ Missing'}
+                    </span>`;
+
+                document.getElementById('reportStatus').innerHTML =
+                    `<span class="status-badge ${status.reportExist ? 'success' : 'warning'}">
+                        ${status.reportExist ? '✓ Generated' : '⚠ Not Generated'}
+                    </span>`;
+
+                if (status.cacheFreshness.hasCachedData) {
+                    document.getElementById('cacheFreshness').textContent =
+                        `${status.cacheFreshness.cacheAge} hours old`;
+                } else {
+                    document.getElementById('cacheFreshness').textContent = 'No cache';
+                }
+
+                if (status.lastUpdated) {
+                    document.getElementById('lastUpdated').textContent =
+                        new Date(status.lastUpdated).toLocaleString();
+                }
+
+                if (status.reportExist) {
+                    await loadReportData();
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+                showMessage('Error checking status: ' + error.message, 'error');
+            }
+        }
+
+        // Load report data
+        async function loadReportData() {
+            try {
+                const response = await fetch('/api/schedule-report/data');
+                const result = await response.json();
+
+                if (result.success) {
+                    allData = result.data || [];
+                    filteredData = allData;
+                    currentPage = 1;
+
+                    // Update stats
+                    const matchedCount = allData.filter(r => r.TIME_MATCH === 'YES').length;
+                    const unmatchedCount = allData.filter(r => r.TIME_MATCH === 'NO').length;
+                    const matchRate = ((matchedCount / allData.length) * 100).toFixed(1);
+
+                    document.getElementById('totalRecords').textContent = allData.length;
+                    document.getElementById('matchedTimes').textContent = matchedCount;
+                    document.getElementById('unmatchedTimes').textContent = unmatchedCount;
+                    document.getElementById('matchRate').textContent = matchRate + '%';
+
+                    document.getElementById('statsSection').style.display = 'grid';
+                    document.getElementById('tableSection').style.display = 'block';
+                    document.getElementById('noData').style.display = 'none';
+
+                    renderTable();
+                } else {
+                    showMessage('No report data available', 'warning');
+                }
+            } catch (error) {
+                console.error('Error loading report data:', error);
+                showMessage('Error loading report data: ' + error.message, 'error');
+            }
+        }
+
+        // Filter table
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const matchFilter = document.getElementById('filterMatch').value;
+
+            filteredData = allData.filter(row => {
+                const matchesSearch = !search ||
+                    row.TRAIN_CODE.toLowerCase().includes(search) ||
+                    row.STATION_CODE.toLowerCase().includes(search);
+
+                const matchesFilter = !matchFilter || row.TIME_MATCH === matchFilter;
+
+                return matchesSearch && matchesFilter;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No data found</td></tr>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            const pageData = filteredData.slice(start, end);
+
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.TRAIN_CODE}</strong></td>
+                    <td>${row.STATION_CODE}</td>
+                    <td>${formatTime(row.SCHEDULE_ARRIVAL_TIME)}</td>
+                    <td>${formatTime(row.SCHEDULE_DEPARTURE_TIME)}</td>
+                    <td>${formatTime(row.API_ARRIVAL_TIME)}</td>
+                    <td>${formatTime(row.API_DEPARTURE_TIME)}</td>
+                    <td>${getMatchBadge(row.TIME_MATCH)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination();
+        }
+
+        // Render pagination
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '← Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { currentPage--; renderTable(); };
+            pagination.appendChild(prevBtn);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.className = i === currentPage ? 'active' : '';
+                    btn.onclick = () => { currentPage = i; renderTable(); };
+                    pagination.appendChild(btn);
+                } else if (i === 2 || i === totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '8px 12px';
+                    pagination.appendChild(span);
+                }
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next →';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { currentPage++; renderTable(); };
+            pagination.appendChild(nextBtn);
+        }
+
+        // Download CSV
+        function downloadCSV() {
+            const csv = ['TRAIN_CODE,STATION_CODE,SCHEDULE_ARRIVAL_TIME,SCHEDULE_DEPARTURE_TIME,API_ARRIVAL_TIME,API_DEPARTURE_TIME,TIME_MATCH'];
+
+            filteredData.forEach(row => {
+                csv.push(`${row.TRAIN_CODE},${row.STATION_CODE},${row.SCHEDULE_ARRIVAL_TIME},${row.SCHEDULE_DEPARTURE_TIME},${row.API_ARRIVAL_TIME},${row.API_DEPARTURE_TIME},${row.TIME_MATCH}`);
+            });
+
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'schedule-report.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Fetch and compare
+        async function fetchAndCompare() {
+            if (!confirm('This will fetch latest data from the official API. This may take several minutes. Continue?')) {
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const response = await fetch('/api/schedule-report/fetch-and-compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ force: true })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(`✓ Data fetched successfully! Fetched ${result.fetchedSchedules} schedules. Report: ${result.report.totalRows} rows, ${result.report.matchPercentage}% matched`, 'success');
+                    await checkStatus();
+                } else {
+                    showMessage('Error: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Generate report
+        async function generateReport() {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/schedule-report/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(`✓ Report generated! ${result.totalRows} rows, ${result.matchPercentage}% matched`, 'success');
+                    await checkStatus();
+                } else {
+                    showMessage('Error: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', checkStatus);
+    </script>
+</body>
+</html>
