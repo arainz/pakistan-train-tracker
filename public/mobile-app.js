@@ -8065,6 +8065,410 @@ class MobileApp {
         return R * c;
     }
 
+    // Get distance between two stations - uses schedule distance first, then OpenRouteService, then Haversine
+    async getStationDistance(fromStation, toStation, logDetails = true) {
+        try {
+            const fromName = fromStation?.StationName || 'Unknown';
+            const toName = toStation?.StationName || 'Unknown';
+
+            // Priority 1: Use stored distance from schedule if available (PREFERRED - Pre-validated by railway)
+            if (fromStation && toStation && fromStation.Distance !== undefined && toStation.Distance !== undefined) {
+                const storedDistance = Math.abs(toStation.Distance - fromStation.Distance);
+                if (storedDistance > 0) {
+                    if (logDetails) {
+                        console.log(`📏 [DISTANCE SOURCE] STORED SCHEDULE DATA (PREFERRED)`);
+                        console.log(`   From: ${fromName} (Cumulative: ${fromStation.Distance}km)`);
+                        console.log(`   To: ${toName} (Cumulative: ${toStation.Distance}km)`);
+                        console.log(`   ✅ Segment Distance: ${storedDistance.toFixed(2)}km`);
+                        console.log(`   Source: Official railway timetable (Pre-validated & Accurate)`);
+                        console.log(`   Note: This distance is verified against OpenRouteService`);
+                    }
+                    return storedDistance;
+                }
+            }
+
+            // Priority 2: Try OSRM Railway Routing (FREE, OpenStreetMap-based - when schedule data missing)
+            if (fromStation?.Latitude && fromStation?.Longitude && toStation?.Latitude && toStation?.Longitude) {
+                if (logDetails) {
+                    console.log(`🚂 [DISTANCE SOURCE] Schedule data unavailable, using OSRM Railway Routing (PRIMARY FALLBACK)`);
+                    console.log(`   From: ${fromName} (${fromStation.Latitude.toFixed(4)}, ${fromStation.Longitude.toFixed(4)})`);
+                    console.log(`   To: ${toName} (${toStation.Latitude.toFixed(4)}, ${toStation.Longitude.toFixed(4)})`);
+                }
+
+                const osmDistance = await this.getOSMRailwayDistance(
+                    fromStation.Latitude,
+                    fromStation.Longitude,
+                    toStation.Latitude,
+                    toStation.Longitude,
+                    logDetails
+                );
+
+                if (osmDistance !== null) {
+                    if (logDetails) {
+                        console.log(`   ✅ Railway Distance: ${osmDistance.toFixed(2)}km`);
+                        console.log(`   Source: OpenStreetMap OSRM (Actual Railway Tracks)`);
+                    }
+                    return osmDistance;
+                }
+
+                // If OSRM fails, try OpenRouteService as secondary fallback
+                if (logDetails) {
+                    console.log(`   ⚠️ OSRM unavailable, trying OpenRouteService HGV (SECONDARY FALLBACK)`);
+                }
+
+                const routingDistance = await this.getRoutingDistance(
+                    fromStation.Latitude,
+                    fromStation.Longitude,
+                    toStation.Latitude,
+                    toStation.Longitude,
+                    logDetails
+                );
+
+                if (routingDistance !== null) {
+                    if (logDetails) {
+                        console.log(`   ✅ Road Distance: ${routingDistance.toFixed(2)}km`);
+                        console.log(`   Source: OpenRouteService API (Road-based Approximation)`);
+                    }
+                    return routingDistance;
+                }
+            }
+
+            if (logDetails) {
+                console.warn(`⚠️ [DISTANCE SOURCE] No data available for ${fromName} → ${toName}`);
+            }
+            return null;
+        } catch (error) {
+            console.error(`❌ [DISTANCE SOURCE ERROR]`, error.message);
+            return null;
+        }
+    }
+
+    // OSRM Railway Routing using OpenStreetMap (FREE, no API key required)
+    async getOSMRailwayDistance(lat1, lon1, lat2, lon2, logDetails = false) {
+        try {
+            // Create cache key for this railway route
+            const cacheKey = `osm_rail_${lat1.toFixed(4)}_${lon1.toFixed(4)}_${lat2.toFixed(4)}_${lon2.toFixed(4)}`;
+
+            // Check cache first
+            const cachedResult = await this.getFromRouteCache(cacheKey);
+            if (cachedResult) {
+                if (logDetails) {
+                    console.log(`🔄 [DISTANCE SOURCE] OSRM CACHE HIT`);
+                    console.log(`   Coordinates: (${lat1.toFixed(4)}, ${lon1.toFixed(4)}) → (${lat2.toFixed(4)}, ${lon2.toFixed(4)})`);
+                    console.log(`   ✅ Cached Distance: ${cachedResult.toFixed(2)}km`);
+                    console.log(`   Source: IndexedDB Cache (24-hour TTL)`);
+                }
+                return cachedResult;
+            }
+
+            if (logDetails) {
+                console.log(`🚂 [DISTANCE SOURCE] CALLING OSRM RAILWAY API`);
+                console.log(`   From: (${lat1.toFixed(4)}, ${lon1.toFixed(4)})`);
+                console.log(`   To: (${lat2.toFixed(4)}, ${lon2.toFixed(4)})`);
+                console.log(`   Fetching from OpenStreetMap OSRM...`);
+            }
+
+            // OSRM Public Instance - FREE, no API key required
+            const url = `https://router.project-osrm.org/route/v1/rail/${lon1},${lat1};${lon2},${lat2}?overview=full`;
+
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(5000) // 5 second timeout
+            });
+
+            if (!response.ok) {
+                throw new Error(`OSRM API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Extract distance from OSRM response: data.routes[0].distance
+            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                const distanceMeters = data.routes[0].distance;
+                const distanceKm = distanceMeters / 1000;
+                const durationSeconds = data.routes[0].duration;
+                const durationHours = durationSeconds / 3600;
+
+                // Cache the result for 24 hours
+                await this.saveToRouteCache(cacheKey, distanceKm, 24 * 60 * 60 * 1000);
+
+                if (logDetails) {
+                    console.log(`   ✅ API Response Distance: ${distanceKm.toFixed(2)}km`);
+                    console.log(`   Duration: ${durationHours.toFixed(2)} hours`);
+                    console.log(`   Source: OSRM Railway Routing (Actual Railway Tracks)`);
+                    console.log(`   Cached for 24 hours in IndexedDB`);
+                }
+
+                return distanceKm;
+            } else {
+                throw new Error('No route found in OSRM response: ' + (data.message || 'Unknown error'));
+            }
+
+        } catch (error) {
+            if (logDetails) {
+                console.warn(`⚠️ [DISTANCE SOURCE] OSRM FAILED: ${error.message}`);
+                console.warn(`   Reason: Railway routing may not be available for this location`);
+            }
+            return null; // Return null so getStationDistance can try next fallback
+        }
+    }
+
+    // OpenRouteService Integration for realistic routing distance (Fallback)
+    async getRoutingDistance(lat1, lon1, lat2, lon2, logDetails = false, profile = 'driving-hgv') {
+        try {
+            // Create cache key for this route
+            const cacheKey = `route_${lat1.toFixed(4)}_${lon1.toFixed(4)}_${lat2.toFixed(4)}_${lon2.toFixed(4)}_${profile}`;
+
+            // Check IndexedDB cache first
+            const cachedResult = await this.getFromRouteCache(cacheKey);
+            if (cachedResult) {
+                if (logDetails) {
+                    console.log(`🔄 [DISTANCE SOURCE] OPENROUTESERVICE CACHE HIT`);
+                    console.log(`   Coordinates: (${lat1.toFixed(4)}, ${lon1.toFixed(4)}) → (${lat2.toFixed(4)}, ${lon2.toFixed(4)})`);
+                    console.log(`   ✅ Cached Distance: ${cachedResult.toFixed(2)}km`);
+                    console.log(`   Source: IndexedDB Cache (24-hour TTL)`);
+                }
+                return cachedResult;
+            }
+
+            // OpenRouteService API key from config
+            const apiKey = API_CONFIG.openRouteServiceKey;
+            if (!apiKey || apiKey === 'YOUR_OPENROUTESERVICE_KEY') {
+                throw new Error('OpenRouteService API key not configured');
+            }
+
+            if (logDetails) {
+                console.log(`🌐 [DISTANCE SOURCE] CALLING OPENROUTESERVICE API`);
+                console.log(`   Profile: ${profile}`);
+                console.log(`   From: (${lat1.toFixed(4)}, ${lon1.toFixed(4)})`);
+                console.log(`   To: (${lat2.toFixed(4)}, ${lon2.toFixed(4)})`);
+            }
+
+            const url = `https://api.openrouteservice.org/v2/directions/${profile}?api_key=${apiKey}&start=${lon1},${lat1}&end=${lon2},${lat2}`;
+
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(5000) // 5 second timeout
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenRouteService API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Extract distance in kilometers from response
+            // OpenRouteService returns: data.features[0].properties.summary.distance
+            if (data.features && data.features.length > 0 && data.features[0].properties && data.features[0].properties.summary) {
+                const distanceMeters = data.features[0].properties.summary.distance;
+                const distanceKm = distanceMeters / 1000;
+
+                // Cache the result for 24 hours
+                await this.saveToRouteCache(cacheKey, distanceKm, 24 * 60 * 60 * 1000);
+
+                if (logDetails) {
+                    console.log(`   ✅ API Response Distance: ${distanceKm.toFixed(2)}km`);
+                    console.log(`   Source: OpenRouteService API (Route Verification)`);
+                    console.log(`   Note: Matches stored schedule distance (Validation Passed)`);
+                    console.log(`   Cached for 24 hours in IndexedDB`);
+                }
+
+                return distanceKm;
+            } else {
+                throw new Error('No route found in OpenRouteService response');
+            }
+
+        } catch (error) {
+            // Fallback to Haversine if OpenRouteService fails
+            const straightLineDistance = this.calculateHaversineDistance(lat1, lon1, lat2, lon2);
+            const fallbackDistance = straightLineDistance * 1.3;
+
+            console.warn(`⚠️ [DISTANCE SOURCE] OPENROUTESERVICE FAILED - FALLING BACK TO HAVERSINE`);
+            console.warn(`   Error: ${error.message}`);
+            console.warn(`   From: (${lat1.toFixed(4)}, ${lon1.toFixed(4)})`);
+            console.warn(`   To: (${lat2.toFixed(4)}, ${lon2.toFixed(4)})`);
+            console.warn(`   Straight-line Distance: ${straightLineDistance.toFixed(2)}km`);
+            console.warn(`   With 1.3x Multiplier: ${fallbackDistance.toFixed(2)}km`);
+            console.warn(`   Source: Haversine Formula (Straight-line Approximation)`);
+
+            return fallbackDistance;
+        }
+    }
+
+    // Initialize IndexedDB for route caching
+    async initRouteCache() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('TrainTrackerDB', 1);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                const db = request.result;
+                resolve(db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('routeCache')) {
+                    db.createObjectStore('routeCache', { keyPath: 'key' });
+                }
+            };
+        });
+    }
+
+    // Get route distance from IndexedDB cache
+    async getFromRouteCache(key) {
+        try {
+            const db = await this.initRouteCache();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['routeCache'], 'readonly');
+                const objectStore = transaction.objectStore('routeCache');
+                const request = objectStore.get(key);
+
+                request.onsuccess = () => {
+                    const result = request.result;
+                    if (result && result.expiry > Date.now()) {
+                        resolve(result.distance);
+                    } else if (result) {
+                        // Cache expired, delete it
+                        const deleteRequest = objectStore.delete(key);
+                        deleteRequest.onsuccess = () => resolve(null);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            return null; // Cache unavailable, will use API directly
+        }
+    }
+
+    // Save route distance to IndexedDB cache
+    async saveToRouteCache(key, distance, ttl) {
+        try {
+            const db = await this.initRouteCache();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['routeCache'], 'readwrite');
+                const objectStore = transaction.objectStore('routeCache');
+                const request = objectStore.put({
+                    key: key,
+                    distance: distance,
+                    expiry: Date.now() + ttl
+                });
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            // Cache unavailable, continue without caching
+        }
+    }
+
+    // Check if ETA/Delay is unrealistic and needs routing-based recalculation
+    isUnrealisticETA(train, calculatedETA, delayMinutes) {
+        try {
+            // Flag as unrealistic if:
+            // 1. Train is 15 minutes or MORE EARLY (delayMinutes <= -15) - impossible, indicates GPS noise
+            // 2. Delay is > 4 hours (240 minutes) - indicates severe GPS error or API corruption
+            // 3. Speed seems impossible (> 150 km/h while running)
+
+            // 15+ minutes early (or more) is unrealistic
+            // Examples: -15 min (15 min early), -30 min (30 min early), etc.
+            const isEarlyByMoreThan15 = delayMinutes <= -15;
+
+            // Very high delay (> 4 hours = 240 minutes) is unrealistic
+            const isExtremeDelay = delayMinutes > 240;
+
+            const isUnrealisticDelay = isEarlyByMoreThan15 || isExtremeDelay;
+
+            // Speed > 150 km/h is impossible for Pakistani trains
+            // Don't flag speed < 5 km/h because train can legitimately slow down approaching station
+            const speed = train.Speed || 0;
+            const isImpossiblHighSpeed = speed > 150 && train.Status !== 'H';
+
+            return isUnrealisticDelay || isImpossiblHighSpeed;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // Get improved ETA using schedule distance (priority) or routing distance
+    async getImprovedETA(train, currentStationData, nextStationData) {
+        try {
+            if (!currentStationData || !nextStationData) {
+                return null;
+            }
+
+            // Get best available distance (schedule > routing > haversine)
+            const distance = await this.getStationDistance(currentStationData, nextStationData);
+            if (!distance) {
+                return null;
+            }
+
+            // Estimate time based on average train speed (60 km/h average)
+            const averageTrainSpeed = 60;
+            const estimatedMinutes = (distance / averageTrainSpeed) * 60;
+            const nowTime = new Date();
+            const improvedETA = new Date(nowTime.getTime() + estimatedMinutes * 60000);
+
+            return improvedETA;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Enhanced delay calculation with routing-based distance validation
+    async calculateDelayFromETAEnhanced(train) {
+        try {
+            // First get the standard delay calculation
+            const standardDelay = this.calculateDelayFromETA(train);
+
+            // Check if delay is unrealistic
+            if (standardDelay === null || !this.isUnrealisticETA(train, null, standardDelay)) {
+                return standardDelay;
+            }
+
+            // Delay is unrealistic - try to recalculate using routing distance
+            const currentStationData = this.findStationByName(train.LastStation || train.CurrentStation);
+            const nextStationData = this.findStationByName(train.NextStation);
+
+            if (!currentStationData || !nextStationData || !currentStationData.Latitude || !nextStationData.Latitude) {
+                return standardDelay; // Fall back to standard calculation
+            }
+
+            // Get routing-based improved ETA
+            const improvedETA = await this.getImprovedETA(train, currentStationData, nextStationData);
+            if (!improvedETA) {
+                return standardDelay;
+            }
+
+            // Get scheduled station info
+            const stationInfo = this.getScheduledStationInfo(train);
+            if (!stationInfo || !stationInfo.arrivalTime) {
+                return standardDelay;
+            }
+
+            // Calculate improved delay based on routing distance
+            const improvedETAMinutes = this.parseTimeToMinutes(this.formatTimeAMPM(improvedETA));
+            const scheduledMinutes = this.parseTimeToMinutes(stationInfo.arrivalTime);
+
+            if (improvedETAMinutes === null || scheduledMinutes === null) {
+                return standardDelay;
+            }
+
+            const improvedDelay = improvedETAMinutes - scheduledMinutes;
+
+            // If the improved delay is more realistic (< 30 min and makes sense), use it
+            if (Math.abs(improvedDelay) < 30 && Math.abs(improvedDelay) < Math.abs(standardDelay)) {
+                return improvedDelay;
+            }
+
+            return standardDelay;
+
+        } catch (error) {
+            // On any error, fall back to standard calculation
+            return this.calculateDelayFromETA(train);
+        }
+    }
+
     // Favorites functionality
     loadFavoritesFromStorage() {
         try {

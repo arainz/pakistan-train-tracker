@@ -6,13 +6,18 @@ const API_CONFIG = {
         fallback: 'http://138.2.91.18:3000', // Oracle Cloud (FREE, Always Free Tier)
         backup: 'https://confused-eel-pakrail-7ab69761.koyeb.app', // Koyeb (FREE, always-on)
     },
-    
+
     // Current active server (will switch on failure)
     _currentServer: null,
     _serverStatus: {
         primary: true,  // Assume primary is available initially
         fallback: true
     },
+
+    // OpenRouteService Configuration for routing-based distance
+    openRouteServiceKey: 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM0MjYzNjcyNGExZjQ1Y2E4OWFmZjRhMDJjZGZmMDM2IiwiaCI6Im11cm11cjY0In0=', // Get free key from https://openrouteservice.org/
+    routingProfile: 'driving-hgv', // HGV profile closest to train routing
+
     
     // Auto-detect if running in Capacitor mobile app
     getBaseURL() {
