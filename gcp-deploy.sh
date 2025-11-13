@@ -53,98 +53,75 @@ gcloud services enable containerregistry.googleapis.com
 
 print_status "APIs enabled!"
 
-# Choose deployment method
-echo ""
-print_info "Choose deployment method:"
-echo "1. Google Cloud Run (Recommended - Serverless, automatic scaling)"
-echo "2. Google App Engine (Managed platform)"
-echo "3. Google Kubernetes Engine (Advanced - full container orchestration)"
-echo ""
+# Deploying to Google Cloud Run
+print_info "🚀 Deploying to Google Cloud Run (pakistan-train-tracker)..."
 
-read -p "Enter your choice (1-3): " DEPLOY_METHOD
+# Build and deploy to Cloud Run
+print_info "Building and deploying container..."
 
-case $DEPLOY_METHOD in
-    1)
-        print_info "Deploying to Google Cloud Run..."
-        
-        # Build and deploy to Cloud Run
-        print_info "Building and deploying container..."
-        
-        gcloud run deploy pakistan-train-tracker \
-            --source . \
-            --region us-central1 \
-            --allow-unauthenticated \
-            --port 8080 \
-            --memory 512Mi \
-            --cpu 1 \
-            --max-instances 10 \
-            --set-env-vars NODE_ENV=production,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com \
-            --project $PROJECT_ID
-        
-        if [ $? -eq 0 ]; then
-            print_status "Deployment successful!"
-            
-            # Get the service URL
-            SERVICE_URL=$(gcloud run services describe pakistan-train-tracker --region=us-central1 --format="value(status.url)" --project=$PROJECT_ID)
-            
-            print_status "🎉 Your Pakistan Train Tracker is live!"
-            print_info "URL: $SERVICE_URL"
-            print_info "API: $SERVICE_URL/api/live"
-            print_info "Health: $SERVICE_URL/health"
-            
-            echo ""
-            print_info "Testing deployment..."
-            curl -s "$SERVICE_URL/health" | head -3
-            
-        else
-            print_error "Deployment failed!"
-            exit 1
-        fi
-        ;;
-        
-    2)
-        print_info "Deploying to Google App Engine..."
-        
-        # Deploy to App Engine
-        gcloud app deploy app.yaml --project $PROJECT_ID
-        
-        if [ $? -eq 0 ]; then
-            print_status "Deployment successful!"
-            
-            # Get the service URL
-            SERVICE_URL="https://$PROJECT_ID.appspot.com"
-            
-            print_status "🎉 Your Pakistan Train Tracker is live!"
-            print_info "URL: $SERVICE_URL"
-            print_info "API: $SERVICE_URL/api/live"
-            print_info "Health: $SERVICE_URL/health"
-            
-        else
-            print_error "Deployment failed!"
-            exit 1
-        fi
-        ;;
-        
-    3)
-        print_warning "Google Kubernetes Engine deployment is more complex."
-        print_info "For GKE deployment, you'll need to:"
-        print_info "1. Create a GKE cluster"
-        print_info "2. Build and push Docker image"
-        print_info "3. Create Kubernetes deployment and service"
-        print_info ""
-        print_info "Would you like to use Cloud Run instead? It's simpler and perfect for this app."
-        ;;
-        
-    *)
-        print_error "Invalid choice!"
-        exit 1
-        ;;
-esac
+gcloud run deploy pakistan-train-tracker \
+    --source . \
+    --region us-central1 \
+    --allow-unauthenticated \
+    --port 8080 \
+    --memory 512Mi \
+    --cpu 1 \
+    --max-instances 10 \
+    --set-env-vars NODE_ENV=production,DATA_BASE_URL=https://trackyourtrains.com/data,SOCKET_URL=https://socket.pakraillive.com \
+    --project $PROJECT_ID
+
+if [ $? -eq 0 ]; then
+    print_status "Deployment successful! ✅"
+
+    # Get the service URL
+    SERVICE_URL=$(gcloud run services describe pakistan-train-tracker --region=us-central1 --format="value(status.url)" --project=$PROJECT_ID)
+
+    print_status "🎉 Your Pakistan Train Tracker is live!"
+    print_info "URL: $SERVICE_URL"
+    print_info "API: $SERVICE_URL/api/live"
+    print_info "Health: $SERVICE_URL/health"
+
+    echo ""
+    print_info "Cleaning up old versions (keeping only latest)..."
+
+    # Get all revisions sorted by creation time (newest first)
+    REVISIONS=$(gcloud run revisions list --service pakistan-train-tracker --region us-central1 --format="value(name)" --project=$PROJECT_ID)
+    REVISION_COUNT=$(echo "$REVISIONS" | wc -l)
+
+    if [ $REVISION_COUNT -gt 1 ]; then
+        print_warning "Found $REVISION_COUNT revisions. Keeping latest, deleting old ones..."
+
+        # Skip the first one (latest) and delete the rest
+        echo "$REVISIONS" | tail -n +2 | while read REVISION; do
+            print_info "Deleting old revision: $REVISION"
+            gcloud run revisions delete $REVISION \
+                --service pakistan-train-tracker \
+                --region us-central1 \
+                --quiet \
+                --project=$PROJECT_ID 2>/dev/null || true
+        done
+
+        print_status "Old revisions cleaned up! Only latest version retained."
+    else
+        print_status "Only one revision exists. No cleanup needed."
+    fi
+
+    echo ""
+    print_info "Testing deployment..."
+    curl -s "$SERVICE_URL/health" | head -3
+
+    echo ""
+    print_status "Deployment complete! 🎉"
+
+else
+    print_error "Deployment failed!"
+    exit 1
+fi
 
 echo ""
-print_info "Additional commands:"
-echo "View logs: gcloud run logs tail --service pakistan-train-tracker --region us-central1"
-echo "Update service: gcloud run deploy pakistan-train-tracker --source . --region us-central1"
-echo "Delete service: gcloud run services delete pakistan-train-tracker --region us-central1"
-
-print_status "Google Cloud deployment complete! 🎉"
+print_info "📋 Useful commands:"
+echo "  View logs:     gcloud run logs tail --service pakistan-train-tracker --region us-central1"
+echo "  View revisions: gcloud run revisions list --service pakistan-train-tracker --region us-central1"
+echo "  Delete service: gcloud run services delete pakistan-train-tracker --region us-central1"
+echo ""
+print_info "✨ Next deployment will automatically remove old versions and keep only the latest!"
