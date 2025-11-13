@@ -2544,8 +2544,6 @@ class MobileApp {
 
         // Initialize detail map for train info panel
         setTimeout(() => {
-            console.log('🗺️ Calling initializeTrainDetailMap from populateTrainDetails');
-            console.log('Train data:', train.TrainNumber, train.TrainName);
             this.initializeTrainDetailMap(train);
         }, 600);
 
@@ -9879,33 +9877,20 @@ class MobileApp {
     }
 
     selectTrain(trainId) {
-        console.log('🚂 SELECTTRAIN CALLED WITH:', trainId);
-        console.error('ERROR LOG: selectTrain was called!');
-        window.selectTrainCalled = true;
-        window.lastTrainId = trainId;
-
         const train = this.trainData.active.find(t =>
             t.InnerKey === trainId || t.TrainId === trainId || t.TrainNumber === trainId
         );
 
         if (!train) {
             console.error('❌ Train not found:', trainId);
-            console.error('Available trains:', this.trainData.active.map(t => ({ InnerKey: t.InnerKey, TrainId: t.TrainId, TrainNumber: t.TrainNumber })));
             return;
         }
 
-        console.log('✅ Train found:', train.TrainNumber);
-
         this.selectedTrain = train;
-        console.log('✅ Calling hideTrainSelectionPanel');
         this.hideTrainSelectionPanel();
-        console.log('✅ Calling showTrainInfoPanel');
         this.showTrainInfoPanel();
-        console.log('✅ Calling updateMapWithSelectedTrain');
         this.updateMapWithSelectedTrain(train);
-        console.log('✅ Calling startMapAutoRefresh');
         this.startMapAutoRefresh();
-        console.log('✅ selectTrain completed');
     }
 
     updateMapWithTrains(trains) {
@@ -9922,22 +9907,16 @@ class MobileApp {
     }
 
     updateMapWithSelectedTrain(train) {
-        console.log('🗺️ UPDATEMAP CALLED FOR:', train.TrainNumber);
-        console.error('ERROR LOG: updateMapWithSelectedTrain was called!');
-        window.updateMapCalled = true;
-
         if (!this.map) {
-            console.error('❌ Map not initialized, this.map is:', this.map);
+            console.error('❌ Map not initialized');
             return;
         }
 
-        console.log('✅ Map exists, clearing markers');
         // Clear existing markers
         this.clearMapMarkers();
 
         // Add selected train marker
         if (train.Latitude && train.Longitude) {
-            console.log('✅ Adding train marker at:', train.Latitude, train.Longitude);
             this.addTrainMarker(train, true);
             this.map.setView([train.Latitude, train.Longitude], 12);
         }
@@ -9952,12 +9931,18 @@ class MobileApp {
         }, 400);
     }
 
+    updateBelowMapPopover(htmlContent) {
+        const popoverContent = document.getElementById('mapPopoverContent');
+        if (popoverContent) {
+            popoverContent.innerHTML = htmlContent;
+        }
+    }
+
     initializeTrainDetailMap(train) {
         if (!train || !train.TrainNumber) {
             console.warn('No train or train number');
             return;
         }
-
 
         const mapContainer = document.getElementById('trainDetailMap');
         if (!mapContainer) {
@@ -10090,7 +10075,6 @@ class MobileApp {
             });
 
             trainMarker = L.marker([train.Latitude, train.Longitude], { icon: trainIcon })
-                .bindPopup(popupContent)
                 .addTo(this.detailMap);
 
             // Store reference to train marker for updates
@@ -10100,12 +10084,13 @@ class MobileApp {
             // Add to tracking array immediately
             this.detailMapMarkers.push(trainMarker);
 
-            // Open popup immediately on load
-            setTimeout(() => {
-                if (trainMarker && this.detailMap && this.detailMap.hasLayer(trainMarker)) {
-                    trainMarker.openPopup();
-                }
-            }, 500);
+            // Populate below-map popover with train details immediately
+            this.updateBelowMapPopover(popupContent);
+
+            // Add click handler to show Leaflet popup on the marker
+            trainMarker.on('click', () => {
+                trainMarker.bindPopup(popupContent).openPopup();
+            });
         }
 
         // NOW load train route in background (doesn't block marker from appearing)
@@ -10149,7 +10134,17 @@ class MobileApp {
                                 </p>
                             </div>
                         `;
-                        stationMarker.bindPopup(stationPopup);
+
+                        // Add click handler to show station info in popover below map (no inline popup)
+                        stationMarker.on('click', () => {
+                            const popoverContainer = document.getElementById('mapPopoverContainer');
+                            const popoverContent = document.getElementById('mapPopoverContent');
+                            if (popoverContainer && popoverContent) {
+                                popoverContent.innerHTML = stationPopup;
+                                popoverContainer.style.display = 'block';
+                                popoverContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        });
 
                         this.detailMapMarkers.push(stationMarker);
                     }
@@ -10240,11 +10235,6 @@ class MobileApp {
                     // Update stored train data - replace entire train object
                     this.currentDetailTrain = latestTrain;
 
-                    // Store popup state before rebuilding
-                    const wasPopupOpen = this.currentDetailTrainMarker &&
-                                        this.currentDetailTrainMarker.isPopupOpen &&
-                                        this.currentDetailTrainMarker.isPopupOpen();
-
                     // Remove old marker
                     if (this.currentDetailTrainMarker && this.detailMap.hasLayer(this.currentDetailTrainMarker)) {
                         this.detailMap.removeLayer(this.currentDetailTrainMarker);
@@ -10312,13 +10302,15 @@ class MobileApp {
 
                     // Create new marker
                     const newMarker = L.marker([latestTrain.Latitude, latestTrain.Longitude], { icon: trainIcon })
-                        .bindPopup(popupContent)
                         .addTo(this.detailMap);
 
-                    // Restore popup state
-                    if (wasPopupOpen) {
-                        newMarker.openPopup();
-                    }
+                    // Update below-map popover with latest train details
+                    this.updateBelowMapPopover(popupContent);
+
+                    // Add click handler to show Leaflet popup on the marker
+                    newMarker.on('click', () => {
+                        newMarker.bindPopup(popupContent).openPopup();
+                    });
 
                     // Update references
                     this.currentDetailTrainMarker = newMarker;
@@ -10438,7 +10430,7 @@ class MobileApp {
                          directionKey === 'DOWN' ? t('stations.downTrains').replace(' ٹرینیں', '') : 
                          directionKey;
         
-        // Get the correct train ID for the View Details button
+        // Get the correct train ID for the View Details button (MUST use InnerKey - the unique identifier)
         const trainId = train.InnerKey || train.TrainId || train.TrainNumber;
         
         // Only show "Current:" label if train has reached the station
@@ -10455,12 +10447,13 @@ class MobileApp {
                 ${currentLabel}
                 <p style="margin: 5px 0;">${t('train.nextStation')}: ${nextStation}</p>
                 <p style="margin: 5px 0;">${t('train.eta')}: ${etaTime}</p>
-                ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">${t('train.trainDetails')}</button>` : ''}
+                <!-- Train Details button hidden - map on detail screen not loading properly -->
+                <!-- ${isSelected ? `<button onclick="mobileApp.openTrainDetails('${trainId}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">${t('train.trainDetails')}</button>` : ''} -->
             </div>
         `;
         
         marker.bindPopup(popupContent);
-        
+
         if (isSelected) {
             marker.openPopup();
         }
@@ -10536,7 +10529,7 @@ class MobileApp {
     }
 
     clearMapMarkers() {
-        this.trainMarkers.forEach(marker => {
+        this.trainMarkers.forEach((marker, idx) => {
             if (this.map) this.map.removeLayer(marker);
         });
         this.trainMarkers = [];

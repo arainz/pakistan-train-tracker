@@ -393,20 +393,26 @@
                         </div>
                     </div>
 
-                    <!-- Train Detail Map - Leaflet Map Container -->
-                    <div class="train-detail-map-section">
-                        <h3 data-i18n="map.liveMap">Live Position Map</h3>
-                        <div id="trainDetailMapContainer" style="height: 350px; width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
-                            <div id="trainDetailMap" style="height: 100%; width: 100%;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Journey Map -->
+                    <!-- Journey Map (Horizontal Progress Bar) -->
                     <div class="journey-map">
                         <div class="route-progress" id="routeProgress">
                             <div class="route-stations" id="routeStations">
                                 <!-- Stations and route line will be populated dynamically -->
                                 <div class="loading" data-i18n="common.loadingRouteStations">Loading route stations...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Train Detail Map - Leaflet Map Container (Moved Below Progress) -->
+                    <div class="train-detail-map-section">
+                        <h3 data-i18n="map.liveMap">Live Position Map</h3>
+                        <div id="trainDetailMapContainer" style="height: 350px; width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                            <div id="trainDetailMap" style="height: 100%; width: 100%;"></div>
+                        </div>
+                        <!-- Popover Content Container (Always visible) -->
+                        <div id="mapPopoverContainer" style="background: rgba(255,255,255,0.95); border-radius: 8px; padding: 12px; margin-top: 12px; margin-bottom: 20px; border-left: 4px solid #4CAF50;">
+                            <div id="mapPopoverContent" style="min-height: 80px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 14px;">
+                                👆 Click on train or station marker to view details
                             </div>
                         </div>
                     </div>
