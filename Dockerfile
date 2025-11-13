@@ -28,4 +28,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Start the application
-CMD ["node", "production-server.js"]
+CMD ["node", "server.js"]
