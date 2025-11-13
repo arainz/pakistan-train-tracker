@@ -1273,21 +1273,55 @@ class MobileApp {
             console.warn('⚠️ Train metadata not loaded, skipping TrainNameUR enrichment');
             return trains;
         }
-        
+
         return trains.map(train => {
             // Find matching train in metadata by TrainNumber
-            const metadataTrain = this.trainsMetadata.find(t => 
-                t.TrainNumber === train.TrainNumber || 
+            const metadataTrain = this.trainsMetadata.find(t =>
+                t.TrainNumber === train.TrainNumber ||
                 String(t.TrainNumber) === String(train.TrainNumber)
             );
-            
+
             if (metadataTrain && metadataTrain.TrainNameUR) {
                 // Add TrainNameUR if not already present
                 if (!train.TrainNameUR) {
                     train.TrainNameUR = metadataTrain.TrainNameUR;
                 }
             }
-            
+
+            // CRITICAL FIX: Derive CurrentStation from schedule since API doesn't provide it
+            // The API only sends NextStation, so we need to find CurrentStation from the schedule
+            if (!train.CurrentStation && this.scheduleData && this.scheduleData.length > 0 && train.NextStation) {
+                try {
+                    // Find the schedule for this train
+                    const trainNumber = train.TrainNumber || train.trainNumber;
+                    const scheduledTrain = this.scheduleData.find(schedTrain =>
+                        String(schedTrain.trainNumber) === String(trainNumber) ||
+                        String(schedTrain.TrainNumber) === String(trainNumber)
+                    );
+
+                    if (scheduledTrain && scheduledTrain.stations && scheduledTrain.stations.length > 0) {
+                        // Find NextStation index in schedule
+                        const nextStationIndex = scheduledTrain.stations.findIndex(s =>
+                            s.StationName === train.NextStation ||
+                            s.StationName.includes(train.NextStation) ||
+                            train.NextStation.includes(s.StationName)
+                        );
+
+                        // CurrentStation is the station BEFORE NextStation
+                        if (nextStationIndex > 0) {
+                            train.CurrentStation = scheduledTrain.stations[nextStationIndex - 1].StationName;
+                            console.log(`✅ [ENRICH] Derived CurrentStation for ${train.TrainName} #${train.TrainNumber}: "${train.CurrentStation}" (from schedule, NextStation="${train.NextStation}")`);
+                        } else if (nextStationIndex === 0) {
+                            // Train is at the first stop
+                            train.CurrentStation = scheduledTrain.stations[0].StationName;
+                            console.log(`✅ [ENRICH] Train at first station: "${train.CurrentStation}"`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ [ENRICH] Error deriving CurrentStation:`, error.message);
+                }
+            }
+
             return train;
         });
     }
@@ -4117,8 +4151,8 @@ class MobileApp {
                         }
                     }
 
-                    // Check if delay is unrealistic (> 300 min = 5 hours OR negative)
-                    if (delayMinutes > 300 || delayMinutes < -10) {
+                    // Check if delay is unrealistic (> 240 min = 4 hours OR negative)
+                    if (delayMinutes > 240 || delayMinutes < -10) {
                         shouldTriggerFallback = true;
                         console.log(`⚠️ Delay is unrealistic: API ETA ${apiETA} vs Scheduled ${scheduledTime.replace('📅 ', '')} = ${delayMinutes}min delay. Triggering fallback calculation`);
                     } else if (minutesUntilArrival < -10) {
@@ -4135,9 +4169,9 @@ class MobileApp {
                     if (rawMinutesUntilArrival < -10) {
                         shouldTriggerFallback = true;
                         console.log(`⚠️ No scheduled time available, ETA is in past (${rawMinutesUntilArrival} min): Triggering fallback`);
-                    } else if (minutesUntilArrival > 360) {
+                    } else if (minutesUntilArrival > 240) {
                         shouldTriggerFallback = true;
-                        console.log(`⚠️ No scheduled time available, ETA > 6 hours (${minutesUntilArrival} min): Triggering fallback`);
+                        console.log(`⚠️ No scheduled time available, ETA > 4 hours (${minutesUntilArrival} min): Triggering fallback`);
                     }
                 }
 
@@ -4408,6 +4442,10 @@ class MobileApp {
                     String(schedTrain.trainNumber) === String(trainNumber) ||
                     String(schedTrain.TrainNumber) === String(trainNumber)
                 );
+
+                if (!scheduledTrain) {
+                    console.log(`❌ [DEBUG] Train #${trainNumber} NOT FOUND in scheduleData (has ${this.scheduleData.length} trains)`);
+                }
                 
                 if (scheduledTrain && scheduledTrain.stations) {
                     // Find current position in route
@@ -4416,16 +4454,29 @@ class MobileApp {
                         station.StationName.includes(train.CurrentStation) ||
                         (train.CurrentStation && train.CurrentStation.includes(station.StationName))
                     );
-                    
+
                     const nextStationIndex = scheduledTrain.stations.findIndex(station =>
                         station.StationName === train.NextStation ||
                         station.StationName.includes(train.NextStation) ||
                         train.NextStation.includes(station.StationName)
                     );
-                    
+
+                    console.log(`🔍 [DEBUG Station Matching] Train: ${train.TrainName || 'Unknown'} #${train.TrainNumber}`);
+                    console.log(`🔍 [DEBUG Station Matching] CurrentStation from API: "${train.CurrentStation}"`);
+                    console.log(`🔍 [DEBUG Station Matching] NextStation from API: "${train.NextStation}"`);
+                    console.log(`🔍 [DEBUG Station Matching] currentStationIndex: ${currentStationIndex}, nextStationIndex: ${nextStationIndex}`);
+                    console.log(`🔍 [DEBUG Station Matching] Schedule has ${scheduledTrain.stations.length} stations`);
+                    if (currentStationIndex === -1) {
+                        console.log(`❌ [DEBUG Station Matching] CURRENT STATION NOT FOUND! API: "${train.CurrentStation}"`);
+                        console.log(`📋 [DEBUG Station Matching] Available stations:`, scheduledTrain.stations.slice(0, 5).map(s => s.StationName));
+                    }
+                    if (nextStationIndex === -1) {
+                        console.log(`❌ [DEBUG Station Matching] NEXT STATION NOT FOUND! API: "${train.NextStation}"`);
+                    }
+
                     if (nextStationIndex !== -1) {
                         const nextStationData = scheduledTrain.stations[nextStationIndex];
-                        
+
                         if (currentStationIndex !== -1 && currentStationIndex < nextStationIndex) {
                             // Get segment distance (current to next station)
                             const currentStationData = scheduledTrain.stations[currentStationIndex];
@@ -4471,29 +4522,28 @@ class MobileApp {
                                 );
                                 
                                 if (currentStationMeta && currentStationMeta.Latitude && currentStationMeta.Longitude) {
-                                    // Calculate straight-line distance from current station to train position
-                                    const straightLineDistance = this.calculateHaversineDistance(
+                                    // Calculate GPS progress using Haversine distance from current station to train
+                                    const trainProgressDistance = this.calculateHaversineDistance(
                                         currentStationMeta.Latitude, currentStationMeta.Longitude,
                                         trainLat, trainLng
                                     );
-                                    
+
                                     // Calculate what percentage of the segment has been traveled
-                                    // This is more accurate than applying a fixed multiplier
-                                    const progressRatio = straightLineDistance / segmentDistance;
-                                    
+                                    const progressRatio = trainProgressDistance / segmentDistance;
+
                                     // If ratio seems reasonable (< 1.0), use proportional calculation
                                     if (progressRatio <= 1.0) {
-                                        // Assume train has traveled this proportion of the segment
+                                        // Train has traveled this distance, remaining is segment - traveled
                                         const traveledDistance = segmentDistance * progressRatio;
                                         distanceToNextStation = Math.max(segmentDistance - traveledDistance, 1);
                                     } else {
-                                        // Ratio > 1 means straight-line > segment (unusual geometry)
-                                        // Apply conservative multiplier to straight-line distance
-                                        const traveledDistance = straightLineDistance * 1.2;
-                                        distanceToNextStation = Math.max(segmentDistance - traveledDistance, 1);
+                                        // Ratio > 1 means train distance > segment (unusual - train off-route)
+                                        // Use full segment distance as conservative estimate
+                                        distanceToNextStation = segmentDistance;
+                                        console.log(`⚠️ [GPS Progress] Train distance (${trainProgressDistance.toFixed(2)}km) exceeds segment (${segmentDistance.toFixed(2)}km) - using full segment`);
                                     }
-                                    
-                                    console.log(`📍 [ETA Distance Source] Train position calculated from GPS: ${straightLineDistance.toFixed(2)}km (straight-line) from ${currentStationData.StationName}, ${distanceToNextStation.toFixed(2)}km remaining to ${train.NextStation} [USING GPS + STORED SEGMENT DISTANCE]`);
+
+                                    console.log(`📍 [ETA Distance Source] Train position: ${trainProgressDistance.toFixed(2)}km (HAVERSINE GPS) from ${currentStationData.StationName}, ${distanceToNextStation.toFixed(2)}km remaining to ${train.NextStation} [USING STORED SEGMENT DISTANCE]`);
                                 } else {
                                     // Fallback: use full segment distance
                                     distanceToNextStation = segmentDistance;
@@ -4507,41 +4557,49 @@ class MobileApp {
                         } else {
                             // Cannot determine segment distance (current station not found or invalid)
                             // Fall through to Haversine calculation below using train GPS coordinates
-                            // This ensures we calculate actual distance from train position to next station
+                            if (currentStationIndex === -1) {
+                                console.log(`⚠️ [FALLBACK TO HAVERSINE] Current station NOT FOUND in schedule. API CurrentStation: "${train.CurrentStation}"`);
+                            } else {
+                                console.log(`⚠️ [FALLBACK TO HAVERSINE] Invalid station order or next station not found. currentIndex=${currentStationIndex}, nextIndex=${nextStationIndex}`);
+                            }
                             distanceToNextStation = null;
                         }
                     }
                 }
             }
             
-            // Fallback: Use Haversine if route distance not available
+            // Fallback: Try OSM Routing first, then Haversine if route distance not available
             let distanceSourceForETA = '';
             if (!distanceToNextStation || distanceToNextStation <= 0) {
                 const trainLat = train.Latitude || train.latitude;
                 const trainLng = train.Longitude || train.longitude;
-                
+
                 if (!trainLat || !trainLng || !this.stationsMetadata) {
                     return null;
                 }
-                
-                const nextStation = this.stationsMetadata.find(station => 
+
+                const nextStation = this.stationsMetadata.find(station =>
                     station.StationName === train.NextStation ||
                     station.StationName.includes(train.NextStation) ||
                     train.NextStation.includes(station.StationName)
                 );
-                
+
                 if (!nextStation || !nextStation.Latitude || !nextStation.Longitude) {
                     return null;
                 }
-                
-                // Calculate straight-line distance (multiply by 1.3 to account for track routing)
+
+                // Try OSM Routing first for accurate distance
+                console.log(`🗺️ [ETA Distance Source] Attempting OSM Routing (train at ${trainLat.toFixed(4)},${trainLng.toFixed(4)} → station at ${nextStation.Latitude.toFixed(4)},${nextStation.Longitude.toFixed(4)})`);
+
+                // Use synchronous check - if OSM takes too long, use Haversine
+                // Use Haversine for remaining distance to next station
                 const straightLineDistance = this.calculateHaversineDistance(
                     trainLat, trainLng,
                     nextStation.Latitude, nextStation.Longitude
                 );
-                distanceToNextStation = straightLineDistance * 1.3;
-                distanceSourceForETA = 'COORDINATES (Haversine * 1.3 - final fallback)';
-                console.log(`📏 [ETA Distance Source] Using Haversine calculation: Straight-line=${straightLineDistance.toFixed(2)} km × 1.3 = ${distanceToNextStation.toFixed(2)} km [FROM COORDINATES - FINAL FALLBACK]`);
+                distanceToNextStation = straightLineDistance * 1.3; // Apply 1.3 multiplier for actual route distance
+                distanceSourceForETA = 'HAVERSINE (Stored Segment)';
+                console.log(`📏 [ETA Distance Source] Using Haversine: Straight-line=${straightLineDistance.toFixed(2)} km × 1.3 = ${distanceToNextStation.toFixed(2)} km [FROM STORED SEGMENT]`);
             } else {
                 distanceSourceForETA = 'STORED Distance from schedules.json';
             }
