@@ -2954,7 +2954,7 @@ class MobileApp {
 
         // Also populate vertical route stations
         this.populateVerticalRouteStations(stations, train);
-        
+
         console.log(`📍 populateRouteStations() finished - progress bar at 0%, will be updated by startDetailAutoRefresh() or updateRouteStationsProgress()`);
         
         // Scroll to current station
@@ -9557,7 +9557,7 @@ class MobileApp {
             
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
+                attribution: false
             }).addTo(this.map);
             
             console.log('🗺️ Map initialized successfully');
@@ -9957,7 +9957,7 @@ class MobileApp {
                 this.detailMap = L.map('trainDetailMap').setView([30.3753, 69.3451], 6);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
+                    attribution: false,
                     maxZoom: 19
                 }).addTo(this.detailMap);
 
@@ -10467,7 +10467,7 @@ class MobileApp {
         try {
             const response = await fetch(`${API_CONFIG.getBaseURL()}/api/train/${train.TrainNumber}`);
             const data = await response.json();
-            
+
             if (data.success && data.data && data.data.schedule) {
                 this.displayTrainRoute(data.data.schedule);
             }
@@ -10475,19 +10475,54 @@ class MobileApp {
             console.error('❌ Error loading train route:', error);
         }
     }
+
+    // Generate smooth Bezier curve points between two coordinates
+    generateBezierCurve(point1, point2, controlPointOffset = 0.1) {
+        const [lat1, lng1] = point1;
+        const [lat2, lng2] = point2;
+
+        // Calculate control point for smooth curve
+        const midLat = (lat1 + lat2) / 2;
+        const midLng = (lng1 + lng2) / 2;
+
+        // Offset control point perpendicular to the line
+        const latDiff = lat2 - lat1;
+        const lngDiff = lng2 - lng1;
+
+        // Create control point offset
+        const controlLat = midLat - lngDiff * controlPointOffset;
+        const controlLng = midLng + latDiff * controlPointOffset;
+
+        // Generate points along the Bezier curve
+        const curvePoints = [];
+        const steps = 15; // Number of segments in the curve
+
+        for (let t = 0; t <= steps; t++) {
+            const u = t / steps;
+            const u1 = 1 - u;
+
+            // Quadratic Bezier formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+            const lat = u1 * u1 * lat1 + 2 * u1 * u * controlLat + u * u * lat2;
+            const lng = u1 * u1 * lng1 + 2 * u1 * u * controlLng + u * u * lng2;
+
+            curvePoints.push([lat, lng]);
+        }
+
+        return curvePoints;
+    }
+
     displayTrainRoute(stations) {
         if (!this.map || !stations || stations.length === 0) return;
 
         // Clear existing route lines
         this.clearRouteLines();
 
-        const coordinates = [];
         const stationMarkers = [];
+        let smoothedCoordinates = [];
 
+        // Add station markers and create smooth route
         stations.forEach((station, index) => {
             if (station.Latitude && station.Longitude) {
-                coordinates.push([station.Latitude, station.Longitude]);
-                
                 // Add station marker
                 const stationMarker = L.circleMarker([station.Latitude, station.Longitude], {
                     radius: 6,
@@ -10497,27 +10532,44 @@ class MobileApp {
                     opacity: 1,
                     fillOpacity: 0.8
                 }).addTo(this.map);
-                
+
                 stationMarker.bindPopup(`
                     <strong>${station.StationName}</strong><br>
                     Arrival: ${station.ArrivalTime || '--:--'}<br>
                     Departure: ${station.DepartureTime || '--:--'}
                 `);
-                
+
                 stationMarkers.push(stationMarker);
+
+                // Generate smooth curve to next station
+                if (index < stations.length - 1) {
+                    const nextStation = stations[index + 1];
+                    if (nextStation.Latitude && nextStation.Longitude) {
+                        const curveSegment = this.generateBezierCurve(
+                            [station.Latitude, station.Longitude],
+                            [nextStation.Latitude, nextStation.Longitude],
+                            0.08
+                        );
+                        // Add all points except the last one (to avoid duplication with next segment)
+                        smoothedCoordinates = smoothedCoordinates.concat(curveSegment.slice(0, -1));
+                    }
+                } else {
+                    // Add last station point
+                    smoothedCoordinates.push([station.Latitude, station.Longitude]);
+                }
             }
         });
 
-        // Draw route line
-        if (coordinates.length > 1) {
-            const routeLine = L.polyline(coordinates, {
+        // Draw smooth route line on top
+        if (smoothedCoordinates.length > 1) {
+            const routeLine = L.polyline(smoothedCoordinates, {
                 color: '#8B4513',
                 weight: 6,
                 opacity: 0.8
             }).addTo(this.map);
 
-            // Add track rails
-            const trackRails = L.polyline(coordinates, {
+            // Add track rails with dashed pattern
+            const trackRails = L.polyline(smoothedCoordinates, {
                 color: '#C0C0C0',
                 weight: 2,
                 opacity: 1,
@@ -10541,6 +10593,7 @@ class MobileApp {
         });
         this.routeLines = [];
     }
+
 
     showTrainSelectionPanel() {
         const panel = document.getElementById('trainSelectionPanel');
