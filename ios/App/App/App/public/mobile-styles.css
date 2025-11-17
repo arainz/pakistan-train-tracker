@@ -8332,3 +8332,12 @@ body.dark-mode .refresh-text {
 .train-marker {
     border: none !important;
 }
+
+/* Hide Leaflet attribution */
+.leaflet-control-attribution {
+    display: none !important;
+}
+
+.leaflet-container .leaflet-control-attribution {
+    display: none !important;
+}
