@@ -1288,37 +1288,48 @@ class MobileApp {
                 }
             }
 
-            // CRITICAL FIX: Derive CurrentStation from schedule since API doesn't provide it
-            // The API only sends NextStation, so we need to find CurrentStation from the schedule
-            if (!train.CurrentStation && this.scheduleData && this.scheduleData.length > 0 && train.NextStation) {
+            // CRITICAL FIX: Set CurrentStation using API-provided PrevStationId (most reliable)
+            // Fallback to deriving from schedule if PrevStationId not available
+            if (!train.CurrentStation) {
                 try {
-                    // Find the schedule for this train
-                    const trainNumber = train.TrainNumber || train.trainNumber;
-                    const scheduledTrain = this.scheduleData.find(schedTrain =>
-                        String(schedTrain.trainNumber) === String(trainNumber) ||
-                        String(schedTrain.TrainNumber) === String(trainNumber)
-                    );
+                    // Method 1: Use PrevStationId from API (MOST RELIABLE - NEW)
+                    if (train.PrevStationId && this.stationIdMap) {
+                        const prevStationName = this.getStationNameById(train.PrevStationId);
+                        if (prevStationName) {
+                            train.CurrentStation = prevStationName;
+                            console.log(`✅ [ENRICH] Set CurrentStation for ${train.TrainName} #${train.TrainNumber}: "${train.CurrentStation}" (from API PrevStationId="${train.PrevStationId}")`);
+                        }
+                    }
 
-                    if (scheduledTrain && scheduledTrain.stations && scheduledTrain.stations.length > 0) {
-                        // Find NextStation index in schedule
-                        const nextStationIndex = scheduledTrain.stations.findIndex(s =>
-                            s.StationName === train.NextStation ||
-                            s.StationName.includes(train.NextStation) ||
-                            train.NextStation.includes(s.StationName)
+                    // Method 2: Fallback to deriving from schedule using NextStation (OLD METHOD)
+                    if (!train.CurrentStation && this.scheduleData && this.scheduleData.length > 0 && train.NextStation) {
+                        const trainNumber = train.TrainNumber || train.trainNumber;
+                        const scheduledTrain = this.scheduleData.find(schedTrain =>
+                            String(schedTrain.trainNumber) === String(trainNumber) ||
+                            String(schedTrain.TrainNumber) === String(trainNumber)
                         );
 
-                        // CurrentStation is the station BEFORE NextStation
-                        if (nextStationIndex > 0) {
-                            train.CurrentStation = scheduledTrain.stations[nextStationIndex - 1].StationName;
-                            console.log(`✅ [ENRICH] Derived CurrentStation for ${train.TrainName} #${train.TrainNumber}: "${train.CurrentStation}" (from schedule, NextStation="${train.NextStation}")`);
-                        } else if (nextStationIndex === 0) {
-                            // Train is at the first stop
-                            train.CurrentStation = scheduledTrain.stations[0].StationName;
-                            console.log(`✅ [ENRICH] Train at first station: "${train.CurrentStation}"`);
+                        if (scheduledTrain && scheduledTrain.stations && scheduledTrain.stations.length > 0) {
+                            // Find NextStation index in schedule
+                            const nextStationIndex = scheduledTrain.stations.findIndex(s =>
+                                s.StationName === train.NextStation ||
+                                s.StationName.includes(train.NextStation) ||
+                                train.NextStation.includes(s.StationName)
+                            );
+
+                            // CurrentStation is the station BEFORE NextStation
+                            if (nextStationIndex > 0) {
+                                train.CurrentStation = scheduledTrain.stations[nextStationIndex - 1].StationName;
+                                console.log(`✅ [ENRICH] Derived CurrentStation for ${train.TrainName} #${train.TrainNumber}: "${train.CurrentStation}" (from schedule, NextStation="${train.NextStation}")`);
+                            } else if (nextStationIndex === 0) {
+                                // Train is at the first stop
+                                train.CurrentStation = scheduledTrain.stations[0].StationName;
+                                console.log(`✅ [ENRICH] Train at first station: "${train.CurrentStation}"`);
+                            }
                         }
                     }
                 } catch (error) {
-                    console.warn(`⚠️ [ENRICH] Error deriving CurrentStation:`, error.message);
+                    console.warn(`⚠️ [ENRICH] Error setting CurrentStation:`, error.message);
                 }
             }
 
@@ -4476,15 +4487,35 @@ class MobileApp {
     calculateETAFromCoordinates(train) {
         try {
             const speed = train.Speed || train.SpeedKmph || 0;
-            
+
             if (speed === 0 || !train.NextStation) {
                 return null;
             }
-            
-            // Try to get route distance from schedule data (most accurate)
+
+            // NEW OPTIMIZATION: Try to get distance using API StationIds (MOST DIRECT & ACCURATE)
             let distanceToNextStation = null;
-            
-            if (this.scheduleData && this.scheduleData.length > 0) {
+            let distanceSource = '';
+
+            if (train.PrevStationId && train.NextStationId && this.scheduleData && this.scheduleData.length > 0) {
+                const trainNumber = train.TrainNumber || train.trainNumber;
+                const distanceByIds = this.getDistanceBetweenStationsInRoute(
+                    trainNumber,
+                    train.PrevStationId,
+                    train.NextStationId
+                );
+
+                if (distanceByIds && distanceByIds > 0) {
+                    // We have exact distance from schedule using IDs
+                    distanceToNextStation = distanceByIds;
+                    distanceSource = 'STORED Distance (via StationIds)';
+                    console.log(`✅ [ETA OPTIMIZATION] Using StationId-based distance: PrevStationId=${train.PrevStationId}, NextStationId=${train.NextStationId}, Distance=${distanceToNextStation}km`);
+                } else {
+                    console.log(`⚠️ [ETA OPTIMIZATION] StationId lookup failed (distance=${distanceByIds}), falling back to name-based lookup`);
+                }
+            }
+
+            // Try to get route distance from schedule data (most accurate) - FALLBACK METHOD
+            if (!distanceToNextStation && this.scheduleData && this.scheduleData.length > 0) {
                 const trainNumber = train.TrainNumber || train.trainNumber;
                 const scheduledTrain = this.scheduleData.find(schedTrain =>
                     String(schedTrain.trainNumber) === String(trainNumber) ||
@@ -4667,7 +4698,7 @@ class MobileApp {
             }
             
             // Fallback: Try OSM Routing first, then Haversine if route distance not available
-            let distanceSourceForETA = '';
+            let distanceSourceForETA = distanceSource || '';
             if (!distanceToNextStation || distanceToNextStation <= 0) {
                 const trainLat = train.Latitude || train.latitude;
                 const trainLng = train.Longitude || train.longitude;
@@ -4698,7 +4729,7 @@ class MobileApp {
                 distanceToNextStation = straightLineDistance * 1.3; // Apply 1.3 multiplier for actual route distance
                 distanceSourceForETA = 'HAVERSINE (Stored Segment)';
                 console.log(`📏 [ETA Distance Source] Using Haversine: Straight-line=${straightLineDistance.toFixed(2)} km × 1.3 = ${distanceToNextStation.toFixed(2)} km [FROM STORED SEGMENT]`);
-            } else {
+            } else if (!distanceSourceForETA) {
                 distanceSourceForETA = 'STORED Distance from schedules.json';
             }
             
@@ -4806,6 +4837,125 @@ class MobileApp {
     // Convert degrees to radians
     toRadians(degrees) {
         return degrees * (Math.PI / 180);
+    }
+
+    // Build a cached map of StationId → Station data for fast lookups
+    // This is called after schedule data is loaded
+    buildStationIdMap() {
+        try {
+            this.stationIdMap = {};
+
+            if (!this.scheduleData || !this.stationsMetadata) {
+                console.warn('⚠️ [STATION ID MAP] Cannot build map - missing schedule or metadata');
+                return;
+            }
+
+            // First, add all stations from stationsMetadata (for quick lookup by StationDetailsId)
+            this.stationsMetadata.forEach(station => {
+                this.stationIdMap[station.StationDetailsId] = {
+                    stationId: station.StationDetailsId,
+                    name: station.StationName,
+                    latitude: station.Latitude,
+                    longitude: station.Longitude,
+                    source: 'metadata'
+                };
+            });
+
+            // Then, enhance with schedule data (adds distance and timing info)
+            this.scheduleData.forEach(train => {
+                if (train.stations && Array.isArray(train.stations)) {
+                    train.stations.forEach(station => {
+                        if (!this.stationIdMap[station.StationId]) {
+                            this.stationIdMap[station.StationId] = {
+                                stationId: station.StationId,
+                                name: station.StationName,
+                                latitude: station.Latitude,
+                                longitude: station.Longitude,
+                                source: 'schedule'
+                            };
+                        }
+                        // Enhance with schedule-specific info
+                        this.stationIdMap[station.StationId].distance = station.Distance;
+                        this.stationIdMap[station.StationId].arrivalTime = station.ArrivalTime;
+                        this.stationIdMap[station.StationId].departureTime = station.DepartureTime;
+                    });
+                }
+            });
+
+            console.log(`✅ [STATION ID MAP] Built map with ${Object.keys(this.stationIdMap).length} unique stations`);
+        } catch (error) {
+            console.error('❌ [STATION ID MAP] Error building station ID map:', error);
+            this.stationIdMap = {};
+        }
+    }
+
+    // Get station information by StationId (fast O(1) lookup)
+    getStationById(stationId) {
+        if (!stationId || !this.stationIdMap) {
+            return null;
+        }
+        return this.stationIdMap[stationId] || null;
+    }
+
+    // Get station name by StationId
+    getStationNameById(stationId) {
+        const station = this.getStationById(stationId);
+        return station ? station.name : null;
+    }
+
+    // Get distance between two stations in a specific train's route
+    getDistanceBetweenStationsInRoute(trainNumber, prevStationId, nextStationId) {
+        try {
+            if (!trainNumber || !prevStationId || !nextStationId) {
+                return null;
+            }
+
+            // Find the train in schedule data
+            const scheduledTrain = this.scheduleData.find(t =>
+                String(t.trainNumber) === String(trainNumber) ||
+                String(t.TrainNumber) === String(trainNumber) ||
+                String(t.trainId) === String(trainNumber) ||
+                String(t.TrainId) === String(trainNumber)
+            );
+
+            if (!scheduledTrain || !scheduledTrain.stations) {
+                return null;
+            }
+
+            // Find both stations in the route
+            const prevStation = scheduledTrain.stations.find(s =>
+                String(s.StationId) === String(prevStationId)
+            );
+
+            const nextStation = scheduledTrain.stations.find(s =>
+                String(s.StationId) === String(nextStationId)
+            );
+
+            if (prevStation && nextStation && prevStation.Distance !== undefined && nextStation.Distance !== undefined) {
+                const segmentDistance = nextStation.Distance - prevStation.Distance;
+                console.log(`📏 [DISTANCE BY ID] Train #${trainNumber}: ${prevStation.StationName} (${prevStationId}, ${prevStation.Distance}km) → ${nextStation.StationName} (${nextStationId}, ${nextStation.Distance}km) = ${segmentDistance}km`);
+                return segmentDistance;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('❌ [DISTANCE BY ID] Error calculating distance:', error);
+            return null;
+        }
+    }
+
+    // Get current and next station names using API IDs (NEW - more reliable)
+    getStationsByApiIds(prevStationId, nextStationId) {
+        const prevStation = this.getStationById(prevStationId);
+        const nextStation = this.getStationById(nextStationId);
+
+        return {
+            currentStationName: prevStation ? prevStation.name : null,
+            nextStationName: nextStation ? nextStation.name : null,
+            prevStationId: prevStationId,
+            nextStationId: nextStationId,
+            isValid: !!(prevStation && nextStation)
+        };
     }
 
     // Calculate ETA from schedule when coordinate-based calculation fails
@@ -5526,9 +5676,12 @@ class MobileApp {
             // Store metadata for other uses
             this.trainsMetadata = trains;
             this.stationsMetadata = stations;
-            
+
+            // Build station ID map for fast lookups
+            this.buildStationIdMap();
+
             console.log(`✅ Loaded ${this.scheduleData.length} train schedules from hybrid source`);
-            
+
             // Populate UI
             this.populateScheduledTrains(this.scheduleData);
                 
