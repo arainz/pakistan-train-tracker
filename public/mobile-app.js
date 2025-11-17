@@ -2553,10 +2553,12 @@ class MobileApp {
             this.updateRouteStationsProgress(train);
         }, 100);
 
-        // Initialize detail map for train info panel
-        setTimeout(() => {
-            this.initializeTrainDetailMap(train);
-        }, 600);
+        // Initialize detail map for train info panel - wait for next frame to ensure screen is visible and laid out
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.initializeTrainDetailMap(train);
+            });
+        });
 
         // Add click interactivity to metric cards - DISABLED: Popups removed per user request
         // this.addMetricCardInteractivity(train);
@@ -10197,7 +10199,6 @@ class MobileApp {
             return;
         }
 
-
         // Initialize detail map if not exists
         if (!this.detailMap) {
             try {
@@ -10338,6 +10339,12 @@ class MobileApp {
             trainMarker.on('click', () => {
                 trainMarker.bindPopup(popupContent).openPopup();
             });
+
+            // NOW zoom map to train position after marker is added
+            if (this.detailMap && train.Latitude && train.Longitude) {
+                this.detailMap.invalidateSize(true);
+                this.detailMap.setView([train.Latitude, train.Longitude], 11);
+            }
         }
 
         // NOW load train route in background (doesn't block marker from appearing)
@@ -10361,7 +10368,7 @@ class MobileApp {
 
                         // Add station marker - matching map screen style
                         const stationMarker = L.circleMarker([station.Latitude, station.Longitude], {
-                            radius: 6,
+                            radius: 8,
                             fillColor: '#667eea',
                             color: '#fff',
                             weight: 2,

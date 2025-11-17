@@ -2553,10 +2553,12 @@ class MobileApp {
             this.updateRouteStationsProgress(train);
         }, 100);
 
-        // Initialize detail map for train info panel
-        setTimeout(() => {
-            this.initializeTrainDetailMap(train);
-        }, 600);
+        // Initialize detail map for train info panel - wait for next frame to ensure screen is visible and laid out
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.initializeTrainDetailMap(train);
+            });
+        });
 
         // Add click interactivity to metric cards - DISABLED: Popups removed per user request
         // this.addMetricCardInteractivity(train);
@@ -10197,6 +10199,15 @@ class MobileApp {
             return;
         }
 
+        const containerParent = mapContainer.parentElement;
+        const screenElement = document.getElementById('liveTrainDetail');
+        const isScreenVisible = screenElement && !screenElement.classList.contains('hidden');
+
+        console.log(`🗺️ [INIT MAP] Train: ${train.TrainName}, Lat: ${train.Latitude}, Lng: ${train.Longitude}`);
+        console.log(`🗺️ [INIT MAP] Container size: ${mapContainer.clientWidth}x${mapContainer.clientHeight}`);
+        console.log(`🗺️ [INIT MAP] Parent size: ${containerParent?.clientWidth}x${containerParent?.clientHeight}`);
+        console.log(`🗺️ [INIT MAP] Screen visible: ${isScreenVisible}`);
+        console.log(`🗺️ [INIT MAP] Offset parent: ${mapContainer.offsetParent !== null}`);
 
         // Initialize detail map if not exists
         if (!this.detailMap) {
@@ -10338,6 +10349,13 @@ class MobileApp {
             trainMarker.on('click', () => {
                 trainMarker.bindPopup(popupContent).openPopup();
             });
+
+            // NOW zoom map to train position after marker is added
+            if (this.detailMap && train.Latitude && train.Longitude) {
+                this.detailMap.invalidateSize(true);
+                this.detailMap.setView([train.Latitude, train.Longitude], 11);
+                console.log(`🎯 [ZOOM] Map zoomed to train position: (${train.Latitude}, ${train.Longitude}), zoom: 11`);
+            }
         }
 
         // NOW load train route in background (doesn't block marker from appearing)
@@ -10361,7 +10379,7 @@ class MobileApp {
 
                         // Add station marker - matching map screen style
                         const stationMarker = L.circleMarker([station.Latitude, station.Longitude], {
-                            radius: 6,
+                            radius: 8,
                             fillColor: '#667eea',
                             color: '#fff',
                             weight: 2,
