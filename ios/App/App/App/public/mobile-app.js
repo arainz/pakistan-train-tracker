@@ -4488,9 +4488,20 @@ class MobileApp {
     // Calculate ETA using route distance and train speed
     calculateETAFromCoordinates(train) {
         try {
+            // DEBUG START
+            const trainId = `${train.TrainName || 'Unknown'} #${train.TrainNumber}`;
+            console.log(`\n${'═'.repeat(80)}`);
+            console.log(`🚀 ETA CALCULATION START for ${trainId}`);
+            console.log(`${'═'.repeat(80)}`);
+            console.log(`🚂 Current Station: ${train.CurrentStation || 'N/A'}`);
+            console.log(`→ Next Station: ${train.NextStation}`);
+            console.log(`🔋 Raw Speed Values: train.Speed=${train.Speed}, train.SpeedKmph=${train.SpeedKmph}`);
+
             const speed = train.Speed || train.SpeedKmph || 0;
+            console.log(`⚡ Final Speed: ${speed} km/h`);
 
             if (speed === 0 || !train.NextStation) {
+                console.log(`❌ EARLY RETURN: Speed is 0 or no NextStation`);
                 return null;
             }
 
@@ -4511,6 +4522,73 @@ class MobileApp {
                     distanceToNextStation = distanceByIds;
                     distanceSource = 'STORED Distance (via StationIds)';
                     console.log(`✅ [ETA OPTIMIZATION] Using StationId-based distance: PrevStationId=${train.PrevStationId}, NextStationId=${train.NextStationId}, Distance=${distanceToNextStation}km`);
+
+                    // IMPORTANT: Apply GPS-based progress calculation even when using StationIds
+                    // This ensures we use remaining distance, not full segment distance
+                    console.log(`📍 [GPS PROGRESS CHECK] Starting GPS progress calculation...`);
+                    console.log(`   CurrentStation: ${train.CurrentStation || train.LastStation}`);
+                    console.log(`   NextStation: ${train.NextStation}`);
+                    console.log(`   Train GPS: (${train.Latitude}, ${train.Longitude})`);
+                    console.log(`   stationsMetadata available: ${!!this.stationsMetadata} (${this.stationsMetadata ? this.stationsMetadata.length : 0} stations)`);
+
+                    const trainLat = train.Latitude || train.latitude;
+                    const trainLng = train.Longitude || train.longitude;
+                    const currentStation = train.CurrentStation || train.LastStation;
+
+                    if (trainLat && trainLng && this.stationsMetadata && currentStation) {
+                        console.log(`✅ [GPS PROGRESS] All conditions met, finding current station metadata...`);
+
+                        // Find current station metadata to calculate GPS progress
+                        const currentStationMeta = this.stationsMetadata.find(s =>
+                            s.StationName === currentStation ||
+                            s.StationName.includes(currentStation) ||
+                            currentStation.includes(s.StationName)
+                        );
+
+                        console.log(`   Searched for station: "${currentStation}"`);
+                        console.log(`   Found metadata: ${!!currentStationMeta}`);
+
+                        if (currentStationMeta && currentStationMeta.Latitude && currentStationMeta.Longitude) {
+                            console.log(`✅ [GPS PROGRESS] Station metadata found: ${currentStationMeta.StationName} (${currentStationMeta.Latitude}, ${currentStationMeta.Longitude})`);
+
+                            // Calculate GPS progress from current station to train
+                            const trainProgressDistance = this.calculateHaversineDistance(
+                                currentStationMeta.Latitude, currentStationMeta.Longitude,
+                                trainLat, trainLng
+                            );
+
+                            console.log(`📏 [GPS PROGRESS] Train is ${trainProgressDistance.toFixed(2)}km from ${currentStation}`);
+                            console.log(`   Full segment distance: ${distanceToNextStation}km`);
+
+                            // Calculate what percentage of segment has been traveled
+                            const progressRatio = trainProgressDistance / distanceToNextStation;
+                            console.log(`   Progress ratio: ${progressRatio.toFixed(4)} (${(progressRatio * 100).toFixed(1)}%)`);
+
+                            // If ratio is reasonable (< 1.0), calculate remaining distance
+                            if (progressRatio < 1.0 && progressRatio > 0) {
+                                const remainingDistance = distanceToNextStation * (1 - progressRatio);
+                                distanceToNextStation = Math.max(remainingDistance, 1); // At least 1km
+                                console.log(`✅ [GPS PROGRESS APPLIED] Remaining distance: ${distanceToNextStation.toFixed(2)}km (was ${distanceByIds}km, reduced by ${(distanceByIds - distanceToNextStation).toFixed(2)}km)`);
+                                distanceSource = 'REMAINING Distance (GPS-adjusted from StationIds)';
+                            } else if (progressRatio >= 1.0) {
+                                // Train has passed current station or is at next station
+                                console.log(`⚠️ [GPS PROGRESS] Train distance (${trainProgressDistance.toFixed(2)}km) >= segment distance (${distanceToNextStation}km)`);
+                                console.log(`   → Train may be near or past next station, using 1km minimum`);
+                                distanceToNextStation = 1;
+                                distanceSource = 'MINIMUM Distance (train at destination)';
+                            }
+                        } else {
+                            console.log(`⚠️ [GPS PROGRESS] Station metadata not found for "${currentStation}"`);
+                            if (currentStationMeta) {
+                                console.log(`   Metadata exists but missing coordinates: Lat=${currentStationMeta.Latitude}, Lng=${currentStationMeta.Longitude}`);
+                            }
+                        }
+                    } else {
+                        console.log(`⚠️ [GPS PROGRESS] Conditions not met:`);
+                        console.log(`   trainLat: ${trainLat}, trainLng: ${trainLng}`);
+                        console.log(`   stationsMetadata: ${!!this.stationsMetadata}`);
+                        console.log(`   currentStation: ${currentStation}`);
+                    }
                 } else {
                     console.log(`⚠️ [ETA OPTIMIZATION] StationId lookup failed (distance=${distanceByIds}), falling back to name-based lookup`);
                 }
@@ -4734,22 +4812,44 @@ class MobileApp {
             } else if (!distanceSourceForETA) {
                 distanceSourceForETA = 'STORED Distance from schedules.json';
             }
-            
+
+            // DEBUG - FINAL DISTANCE CHECK
+            console.log(`\n✅ FINAL DISTANCE DETERMINED:`);
+            console.log(`   distanceToNextStation = ${distanceToNextStation} km`);
+            console.log(`   distanceSourceForETA = ${distanceSourceForETA}`);
+            console.log(`   speed = ${speed} km/h`);
+
             // Calculate time in hours, then convert to minutes
+            console.log(`\n⏱️ TIME CALCULATION:`);
             const timeInHours = distanceToNextStation / speed;
+            console.log(`   Distance ÷ Speed = ${distanceToNextStation} ÷ ${speed} = ${timeInHours.toFixed(4)} hours`);
             const timeInMinutes = Math.round(timeInHours * 60);
-            
+            console.log(`   ${timeInHours.toFixed(4)} × 60 = ${timeInMinutes} minutes`);
+
             // Calculate ETA by adding travel time to CURRENT time
             const now = new Date();
             const etaDate = new Date(now.getTime() + (timeInMinutes * 60 * 1000));
             const etaHours = etaDate.getHours();
             const etaMinutes = etaDate.getMinutes();
-            
+
             // Format as HH:MM
             const etaTime = `${String(etaHours).padStart(2, '0')}:${String(etaMinutes).padStart(2, '0')}`;
 
             const trainName = (typeof translator !== 'undefined' && translator) ? translator.getTrainName(train) : (train.TrainName || train.trainName || `Train ${train.TrainNumber}`);
-            console.log(`🎯 ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km [FROM ${distanceSourceForETA}] | Speed: ${speed}km/h | ETA: ${etaTime}`);
+
+            // DEBUG LOGGING - DETAILED ETA CALCULATION
+            console.log(`\n🎯====== FALLBACK ETA CALCULATION (calculateETAFromCoordinates) ======`);
+            console.log(`📍 Train: ${trainName} #${train.TrainNumber}`);
+            console.log(`→ Route: ${train.NextStation}`);
+            console.log(`📊 Distance: ${distanceToNextStation.toFixed(2)} km [${distanceSourceForETA}]`);
+            console.log(`⚡ Speed: ${speed} km/h`);
+            console.log(`⏱️ Calculation:`);
+            console.log(`   • Hours needed: ${distanceToNextStation.toFixed(2)} ÷ ${speed} = ${timeInHours.toFixed(2)} hours`);
+            console.log(`   • Minutes needed: ${timeInHours.toFixed(2)} × 60 = ${timeInMinutes} min (${Math.floor(timeInMinutes/60)}h ${timeInMinutes%60}m)`);
+            console.log(`🕐 Current time: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} (${this.getCurrentTimeInMinutes()} min from midnight)`);
+            console.log(`➕ Formula: Current time + ${timeInMinutes} min`);
+            console.log(`📅 Result ETA: ${etaTime} (${etaHours}:${String(etaMinutes).padStart(2,'0')})`);
+            console.log(`✅ ETA Calculated: ${trainName} (#${train.TrainNumber}) → ${train.NextStation} | Distance: ${distanceToNextStation.toFixed(1)}km | Speed: ${speed}km/h | ETA: ${etaTime}`);
 
             // SMART COMPARISON: Compare calculated ETA with API ETA
             // Only reject if there's a significant difference (> 30 minutes)
@@ -4813,9 +4913,15 @@ class MobileApp {
                 }
             }
 
+            console.log(`${'═'.repeat(80)}`);
+            console.log(`✅ ETA CALCULATION END for ${trainId} → Final ETA: ${etaTime}`);
+            console.log(`${'═'.repeat(80)}\n`);
             return etaTime;
-            
+
         } catch (error) {
+            console.log(`${'═'.repeat(80)}`);
+            console.log(`❌ ETA CALCULATION ERROR for ${trainId}: ${error.message}`);
+            console.log(`${'═'.repeat(80)}\n`);
             return null;
         }
     }
@@ -4989,6 +5095,11 @@ class MobileApp {
     // Calculate delay by comparing NextStationETA with scheduled time
     calculateDelayFromETA(train) {
         try {
+            const trainId = `${train.TrainName || 'Unknown'} #${train.TrainNumber}`;
+            console.log(`\n${'─'.repeat(80)}`);
+            console.log(`⏱️  DELAY CALCULATION START for ${trainId}`);
+            console.log(`${'─'.repeat(80)}`);
+
             // IMPORTANT: Always recalculate delay from the corrected ETA, not API's LateBy
             // Reason: API may have calculated LateBy with a stale/incorrect ETA on backend
             // We have corrected the ETA through our validation logic, so recalculate delay
@@ -5010,9 +5121,14 @@ class MobileApp {
                 // Fallback to API LateBy if calculation fails
                 if (train.LateBy !== undefined && train.LateBy !== null && train.LateBy !== '') {
                     const lateby = parseInt(train.LateBy);
-                    console.log(`⏮️ FALLBACK to API LateBy: ${lateby}min`);
+                    console.log(`${'─'.repeat(80)}`);
+                    console.log(`⏮️ DELAY CALCULATION FALLBACK for ${trainId} → Using API LateBy: ${lateby} minutes`);
+                    console.log(`${'─'.repeat(80)}\n`);
                     return lateby;
                 }
+                console.log(`${'─'.repeat(80)}`);
+                console.log(`❌ DELAY CALCULATION FAILED for ${trainId} → No data available`);
+                console.log(`${'─'.repeat(80)}\n`);
                 return null;
             }
 
@@ -5023,9 +5139,14 @@ class MobileApp {
                 // Fallback to API LateBy if calculation fails
                 if (train.LateBy !== undefined && train.LateBy !== null && train.LateBy !== '') {
                     const lateby = parseInt(train.LateBy);
-                    console.log(`⏮️ FALLBACK to API LateBy: ${lateby}min`);
+                    console.log(`${'─'.repeat(80)}`);
+                    console.log(`⏮️ DELAY CALCULATION FALLBACK for ${trainId} → Using API LateBy: ${lateby} minutes`);
+                    console.log(`${'─'.repeat(80)}\n`);
                     return lateby;
                 }
+                console.log(`${'─'.repeat(80)}`);
+                console.log(`❌ DELAY CALCULATION FAILED for ${trainId} → No scheduled info`);
+                console.log(`${'─'.repeat(80)}\n`);
                 return null;
             }
 
@@ -5038,9 +5159,14 @@ class MobileApp {
                 // Fallback to API LateBy if calculation fails
                 if (train.LateBy !== undefined && train.LateBy !== null && train.LateBy !== '') {
                     const lateby = parseInt(train.LateBy);
-                    console.log(`⏮️ FALLBACK to API LateBy: ${lateby}min`);
+                    console.log(`${'─'.repeat(80)}`);
+                    console.log(`⏮️ DELAY CALCULATION FALLBACK for ${trainId} → Using API LateBy: ${lateby} minutes`);
+                    console.log(`${'─'.repeat(80)}\n`);
                     return lateby;
                 }
+                console.log(`${'─'.repeat(80)}`);
+                console.log(`❌ DELAY CALCULATION FAILED for ${trainId} → Cannot parse times`);
+                console.log(`${'─'.repeat(80)}\n`);
                 return null;
             }
 
@@ -5059,10 +5185,17 @@ class MobileApp {
             }
 
             console.log(`✅ Final delay: ${delayMinutes} minutes`);
-            return Math.round(delayMinutes);
+            const finalDelay = Math.round(delayMinutes);
+            console.log(`${'─'.repeat(80)}`);
+            console.log(`✅ DELAY CALCULATION END for ${trainId} → Final Delay: ${finalDelay} minutes | ETA: ${etaToUse}`);
+            console.log(`${'─'.repeat(80)}\n`);
+            return finalDelay;
 
         } catch (error) {
             console.error('Error calculating delay from ETA:', error);
+            console.log(`${'─'.repeat(80)}`);
+            console.log(`❌ DELAY CALCULATION ERROR for ${trainId}: ${error.message}`);
+            console.log(`${'─'.repeat(80)}\n`);
             // Fallback to API LateBy if calculation fails due to error
             if (train.LateBy !== undefined && train.LateBy !== null && train.LateBy !== '') {
                 const lateby = parseInt(train.LateBy);
@@ -10199,16 +10332,6 @@ class MobileApp {
             return;
         }
 
-        const containerParent = mapContainer.parentElement;
-        const screenElement = document.getElementById('liveTrainDetail');
-        const isScreenVisible = screenElement && !screenElement.classList.contains('hidden');
-
-        console.log(`🗺️ [INIT MAP] Train: ${train.TrainName}, Lat: ${train.Latitude}, Lng: ${train.Longitude}`);
-        console.log(`🗺️ [INIT MAP] Container size: ${mapContainer.clientWidth}x${mapContainer.clientHeight}`);
-        console.log(`🗺️ [INIT MAP] Parent size: ${containerParent?.clientWidth}x${containerParent?.clientHeight}`);
-        console.log(`🗺️ [INIT MAP] Screen visible: ${isScreenVisible}`);
-        console.log(`🗺️ [INIT MAP] Offset parent: ${mapContainer.offsetParent !== null}`);
-
         // Initialize detail map if not exists
         if (!this.detailMap) {
             try {
@@ -10354,7 +10477,6 @@ class MobileApp {
             if (this.detailMap && train.Latitude && train.Longitude) {
                 this.detailMap.invalidateSize(true);
                 this.detailMap.setView([train.Latitude, train.Longitude], 11);
-                console.log(`🎯 [ZOOM] Map zoomed to train position: (${train.Latitude}, ${train.Longitude}), zoom: 11`);
             }
         }
 
